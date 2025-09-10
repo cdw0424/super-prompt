@@ -23,6 +23,23 @@ resolve_app_home() {
 APP_HOME="$(resolve_app_home)"
 CLI_SCRIPT="${APP_HOME}/scripts/super_prompt/cli.py"
 
+ensure_codex_latest() {
+  if [ "${SP_SKIP_CODEX_UPGRADE:-0}" = "1" ]; then return 0; fi
+  if command -v npm >/dev/null 2>&1; then
+    echo "-------- Upgrading Codex CLI to latest (@openai/codex)"
+    npm install -g @openai/codex@latest >/dev/null 2>&1 || true
+  fi
+}
+
+ensure_self_latest() {
+  # Auto-update this package unless skipped
+  if [ "${SP_SKIP_SELF_UPDATE:-0}" = "1" ]; then return 0; fi
+  if command -v npm >/dev/null 2>&1; then
+    echo "-------- Checking Super Prompt updates (@cdw0424/super-prompt)"
+    npm install -g @cdw0424/super-prompt@latest >/dev/null 2>&1 || true
+  fi
+}
+
 ensure_cli() {
   if [ -f "$CLI_SCRIPT" ]; then return 0; fi
   if [ -f "${APP_HOME}/install.js" ] && command -v node >/dev/null 2>&1; then
@@ -31,6 +48,9 @@ ensure_cli() {
   fi
   [ -f "$CLI_SCRIPT" ]
 }
+
+ensure_self_latest
+ensure_codex_latest
 
 if ! ensure_cli; then
   echo "❌ Python CLI not found. Try:"

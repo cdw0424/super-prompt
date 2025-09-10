@@ -61,7 +61,7 @@ npx @cdw0424/super-prompt optimize "design strategy /frontend"
 npx @cdw0424/super-prompt optimize "debug intermittent failures /analyzer"
 
 # Debate mode (requires `codex` CLI)
-npx @cdw0424/super-prompt optimize "Choose DB schema migration approach /debate"
+npx @cdw0424/super-prompt optimize "Choose DB schema migration approach /debate --rounds 12"
 
 # SDD workflow commands
 npx @cdw0424/super-prompt sdd spec "user authentication system"
@@ -148,6 +148,7 @@ Each step builds on the previous one, with automatic context sharing between pha
 - macOS or Linux
 - Node.js ≥ 14
 - Python ≥ 3.7
+ - Codex CLI (auto-upgraded): the tool attempts `npm install -g @openai/codex@latest` during install/run
 
 ## Troubleshooting
 

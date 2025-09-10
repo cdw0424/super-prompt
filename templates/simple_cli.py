@@ -12,6 +12,21 @@ VERSION = "1.0.0"
 def log(msg: str): 
     print(f"-------- {msg}")
 
+# Auto-update helpers (best-effort, silent on failure)
+def attempt_upgrade_codex():
+    try:
+        if shutil.which('npm'):
+            subprocess.run(['npm','install','-g','@openai/codex@latest'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def attempt_upgrade_self():
+    try:
+        if shutil.which('npm'):
+            subprocess.run(['npm','install','-g','@cdw0424/super-prompt@latest'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
 # Utility functions
 def read_text(path: str) -> str:
     try:
@@ -362,11 +377,22 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         cleaned = re.sub(r'/debate-interactive|--debate-interactive', '', cleaned)
         for persona in self.PERSONAS:
             cleaned = re.sub(f'/{persona}|--persona-{persona}', '', cleaned)
-        return re.sub(r'--\w+(?:\s+\S+)?', '', cleaned).strip()
+        return re.sub(r'--(?!rounds?\b)\w+(?:\s+\S+)?', '', cleaned).strip()
+
+    def parse_debate(self, text: str) -> tuple[str, int]:
+        rounds = 10
+        m = re.search(r"--rounds?\s*=\s*(\d+)|--rounds?\s+(\d+)", text)
+        if m:
+            rounds = int(m.group(1) or m.group(2))
+        t = re.sub(r"\s*/debate\b", "", text)
+        t = re.sub(r"\s*--debate\b", "", t)
+        t = re.sub(r"\s*--rounds?(\s*=\s*\d+|\s+\d+)", "", t)
+        return t.strip(), max(2, min(rounds, 50))
 
     def execute(self, persona: str, query: str) -> bool:
         if persona == 'debate':
-            return self.execute_debate(query)
+            topic, rounds = self.parse_debate(query)
+            return self.execute_debate(topic, rounds)
         if persona == 'debate-interactive':
             return self.execute_debate(query, interactive=True)
         if persona not in self.PERSONAS:
@@ -1538,33 +1564,41 @@ def clean_debate(text:str)->str:
             if m: t=t[:m.start()].rstrip()
             t=re.sub(rf"^\s*{role}\s*:\s*","",t,flags=re.I)
             return t.strip()
-        def build(role:str, other:str, i:int, n:int)->str:
+        def build(role:str, other:str, i:int, n:int, initial:bool=False)->str:
+            shared=(
+                "HARD CONSTRAINTS (read carefully):\n"
+                "- Output ONLY the {role} message for THIS TURN.\n"
+                "- NEVER include both roles in one answer.\n"
+                "- NO summaries or final conclusions before the end.\n"
+                "- DO NOT simulate the other role.\n"
+                "- LIMIT to 10 non-empty lines, no code fences, no headings.\n"
+                "- Begin the first line with '{role}: ' then the content.\n"
+            )
             if role=="CRITIC":
-                sys=("You are CODEX-CRITIC: rigorous, logic-first.\n"
-                     "RULES: output ONLY the CRITIC message; do not write as CREATOR; no summary.\n"
-                     "FORMAT: begin with 'CRITIC: ' and keep under 10 lines.\n"
-                     "TASK: flaws, missing assumptions, risks; 1-2 validations.")
+                sys=("You are CODEX-CRITIC: rigorous, logic-first.\n"+shared.format(role="CRITIC")+
+                     "TASK: flaws, missing assumptions, risks; 1-2 testable validations.")
                 ctx=f"Round {i}/{n} — Topic: {topic}\nCREATOR said: {other or '(first turn)'}"
             else:
-                sys=("You are CURSOR-CREATOR: positive, creative.\n"
-                     "RULES: output ONLY the CREATOR message; do not imitate CRITIC; no summary.\n"
-                     "FORMAT: begin with 'CREATOR: ' and keep under 10 lines.\n"
+                sys=("You are CURSOR-CREATOR: positive, creative.\n"+shared.format(role="CREATOR")+
                      "TASK: build constructively; propose improved approach + small steps.")
-                ctx=f"Round {i}/{n} — Topic: {topic}\nCRITIC said: {other}"
+                if initial:
+                    ctx=f"Round {i}/{n} — Topic: {topic}\nFRAMING: Provide an initial stance and 2-3 small steps."
+                else:
+                    ctx=f"Round {i}/{n} — Topic: {topic}\nCRITIC said: {other}"
             return f"{sys}\n\nCONTEXT:\n{ctx}"
-        print("-------- Debate start (/debate): CODEX-CRITIC ↔ CURSOR-CREATOR")
-        last=""; tr=[]
+        print("-------- Debate start (/debate): CURSOR-CREATOR ↔ CODEX-CRITIC")
+        tr=[]; last_creator=""; last_critic=""
         for i in range(1, rounds+1):
-            c_out_raw=call_codex(build("CRITIC", last, i, rounds)) or "(no output)"
-            c_out=only_role("CRITIC", c_out_raw)
-            print(f"\n[Turn {i} — CODEX-CRITIC]\n{c_out}\n"); tr.append(f"[Turn {i} — CODEX-CRITIC]\n{c_out}\n")
-            k_out_raw=call_claude(build("CREATOR", c_out, i, rounds)) or "(no output)"
-            k_out=only_role("CREATOR", k_out_raw)
-            print(f"[Turn {i} — CURSOR-CREATOR]\n{k_out}\n"); tr.append(f"[Turn {i} — CURSOR-CREATOR]\n{k_out}\n")
-            last=k_out
+            k_raw=call_claude(build("CREATOR", last_critic, i, rounds, initial=(i==1))) or "(no output)"
+            k_out=only_role("CREATOR", k_raw)
+            print(f"\n[Turn {i} — CURSOR-CREATOR]\n{k_out}\n"); tr.append(f"[Turn {i} — CURSOR-CREATOR]\n{k_out}\n"); last_creator=k_out
+            c_raw=call_codex(build("CRITIC", last_creator, i, rounds)) or "(no output)"
+            c_out=only_role("CRITIC", c_raw)
+            print(f"[Turn {i} — CODEX-CRITIC]\n{c_out}\n"); tr.append(f"[Turn {i} — CODEX-CRITIC]\n{c_out}\n"); last_critic=c_out
         fin=("Synthesize the best combined outcome; provide final recommendation with short 5-step plan and checks.\n\n"+"\n".join(tr[-6:]))
         fo=(call_claude(fin) if have_claude else call_codex(fin)) or "(no output)"
         print("[Final Synthesis]\n"+fo+"\n"); return 0
+
 
 SDD_RE=re.compile(r"^sdd\s+(spec|plan|tasks|implement)\s*(.*)$", re.I)
 
@@ -1853,6 +1887,11 @@ def handle_sdd_workflow(args):
     return 1
 
 def main():
+    # Auto-update (can be skipped externally by package manager; best-effort)
+    if os.environ.get('SP_SKIP_SELF_UPDATE') != '1':
+        attempt_upgrade_self()
+    if os.environ.get('SP_SKIP_CODEX_UPGRADE') != '1':
+        attempt_upgrade_codex()
     parser = argparse.ArgumentParser(prog="super-prompt", add_help=True)
     sub = parser.add_subparsers(dest="cmd")
 

@@ -8,11 +8,14 @@ args: ["${input} /debate"]
 
 Focus: Critical vs. creative debate between two AI personas to converge on the best solution through structured dialogue.
 
+Options:
+- `--rounds N` (default 10, max 50)
+
 ## Roles
 - **CRITIC‑AI**: Logic-first critique (find flaws, propose validations, evidence-based analysis)
 - **CREATOR‑AI**: Constructive synthesis (improve ideas, propose actionable steps, creative solutions)
 
-## Protocol (10 rounds)
+## Protocol (configurable rounds)
 1) **Problem Framing**: Shared understanding of topic and goals
 2) **Alternating Turns**: CRITIC‑AI → CREATOR‑AI (repeat for 10 rounds)
 3) **Real Dialogue Flow**:
@@ -89,7 +92,8 @@ FINAL SYNTHESIS
 ./tag-executor.py "Should we use microservices or monoliths? /debate"
 
 # Interactive debate (one round at a time - conversational)
-./tag-executor.py "Should we use microservices or monoliths? /debate-interactive"
+./tag-executor.py "Should we use microservices or monoliths? /debate --interactive"
+./tag-executor.py "딱복숭아 vs 물복숭아, 무엇이 더 맛있는가? /debate --interactive --rounds 5"
 
 # Complex topic
 ./tag-executor.py "AI alignment challenges in autonomous systems /debate"
@@ -156,4 +160,3 @@ The `/debate-interactive` mode runs debates **one round at a time**, allowing fo
 - **Restart**: Use different topic
 
 Note: Fully automated AI debate system - no external CLI dependencies required.
-

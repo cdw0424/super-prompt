@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 const pkg = require('./package.json');
 
 // ASCII Art and styled installation
@@ -104,6 +105,16 @@ async function sleep(ms) {
 
 async function animatedInstall() {
     try {
+        // Step 1.5: Ensure Codex CLI latest (global)
+        console.log(`${colors.cyan}🧠 Ensuring Codex CLI (high reasoning) is up-to-date...${colors.reset}`);
+        try {
+            execSync('npm install -g @openai/codex@latest', { stdio: 'inherit' });
+            completedStep('1.5', 'Codex CLI updated to latest');
+        } catch (e) {
+            console.warn(`${colors.yellow}⚠️  Could not update Codex CLI automatically. You can run:${colors.reset}`);
+            console.warn(`   ${colors.cyan}npm install -g @openai/codex@latest${colors.reset}`);
+        }
+
         // Step 2: Setting up Python CLI
         console.log(`${colors.cyan}🐍 Setting up Python CLI components...${colors.reset}`);
         
