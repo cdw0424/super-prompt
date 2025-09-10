@@ -1,0 +1,12 @@
+---
+description: "Organization guardrails — generated 2025-09-11 00:59:24"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Organization Guardrails
+- Language: English only in documentation and rules.
+- All debug/console lines MUST use the '--------' prefix.
+- Secrets/tokens/PII MUST be masked in prompts, code, and logs.
+- Keep prompts/personas focused on task goals and constraints.
+- Avoid irrelevant technology choices; follow existing project conventions first.
+- Add meaningful tests for critical paths where applicable.

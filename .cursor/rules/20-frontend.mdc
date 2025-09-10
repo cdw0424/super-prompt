@@ -1,0 +1,13 @@
+---
+description: "Frontend conventions — generated 2025-09-11 00:59:24"
+globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/*.dart"]
+alwaysApply: false
+---
+# Frontend Rules (SDD-Compliant)
+- Small, reusable components; single responsibility per file.
+- Framework-specific patterns: python, javascript
+- Routing: Follow framework conventions; guard access control.
+- Separate networking layer (services/hooks), define DTO/validation schema.
+- UI copy: English only; centralize strings.
+- Performance and accessibility: measure and improve user‑perceived responsiveness.
+- All debug logs: use '--------' prefix.

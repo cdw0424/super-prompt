@@ -1,0 +1,51 @@
+{
+  "name": "@cdw0424/super-prompt",
+  "version": "2.1.1",
+  "description": "Cursor-first prompt engineering toolkit with SDD assist and personas",
+  "main": "index.js",
+  "bin": {
+    "super-prompt": "./bin/super-prompt"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "development",
+    "persona",
+    "cursor",
+    "cli",
+    "prompt-engineering",
+    "productivity",
+    "automation"
+  ],
+  "author": "Daniel Choi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/choi-dong-won/super-prompt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/choi-dong-won/super-prompt/issues"
+  },
+  "homepage": "https://github.com/choi-dong-won/super-prompt#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "files": [
+    "bin/",
+    "templates/simple_cli.py",
+    "templates/simple_tag_executor.py",
+    "install.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(super-prompt:*)",
+      "Read(//opt/homebrew/lib/node_modules/@cdw0424/super-prompt/**)",
+      "Bash(bash bin/super-prompt:*)",
+      "Bash(/opt/homebrew/bin/super-prompt:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

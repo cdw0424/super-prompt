@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Super Prompt CLI Wrapper — robust, self-healing
+set -euo pipefail
+
+resolve_app_home() {
+  local PRG="$0"
+  while [ -h "$PRG" ]; do
+    ls_output=$(ls -ld "$PRG")
+    link=$(expr "$ls_output" : '.*-> \(.*\)$')
+    if expr "$link" : '/.*' >/dev/null; then
+      PRG="$link"
+    else
+      PRG="$(dirname "$PRG")/$link"
+    fi
+  done
+  local SAVED="$(pwd)"
+  cd "$(dirname "$PRG")/.." >/dev/null
+  local HOME_DIR="$(pwd -P)"
+  cd "$SAVED" >/dev/null
+  printf "%s" "$HOME_DIR"
+}
+
+APP_HOME="$(resolve_app_home)"
+CLI_SCRIPT="${APP_HOME}/scripts/super_prompt/cli.py"
+
+ensure_cli() {
+  if [ -f "$CLI_SCRIPT" ]; then return 0; fi
+  if [ -f "${APP_HOME}/install.js" ] && command -v node >/dev/null 2>&1; then
+    echo "-------- Finalizing installation (running postinstall)"
+    (cd "$APP_HOME" && node install.js) || true
+  fi
+  [ -f "$CLI_SCRIPT" ]
+}
+
+if ! ensure_cli; then
+  echo "❌ Python CLI not found. Try:"
+  echo "   - npm config set ignore-scripts false"
+  echo "   - npm rebuild -g @cdw0424/super-prompt"
+  echo "   - or run: node '${APP_HOME}/install.js'"
+  exit 1
+fi
+
+# Check Python version
+python3 - <<'PY' || { echo "❌ Python 3.7+ required"; exit 1; }
+import sys
+req=(3,7)
+sys.exit(0 if sys.version_info>=req else 1)
+PY
+
+exec python3 "$CLI_SCRIPT" "$@"
