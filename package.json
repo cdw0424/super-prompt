@@ -10,7 +10,10 @@
     "postinstall": "node install.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "codex:plan": "bin/codex-high",
-    "codex:exec": "bin/codex-medium"
+    "codex:exec": "bin/codex-medium",
+    "amr:rules": "super-prompt amr:rules",
+    "amr:print": "super-prompt amr:print",
+    "amr:qa": "scripts/codex/prompt-qa.sh"
   },
   "keywords": [
     "ai",

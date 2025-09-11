@@ -221,6 +221,11 @@ Quick start
   npm run codex:exec
   ```
 
+AMR utilities
+- Generate Cursor AMR rule: `npm run amr:rules` → writes `.cursor/rules/05-amr.mdc`
+- Print bootstrap prompt: `npm run amr:print` (copy to Codex TUI)
+- Validate a transcript: `npm run amr:qa -- path/to/transcript.txt`
+
 Router switching
 - If the environment does not auto‑execute the following lines, copy‑run them in the TUI:
   ```

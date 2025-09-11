@@ -729,6 +729,54 @@ alwaysApply: false
     log(f"SDD rules generated in {out_dir}")
     return out_dir
 
+def generate_amr_rules_file(out_dir: str = ".cursor/rules", dry: bool = False) -> str:
+    """Generate a minimal AMR rule file for Cursor to enforce router policy/state machine."""
+    os.makedirs(out_dir, exist_ok=True)
+    amr_path = os.path.join(out_dir, "05-amr.mdc")
+    content = """---
+description: "Auto Model Router (AMR) policy and state machine"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Auto Model Router (medium ↔ high)
+- Default: gpt-5, reasoning=medium.
+- Task classes: L0 (light), L1 (moderate), H (heavy reasoning).
+- H: switch to high for PLAN/REVIEW, then back to medium for EXECUTION.
+- Router switch lines (copy-run if needed):
+  - `/model gpt-5 high` → `--------router: switch to high (reason=deep_planning)`
+  - `/model gpt-5 medium` → `--------router: back to medium (reason=execution)`
+
+# Output Discipline
+- Language: English. Logs start with `--------`.
+- Keep diffs minimal; provide exact macOS zsh commands.
+
+# Fixed State Machine
+[INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
+
+# Templates (use as needed)
+T1 Switch High:
+```
+/model gpt-5 high
+--------router: switch to high (reason=deep_planning)
+```
+T1 Back Medium:
+```
+/model gpt-5 medium
+--------router: back to medium (reason=execution)
+```
+T2 PLAN:
+```
+[Goal]\n- …\n[Plan]\n- …\n[Risk/Trade‑offs]\n- …\n[Test/Verify]\n- …\n[Rollback]\n- …
+```
+T3 EXECUTE:
+```
+[Diffs]\n```diff\n--- a/file\n+++ b/file\n@@\n- old\n+ new\n```\n[Commands]\n```bash\n--------run: npm test -- --watchAll=false\n```
+```
+"""
+    write_text(amr_path, content, dry)
+    log(f"AMR rules generated in {out_dir}")
+    return amr_path
+
 def install_cursor_commands_in_project(dry=False):
     """Install Cursor slash commands in the current project.
     Writes .cursor/commands/super-prompt/* using a thin wrapper that calls
@@ -767,6 +815,51 @@ fi
         content = f"---\ndescription: {name} command\nrun: \"./tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
         write_text(os.path.join(base, f'{name}.md'), content, dry)
 
+    # Provide AMR helper templates as static commands (no runner required)
+    amr_plan_md = """---
+description: AMR PLAN template
+---
+/model gpt-5 high
+--------router: switch to high (reason=deep_planning)
+
+[Goal]
+- …
+[Plan]
+- …
+[Risk/Trade‑offs]
+- …
+[Test/Verify]
+- Commands:
+  ```bash
+  npm ci
+  npm test -- --watchAll=false
+  ```
+[Rollback]
+- …
+"""
+    write_text(os.path.join(base, 'amr-plan.md'), amr_plan_md, dry)
+
+    amr_exec_md = """---
+description: AMR EXECUTION template
+---
+/model gpt-5 medium
+--------router: back to medium (reason=execution)
+
+[Diffs]
+```diff
+--- a/path
++++ b/path
+@@
+- old
++ new
+```
+[Commands]
+```bash
+--------run: npm run build && npm test -- --watchAll=false
+```
+"""
+    write_text(os.path.join(base, 'amr-exec.md'), amr_exec_md, dry)
+
 def show_ascii_logo():
     """Display ASCII logo with version info"""
     logo = """
@@ -803,6 +896,17 @@ def main():
     p_optimize = sub.add_parser("optimize", help="Execute persona queries with SDD context")
     p_optimize.add_argument("query", nargs="*", help="Query with persona tag")
     p_optimize.add_argument("--list-personas", action="store_true")
+
+    # AMR commands
+    p_amr_rules = sub.add_parser("amr:rules", help="Generate AMR rule file (05-amr.mdc)")
+    p_amr_rules.add_argument("--out", default=".cursor/rules", help="Rules directory")
+    p_amr_rules.add_argument("--dry-run", action="store_true")
+
+    p_amr_print = sub.add_parser("amr:print", help="Print AMR bootstrap prompt to stdout")
+    p_amr_print.add_argument("--path", default="prompts/codex_amr_bootstrap_prompt_en.txt", help="Prompt file path")
+
+    p_amr_qa = sub.add_parser("amr:qa", help="Validate a transcript for AMR/state-machine conformance")
+    p_amr_qa.add_argument("file", help="Transcript/text file to check")
 
     args = parser.parse_args()
     if not args.cmd: 
@@ -862,6 +966,38 @@ def main():
         print("🚀 Super Prompt - Persona Query Processor")
         success = optimizer.process_query(query_text)
         return 0 if success else 1
+    elif args.cmd == "amr:rules":
+        path = generate_amr_rules_file(args.out, getattr(args, 'dry_run', False))
+        print(f"AMR rules written: {path}")
+        return 0
+    elif args.cmd == "amr:print":
+        p = getattr(args, 'path', 'prompts/codex_amr_bootstrap_prompt_en.txt')
+        data = read_text(p)
+        if not data:
+            print("No bootstrap prompt found.")
+            return 1
+        print(data)
+        return 0
+    elif args.cmd == "amr:qa":
+        fp = args.file
+        if not os.path.isfile(fp):
+            print(f"❌ File not found: {fp}")
+            return 2
+        txt = read_text(fp)
+        ok = True
+        # Check sections
+        if not re.search(r"^\[INTENT\]", txt, re.M):
+            log("Missing [INTENT] section"); ok = False
+        if not (re.search(r"^\[PLAN\]", txt, re.M) or re.search(r"^\[EXECUTE\]", txt, re.M)):
+            log("Missing [PLAN] or [EXECUTE] section"); ok = False
+        # Check log prefix
+        if re.search(r"^(router:|run:)", txt, re.M):
+            log("Found log lines without '--------' prefix"); ok = False
+        # Router switch consistency (if present)
+        if "/model gpt-5 high" in txt and "/model gpt-5 medium" not in txt:
+            log("High switch found without returning to medium"); ok = False
+        print("--------qa: OK" if ok else "--------qa: FAIL")
+        return 0 if ok else 1
     
     log(f"Unknown command: {args.cmd}")
     return 2
