@@ -1,30 +1,35 @@
-# AGENTS.md — Super‑Prompt × Codex: Auto Model Router (medium ↔ high)
+# Repository Guidelines
 
-## Policy: Language & Logs
-- Output language: English. Tone: precise, concise, production‑oriented.
-- All debug/console lines MUST start with `--------`.
+## Project Structure & Module Organization
+- Core CLI: `scripts/super_prompt/cli.py` (Python, single‑file CLI).
+- Node package wrapper: `bin/super-prompt`, metadata in `package.json`.
+- AMR assets: `prompts/`, `docs/`, `bin/codex-*`, `scripts/codex/*`, `.cursor/rules/*`.
+- Keep new personas/rules under `.cursor/commands/super-prompt/` and `.cursor/rules/`.
 
-## Router Rules (AMR)
-- Start: gpt‑5, reasoning=medium.
-- Classify tasks:
-  - L0: lint/format/rename/find‑replace/small refactor → stay medium.
-  - L1: tests/small type/API change/routine migrations → stay medium.
-  - H: architecture/security/perf/complex debugging/multi‑module planning → **switch to high** for PLAN/REVIEW, then **back to medium** for EXECUTION.
-- Switching:
-  - To high: first line `/model gpt-5 high` then log `--------router: switch to high (reason=deep_planning)`
-  - Back to medium: first line `/model gpt-5 medium` then log `--------router: back to medium (reason=execution)`
-- Failure/Flaky/Unclear root cause → temporarily analyze at high then execute at medium.
-- User override: if the user pins a level, never auto‑switch.
+## Build, Test, and Development Commands
+- Initialize Cursor rules: `super-prompt super:init`
+- Run personas from CLI: `super-prompt optimize "your query /frontend"`
+- AMR helpers: `npm run codex:plan`, `npm run codex:exec`, `npm run amr:rules`, `npm run amr:print`
+- Guards: `scripts/codex/router-check.sh` (AMR assets) and `scripts/codex/prompt-qa.sh <transcript>` (state‑machine checks)
 
-## Output Discipline
-- Minimal diffs, explicit test commands, and a short verification report.
-- H tasks: produce a PLAN first (Goal/Plan/Risks/Test/Rollback), then EXECUTION + VERIFY + REPORT.
-- Keep noise low; if long, add a 5‑line executive summary.
+## Coding Style & Naming Conventions
+- Language: English only in prompts/docs. All logs start with `--------`.
+- JavaScript/JSON: 2‑space indent; Python: 4‑space indent.
+- Names: CLI files kebab‑case; Python symbols snake_case; keep function names descriptive.
+- Do not print secrets/tokens; mask like `sk-***`.
 
-## Stack Defaults (opt‑in)
-- FE: React/Next.js/React Router/Flutter (small reusable components).
-- BE: Java 8 + Spring Boot (or Node.js on request).
-- DB: MySQL + Flyway (utf8mb4, KST, proper indexes/FKs).
-- Infra: AWS EC2/ALB/Route53; Blue‑Green deployments.
-- Cache/Lock: Redis with explicit TTLs and `namespace:sub:resource` keys.
-- Shopify: rate limits/backoff/idempotency, bulk minimized.
+## Testing Guidelines
+- For CLI additions, prefer Jest integration tests (`*.int.test.js`) or minimal smoke tests.
+- Validate prompt outputs via `prompt-qa.sh` and keep sample transcripts under `docs/examples/`.
+- Before PR, run: `scripts/codex/router-check.sh` and, if applicable, `npm test`.
+
+## Commit & Pull Request Guidelines
+- Use Conventional Commits (e.g., `feat(cli): ...`, `fix: ...`, `docs: ...`).
+- PRs should include: short description, rationale, screenshots (when UX), and steps to verify.
+- Keep diffs minimal and scoped; avoid unrelated refactors.
+
+## Agent‑Specific Instructions (AMR)
+- Auto Model Router (medium ↔ high): start at medium; escalate to high for PLAN/REVIEW or root‑cause, then return to medium for EXECUTION.
+- Manual switches (if TUI does not auto‑run):
+  - `/model gpt-5 high` → plan at high
+  - `/model gpt-5 medium` → execute at medium
