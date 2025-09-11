@@ -18,6 +18,124 @@
 - EXECUTE: minimal diffs only; include exact macOS zsh commands with `--------run:` prefix.
 - VERIFY: show commands and a brief pass/fail summary (smallest failing snippet if any).
 
+## 🔥 MANDATORY TODO Workflow
+**CRITICAL**: Every complex task (3+ steps) MUST start with TODO planning and progress tracking.
+
+### TODO Planning Rules (Non-negotiable)
+1. **Start with TodoWrite**: Create structured task list BEFORE any work begins
+2. **Single Focus**: Only ONE task should be "in_progress" at any time
+3. **Real-time Updates**: Update status immediately after each task completion
+4. **Evidence-based**: Mark completed only when FULLY accomplished with verification
+5. **Progressive Updates**: Never batch multiple completions - update one by one
+
+### Task States & Management
+- **pending** 📋: Ready for execution, clear requirements
+- **in_progress** 🔄: Currently active (exactly ONE per session)
+- **completed** ✅: Successfully finished with evidence
+- **blocked** 🚧: Waiting on dependency or user input
+
+### Mandatory TODO Triggers
+- Multi-step operations (file changes, configuration, testing)
+- Complex debugging or analysis tasks
+- Feature implementation or system changes
+- Documentation updates with multiple sections
+- Any task requiring coordination between multiple files/systems
+
+### Example TODO Workflows
+
+#### Complex Feature Implementation
+```
+User: "Add authentication to the API"
+
+TodoWrite([
+  {content: "Analyze current authentication setup", status: "in_progress"},
+  {content: "Design JWT token strategy", status: "pending"},
+  {content: "Implement authentication middleware", status: "pending"},
+  {content: "Add protected route decorators", status: "pending"},
+  {content: "Write authentication tests", status: "pending"},
+  {content: "Update API documentation", status: "pending"}
+])
+
+→ Work on first task
+→ TodoWrite(mark first as completed, mark second as in_progress)
+→ Continue until all completed
+```
+
+#### Bug Investigation & Fix
+```
+User: "Users can't login after recent deployment"
+
+TodoWrite([
+  {content: "Reproduce login failure locally", status: "in_progress"},
+  {content: "Check recent deployment changes", status: "pending"},
+  {content: "Analyze authentication logs", status: "pending"},
+  {content: "Identify root cause", status: "pending"},
+  {content: "Implement and test fix", status: "pending"},
+  {content: "Deploy fix and verify", status: "pending"}
+])
+```
+
+#### Documentation Update
+```
+User: "Update README with new installation steps"
+
+TodoWrite([
+  {content: "Review current README structure", status: "in_progress"},
+  {content: "Document new dependencies", status: "pending"},
+  {content: "Update installation commands", status: "pending"},
+  {content: "Add troubleshooting section", status: "pending"},
+  {content: "Test installation steps", status: "pending"}
+])
+```
+
+### TODO Integration with Super-Prompt CLI
+
+#### Using TODO with Persona Commands
+```bash
+# When using personas, still follow TODO planning
+super-prompt optimize --sp-frontend "Build responsive dashboard"
+
+# Agent should:
+1. Create TODO list for dashboard components
+2. Use frontend persona for each task
+3. Update progress after each component
+```
+
+#### TODO for SDD Workflow
+```bash
+# SDD workflow automatically creates structured TODOs
+super-prompt optimize --sp-sdd-spec "user authentication"
+
+# Results in TODO structure:
+- Analyze authentication requirements
+- Define user stories and acceptance criteria  
+- Document security requirements
+- Specify API endpoints
+- Create implementation plan
+```
+
+### TODO Quality Gates
+**Before marking ANY task as completed:**
+1. ✅ **Verification**: Run tests, check outputs, validate functionality
+2. ✅ **Evidence**: Provide concrete proof of completion
+3. ✅ **Documentation**: Update relevant docs if needed
+4. ✅ **Integration**: Ensure changes work with existing system
+5. ✅ **Clean State**: No broken builds, failed tests, or incomplete implementations
+
+### Common TODO Anti-Patterns (AVOID)
+❌ Marking multiple tasks completed at once without individual verification
+❌ Starting new tasks while previous task is still in_progress  
+❌ Completing tasks without evidence or testing
+❌ Skipping TODO creation for "simple" tasks that become complex
+❌ Forgetting to update status after each task completion
+
+### TODO Success Patterns (FOLLOW)
+✅ Always start complex tasks with comprehensive TODO planning
+✅ One task in_progress at a time, complete focus
+✅ Immediate status updates after each task completion
+✅ Evidence-based completion with verification
+✅ Real-time progress tracking for user visibility
+
 ## Personas (Codex‑friendly flags)
 - Use CLI flags (no slash commands in Codex):
 

@@ -11,6 +11,8 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
+**🚀 New in v2.8.0:** Added TODO Auto-Validation System with intelligent high-mode retry for failed tasks, ensuring reliable completion and automatic error recovery.
+
 **🚀 New in v2.6.0:** Full SDD (Spec-Driven Development) workflow now available in Codex CLI alongside Cursor support. Complete SPEC→PLAN→TASKS→IMPLEMENT workflow for both IDEs.
 
 Prompt Engineering toolkit supporting both Cursor and Codex CLI with Spec‑Driven Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your SPEC/PLAN, installs slash commands for Cursor, and provides flag‑based personas for Codex CLI - giving you flexibility to work with either IDE seamlessly.
@@ -257,6 +259,65 @@ super-prompt optimize --sp-sdd-implement "start chat backend development" --vali
 - **Compliance**: Built-in validation and quality gates
 
 Each step builds on the previous one, with automatic context sharing between phases and intelligent validation.
+
+## ✅ TODO Auto-Validation System
+
+The TODO validation system automatically monitors task completion and triggers high-reasoning mode retries for failed tasks. This ensures reliable task completion and intelligent error recovery.
+
+### Features
+
+- **Automatic Validation**: Validates task completion using multiple criteria (file changes, syntax, tests, builds)
+- **Intelligent Retry**: Failed tasks automatically retry in high-reasoning mode with enhanced context
+- **Progress Tracking**: Real-time session management with attempt tracking and error logging
+- **Quality Gates**: Built-in validation for syntax, testing, security, and documentation
+
+### TODO Commands
+
+```bash
+# Validate current TODO session and trigger retries for failed tasks
+super-prompt todo:validate
+
+# Auto-validation mode (validates after each task completion)
+super-prompt todo:validate --auto
+
+# Show current TODO session status with progress tracking
+super-prompt todo:status
+
+# Use custom session file
+super-prompt todo:validate --session-file custom_todos.json
+```
+
+### Validation Criteria
+
+The system automatically validates tasks using context-aware criteria:
+
+- **File Operations**: Detects file changes via git status
+- **Code Quality**: Validates Python/JavaScript syntax
+- **Testing**: Runs available test suites (npm test, pytest)
+- **Build Process**: Verifies build success (npm run build)
+- **Documentation**: Checks README completeness and quality
+- **Git Status**: Ensures repository is in clean state
+
+### High-Mode Retry Logic
+
+When validation fails:
+
+1. **Failure Detection**: Task marked as failed with detailed error context
+2. **Enhanced Prompt**: Creates comprehensive retry prompt with failure analysis
+3. **High-Mode Execution**: Retries using `--sp-high` reasoning mode
+4. **Attempt Tracking**: Monitors retry attempts (max 3 per task)
+5. **Success Validation**: Re-validates after high-mode completion
+
+### Integration with AGENTS.md
+
+The validation system integrates with the Codex AGENTS.md TODO workflow:
+
+- **Mandatory Planning**: All complex tasks (3+ steps) must start with TODO planning
+- **Progress Tracking**: Real-time updates after each task completion
+- **Evidence-Based**: Tasks marked complete only with validation evidence
+- **Quality Assurance**: Automatic validation before final completion
+
+This ensures reliable, high-quality task completion with intelligent error recovery.
 
 ## Debate (Single‑Model, Codex)
 

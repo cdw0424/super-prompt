@@ -19,7 +19,8 @@
       "Bash(find:*)",
       "Bash(curl:*)",
       "Bash(grep:*)",
-      "Bash(sudo chown:*)"
+      "Bash(sudo chown:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

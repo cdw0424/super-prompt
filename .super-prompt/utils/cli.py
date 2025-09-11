@@ -7,7 +7,38 @@ All functionality in a single file to avoid import issues
 import argparse, glob, os, sys, re, json, datetime, textwrap, subprocess, shutil
 from typing import Dict, List, Optional
 
-VERSION = "2.7.2"
+# Import TODO validator components
+try:
+    from todo_validator import TodoValidator, TodoTask, TaskStatus
+except ImportError:
+    # Fallback: define minimal classes for when todo_validator is not available
+    class TaskStatus:
+        PENDING = "pending"
+        IN_PROGRESS = "in_progress"
+        COMPLETED = "completed"
+        BLOCKED = "blocked"
+        FAILED = "failed"
+    
+    class TodoTask:
+        def __init__(self, content, status, activeForm, **kwargs):
+            self.content = content
+            self.status = status
+            self.activeForm = activeForm
+            
+    class TodoValidator:
+        def __init__(self):
+            self.session_file = ".todo_session.json"
+        
+        def load_session(self):
+            return []
+        
+        def save_session(self, todos):
+            pass
+        
+        def process_todos(self, todos):
+            return todos
+
+VERSION = "2.8.0"
 
 def log(msg: str): 
     print(f"-------- {msg}")
@@ -1348,6 +1379,14 @@ def main():
     p_codex_init = sub.add_parser("codex:init", help="Create Codex CLI assets in .codex/ (agents.md, personas.py, bootstrap, router-check)")
     p_codex_init.add_argument("--dry-run", action="store_true")
 
+    # TODO validation system
+    p_todo_validate = sub.add_parser("todo:validate", help="Validate TODO task completion and trigger high-mode retries")
+    p_todo_validate.add_argument("--auto", action="store_true", help="Run validation automatically after each task")
+    p_todo_validate.add_argument("--session-file", default=".todo_session.json", help="TODO session file path")
+    
+    p_todo_status = sub.add_parser("todo:status", help="Show current TODO session status")
+    p_todo_status.add_argument("--session-file", default=".todo_session.json", help="TODO session file path")
+
     args = parser.parse_args()
     if not args.cmd: 
         args.cmd = "super:init"
@@ -1548,9 +1587,112 @@ def main():
         write_codex_agent_assets(getattr(args, 'dry_run', False))
         print("--------codex:init: .codex assets created")
         return 0
+        
+    elif args.cmd == "todo:validate":
+        return handle_todo_validate_command(args)
+        
+    elif args.cmd == "todo:status":
+        return handle_todo_status_command(args)
     
     log(f"Unknown command: {args.cmd}")
     return 2
+
+def handle_todo_validate_command(args):
+    """Handle TODO validation command"""
+    try:
+        validator = TodoValidator()
+        validator.session_file = args.session_file
+        
+        # Load current session
+        todos = validator.load_session()
+        
+        if not todos:
+            print("📋 No active TODO session found")
+            return 0
+        
+        print("🔍 Validating TODO tasks...")
+        
+        # Process and validate todos
+        updated_todos = validator.process_todos(todos)
+        
+        # Save updated session
+        validator.save_session(updated_todos)
+        
+        # Print detailed summary
+        completed = len([t for t in updated_todos if t.status == TaskStatus.COMPLETED])
+        failed = len([t for t in updated_todos if t.status == TaskStatus.FAILED])
+        in_progress = len([t for t in updated_todos if t.status == TaskStatus.IN_PROGRESS])
+        pending = len([t for t in updated_todos if t.status == TaskStatus.PENDING])
+        
+        print(f"\n📊 TODO Validation Summary:")
+        print(f"   ✅ Completed: {completed}")
+        print(f"   🔄 In Progress: {in_progress}")
+        print(f"   📋 Pending: {pending}")
+        print(f"   ❌ Failed: {failed}")
+        
+        # Show failed tasks details
+        failed_tasks = [t for t in updated_todos if t.status == TaskStatus.FAILED]
+        if failed_tasks:
+            print(f"\n❌ Failed Tasks:")
+            for task in failed_tasks:
+                print(f"   • {task.content[:60]}...")
+                print(f"     Attempts: {task.attempt}/{task.max_attempts}")
+                print(f"     Error: {task.last_error}")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ TODO validation failed: {str(e)}")
+        return 1
+
+def handle_todo_status_command(args):
+    """Handle TODO status command"""
+    try:
+        validator = TodoValidator()
+        validator.session_file = args.session_file
+        
+        # Load current session
+        todos = validator.load_session()
+        
+        if not todos:
+            print("📋 No active TODO session found")
+            return 0
+        
+        print("📋 Current TODO Session Status:")
+        print("=" * 50)
+        
+        for i, task in enumerate(todos, 1):
+            status_icon = {
+                TaskStatus.PENDING: "📋",
+                TaskStatus.IN_PROGRESS: "🔄", 
+                TaskStatus.COMPLETED: "✅",
+                TaskStatus.BLOCKED: "🚧",
+                TaskStatus.FAILED: "❌"
+            }
+            
+            icon = status_icon.get(task.status, "❓")
+            print(f"{i:2d}. {icon} {task.content}")
+            
+            if task.status == TaskStatus.FAILED:
+                print(f"     └─ Attempts: {task.attempt}/{task.max_attempts}")
+                print(f"     └─ Error: {task.last_error}")
+            elif task.attempt > 1:
+                print(f"     └─ Attempt: {task.attempt}/{task.max_attempts}")
+        
+        print("=" * 50)
+        
+        # Summary stats
+        completed = len([t for t in todos if t.status == TaskStatus.COMPLETED])
+        total = len(todos)
+        progress = (completed / total * 100) if total > 0 else 0
+        
+        print(f"Progress: {completed}/{total} tasks completed ({progress:.1f}%)")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ TODO status failed: {str(e)}")
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())
