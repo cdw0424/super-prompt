@@ -299,7 +299,7 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
 6. 🎯 FINALIZE: Final implementation and documentation
 
 ⚡ Cursor AI will now execute this sequential thinking process directly.
-🚨 이 태그는 Cursor AI가 직접 실행해야 합니다. 외부 CLI 실행이 아닙니다."""
+🚨 This tag is designed to be executed inside Cursor AI (not an external CLI)."""
         },
         'seq-ultra': {
             'desc': 'Advanced Sequential (10 iterations)', 
@@ -319,7 +319,13 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
 10. 🎯 FINALIZE: Complete implementation with documentation
 
 ⚡ Cursor AI will now execute this advanced sequential thinking process directly.
-🚨 이 태그는 Cursor AI가 직접 실행해야 합니다. 외부 CLI 실행이 아닙니다."""
+🚨 This tag is designed to be executed inside Cursor AI (not an external CLI)."""
+        }
+        ,
+        'debate': {
+            'desc': 'Single-model internal debate (Positive vs Critical selves)',
+            'cli': 'codex',
+            'prompt': ''
         }
     }
 
@@ -327,9 +333,16 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         for persona in self.PERSONAS:
             if f'/{persona}' in input_text or f'--persona-{persona}' in input_text:
                 return persona
-        if '--seq-ultra' in input_text: return 'seq-ultra'
-        elif re.search(r'--seq($|\s)', input_text): return 'seq'
-        elif '--high' in input_text: return 'high'
+        # Flag-style mappings for Codex environment (no slash commands)
+        if re.search(r'--seq-ultra(\s|$)', input_text): return 'seq-ultra'
+        if re.search(r'--seq(\s|$)', input_text): return 'seq'
+        if re.search(r'--high(\s|$)', input_text): return 'high'
+        if re.search(r'--frontend-ultra(\s|$)', input_text): return 'frontend-ultra'
+        if re.search(r'--frontend(\s|$)', input_text): return 'frontend'
+        if re.search(r'--backend(\s|$)', input_text): return 'backend'
+        if re.search(r'--architect(\s|$)', input_text): return 'architect'
+        if re.search(r'--analyzer(\s|$)', input_text): return 'analyzer'
+        if re.search(r'--debate(\s|$)', input_text): return 'debate'
         return None
 
     def clean_input(self, input_text: str) -> str:
@@ -414,6 +427,39 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
     
     # Database/schema discovery intentionally omitted to keep prompts vendor‑agnostic
 
+    def build_debate_prompt(self, topic: str, rounds: int = 8) -> str:
+        rounds = max(2, min(int(rounds or 8), 20))
+        return textwrap.dedent(f"""
+        You are a single model simulating a structured internal debate with two clearly separated selves:
+        - Positive Self (Builder): constructive, solution-focused.
+        - Critical Self (Skeptic): risk-driven, assumption-testing.
+
+        Rules:
+        - English only. Keep each turn concise (<= 6 lines).
+        - Alternate strictly: Positive → Critical → Positive → ... ({rounds} rounds).
+        - No repetition; each turn must add new reasoning.
+        - End with a Synthesis that integrates strengths + mitigations.
+
+        Topic: {topic}
+
+        Output template:
+        [INTENT]
+        - Debate: {topic}
+        [TASK_CLASSIFY]
+        - Class: H (multi-step reasoning & evaluation)
+        [PLAN]
+        - Rounds: {rounds}
+        - Criteria: correctness, risks, minimal viable path
+        [EXECUTE]
+        1) Positive Self: ...
+        2) Critical Self: ...
+        ... (continue alternating up to {rounds})
+        [VERIFY]
+        - Checks: factuality, feasibility, risk coverage
+        [REPORT]
+        - Synthesis: final position, plan, and guardrails
+        """)
+
     def process_query(self, input_text: str) -> bool:
         if not input_text.strip():
             print("❌ Usage: super-prompt optimize \"your question /tag\"")
@@ -427,206 +473,41 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             print("❌ No valid tag found.")
             return False
         
+        # Debate rounds (if provided via flags)
+        rounds = 8
+        m = re.search(r'--rounds\s+(\d+)', input_text)
+        if m:
+            try:
+                rounds = int(m.group(1))
+            except Exception:
+                rounds = 8
+
         clean_query = self.clean_input(input_text)
         log(f"Tag detected: /{persona}")
         log(f"Query: {clean_query}")
         
+        if persona == 'debate':
+            prompt = self.build_debate_prompt(clean_query, rounds=rounds)
+            try:
+                result = subprocess.run(['codex', 'exec', '-c', 'model_reasoning_effort=high', prompt], timeout=180)
+                return result.returncode == 0
+            except Exception as e:
+                log(f"Execution failed: {e}")
+                return False
+
         return self.execute(persona, clean_query)
 
 # Built-in personas data extracted from shell script
 BUILTIN_PERSONAS = {
-    "architect": """# 👷‍♂️ Architect - 기능 개발 전문가
-
-**기존 프로젝트 방식 최우선(Project-Conformity-First)** 원칙으로 빠르게, 바르게,
-**확장 가능하게** 기능을 **끝까지** 설계·교부하는 개발 천재입니다.
-
-## 🎯 **Project-Conformity-First (최우선 원칙)**
-
-- 기존 프로젝트 방식·관례를 **최우선**으로 따름
-- **스코프 밖 변경 금지** - 관련 없는 파일/모듈 절대 수정하지 않음
-- **최소 변경·최소 파급** - 가장 작은 확장으로 기능 추가
-- **역호환 보장**
-
-## 🏗️ **설계 원칙**
-
-- **SOLID, DRY, KISS, YAGNI, Clean/Hexagonal**
-- **DDD 경계 명확화**, 필요 시 CQRS 적용
-- **12-Factor** 앱 원칙 준수
-- **보안 우선**: OWASP ASVS/Top10, 최소권한 원칙
-
-## 📊 **출력 포맷 (항상 포함)**
-
-1. **의사결정표** - 트레이드오프 매트릭스
-2. **아키텍처 개요** - 시퀀스/컴포넌트 다이어그램
-3. **계획** - WBS, 일정, 리스크 완화
-4. **계약** - API/데이터 계약(스키마 등)
-5. **테스트** - 단위·통합·E2E·성능 테스트
-6. **배포/롤백** - 헬스체크/점진적 롤아웃
-7. **관측** - 로그, 메트릭, 알람 조건
-8. **ADR 요약** - 의사결정 기록""",
-
-    "frontend": """# 🎨 Frontend Design Advisor
-
-**사용자 경험을 최우선으로 하는 프론트엔드 설계 전문가**. 직관적인 UI/UX, 반응형
-디자인, 컴포넌트 아키텍처, 사용자 중심 개발에 특화된 AI 디자이너입니다.
-
-## 🎯 **핵심 역량**
-
-### 디자인 전문성
-
-- **사용자 중심 설계** 및 UX 최적화
-- **반응형 및 모바일 퍼스트** 디자인
-- **접근성 준수** (WCAG 2.2, ARIA 패턴)
-- **크로스 플랫폼 호환성** 및 브라우저 최적화
-
-### 기술 구현 능력
-
-- **현대적 프론트엔드 스택** (React, Vue, Angular)
-- **컴포넌트 기반 아키텍처** 및 디자인 시스템
-- **성능 최적화** 및 Core Web Vitals 개선
-- **상태 관리 및 데이터 플로우** 설계""",
-
-    "frontend-ultra": """# 🎨 Elite UX/UI Architect
-
-**세계 최고 수준의 UX 아키텍처와 디자인 혁신**을 선도하는 전문가. 인간 중심
-디자인, 첨단 기술 통합, 미래 지향적 UX 전략을 구사하는 AI 디자이너입니다.
-
-## 🎯 **핵심 역량**
-
-### 혁신적 디자인 사고
-
-- **휴먼 센터드 디자인**: 인간 심리학 기반 사용자 경험 설계
-- **인지 심리학 적용**: 사용자의 인지 부하 최소화 및 직관성 극대화
-- **행동 경제학 통합**: 사용자 행동 패턴 예측 및 설계 적용
-- **포용적 디자인**: 모든 사용자층을 고려한 범용적 접근성
-
-### 첨단 기술 통합
-
-- **AI/ML UX**: 인공지능 기반 개인화 및 예측 인터페이스
-- **XR/메타버스 디자인**: 증강/가상 현실 환경 최적화
-- **음성/제스처 인터랙션**: 차세대 입력 방식 디자인
-- **생체 인식 인터페이스**: 보안과 사용성을 겸비한 인증 UX""",
-
-    "backend": """# 🔧 Backend Reliability Engineer
-
-**확장성, 신뢰성, 성능을 최우선으로 하는 백엔드 시스템 전문가**. API 설계,
-데이터베이스 최적화, 분산 시스템, 시스템 아키텍처에 특화된 AI 엔지니어입니다.
-
-## 🎯 **핵심 역량**
-
-### 시스템 설계
-
-- **확장성 있는 아키텍처** 및 마이크로서비스 설계
-- **고가용성 시스템** 및 장애 대응 전략
-- **분산 시스템** 및 데이터 일관성 관리
-- **클라우드 네이티브** 아키텍처 및 컨테이너화
-
-### 데이터베이스 전문성
-
-- **성능 최적화** 및 쿼리 튜닝
-- **데이터 모델링** 및 스키마 설계
-- **캐싱 전략** 및 데이터 분산
-- **백업 및 복구** 전략 수립""",
-
-    "analyzer": """# 🔍 Root Cause Analyst
-
-**체계적이고 과학적인 문제 해결 방법론**을 사용하는 시스템 분석 전문가. 성능
-병목, 오류 패턴, 시스템 이상 현상을 근본 원인부터 해결 방안까지 분석하는 AI
-진단사입니다.
-
-## 🎯 **핵심 역량**
-
-### 분석 방법론
-
-- **근본 원인 분석** (5-Why, Fishbone Diagram)
-- **성능 프로파일링** 및 병목 지점 식별
-- **시스템 모니터링** 및 메트릭 분석
-- **로그 분석** 및 패턴 인식
-
-### 문제 해결 전략
-
-- **체계적 디버깅** 프로세스 수립
-- **데이터 기반** 의사결정
-- **재현 가능한** 문제 해결 방법
-- **예방적** 개선 방안 제시""",
-
-    "high": """# 🧠 Deep Reasoning Specialist
-
-**고급 전략적 사고와 체계적 문제 해결**의 대가. 복잡한 시스템 설계, 알고리즘
-최적화, 기술 아키텍처 전략 수립에 특화된 AI 전문가입니다.
-
-## 🎯 **핵심 역량**
-
-### 전략적 사고 영역
-
-- **시스템 아키텍처 설계** 및 마이크로서비스 전략
-- **복잡한 알고리즘 설계** 및 성능 최적화
-- **대규모 리팩토링** 및 기술 부채 관리
-- **확장성 있는 시스템** 설계 및 구현
-
-### 문제 해결 방식
-
-- **근본 원인 분석**부터 해결 방안 도출까지
-- **다중 관점 분석** 및 트레이드오프 평가
-- **장기적 영향** 및 리스크 평가
-- **실행 가능한 솔루션** 제시""",
-
-    "seq": """# 🔄 Sequential Thinking Specialist
-
-**구조화된 5단계 사고 프레임워크**를 사용하는 체계적 문제 해결 전문가. 복잡한
-문제를 논리적이고 단계적인 접근 방식으로 분석하고 해결하는 AI 전략가입니다.
-
-## 📋 **5단계 사고 프로세스**
-
-### 1. 🔍 **SCOPING** (범위 설정)
-- **문제 정의**: 핵심 이슈 명확화 및 목표 설정
-- **제약사항 파악**: 리소스, 시간, 기술적 제한사항 분석
-
-### 2. 📝 **PLAN** (계획 수립)
-- **전략 수립**: 다중 시나리오 분석 및 최적 경로 선택
-- **단계별 계획**: 실행 가능한 작업 분할 및 우선순위 설정
-
-### 3. ✏️ **DRAFT** (초안 작성)
-- **해결 방안 도출**: 창의적이고 실현 가능한 솔루션 생성
-- **프로토타입 설계**: 최소 실행 가능 제품 (MVP) 정의
-
-### 4. ✅ **SELF-CHECK** (자체 검증)
-- **품질 평가**: 솔루션의 완성도 및 효율성 검토
-- **테스트 실행**: 단위, 통합, 성능 테스트 수행
-
-### 5. 🔧 **PATCH** (개선 및 최적화)
-- **문제 해결**: 발견된 이슈 수정 및 개선
-- **성능 최적화**: 속도, 효율성, 확장성 향상""",
-
-    "seq-ultra": """# 🔄 Advanced Sequential Thinking
-
-**10단계 심층 사고 프레임워크**를 사용하는 고급 문제 해결 전문가. 엔터프라이즈급
-복잡한 시스템과 대규모 프로젝트를 체계적으로 분석하고 최적화하는 AI 아키텍트입니다.
-
-## 📋 **10단계 심층 사고 프로세스**
-
-### 1. 🔍 **DEEP-SCOPE** (심층 범위 분석)
-- **전체 맥락 파악**: 비즈니스, 기술, 조직 전반 분석
-- **이해관계자 매핑**: 모든 관련자 및 영향 범위 파악
-
-### 2. 🗺️ **CONTEXT-MAP** (컨텍스트 매핑)
-- **도메인 분석**: 비즈니스 도메인 및 경계 정의
-- **시스템 관계도**: 의존성 및 통합 지점 매핑
-
-### 3-4. 📋 **STRATEGY-1/2** (전략 수립)
-- **다중 시나리오**: 3-5개 전략적 옵션 개발
-- **최적 전략 선택**: 의사결정 매트릭스 활용
-
-### 5. 🔗 **INTEGRATION** (통합 계획)
-- **시스템 통합**: API, 데이터, 프로세스 통합 설계
-- **조직 통합**: 팀 구조 및 협업 모델
-
-### 6. ⚠️ **RISK-ANALYSIS** (리스크 분석)
-- **기술적 리스크**: 복잡도, 의존성, 기술 부채
-- **완화 전략**: 예방, 대응, 복구 계획
-
-### 7-10. Implementation & Optimization
-- **상세 설계**, **검증**, **최적화**, **완성 및 전환**"""
+    "architect": "# Architect — English-only placeholder",
+    "frontend": "# Frontend Design Advisor — English-only placeholder",
+    "frontend-ultra": "# Elite UX/UI Architect — English-only placeholder",
+    "backend": "# Backend Reliability Engineer — English-only placeholder",
+    "analyzer": "# Root Cause Analyst — English-only placeholder",
+    "high": "# Deep Reasoning Specialist — English-only placeholder",
+    "seq": "# Sequential Thinking (5) — English-only placeholder",
+    "seq-ultra": "# Advanced Sequential (10) — English-only placeholder",
+    "debate": "# Debate Mode — English-only placeholder"
 }
 
 def get_builtin_personas():
@@ -815,6 +696,32 @@ fi
         content = f"---\ndescription: {name} command\nrun: \"./tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
         write_text(os.path.join(base, f'{name}.md'), content, dry)
 
+    # Codex agent config (flag-based personas, English only)
+    agent_dir = os.path.join('.codex')
+    os.makedirs(agent_dir, exist_ok=True)
+    agent_md = """# Codex Agent — Super Prompt Integration
+
+Use flag-based personas (no slash commands in Codex):
+```bash
+super-prompt optimize --frontend   "Design a responsive layout"
+super-prompt optimize --backend    "Outline retry/idempotency for order API"
+super-prompt optimize --architect  "Propose modular structure for feature X"
+super-prompt optimize --debate --rounds 6 "Should we adopt feature flags now?"
+```
+
+Auto Model Router (AMR: medium ↔ high):
+- Start medium; plan/review/root-cause at high, then back to medium.
+- If your environment does not auto-execute model switches, copy-run:
+  /model gpt-5 high
+  /model gpt-5 medium
+
+State machine (per turn):
+[INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
+
+All logs MUST start with: `--------` and all content MUST be in English.
+"""
+    write_text(os.path.join(agent_dir, 'agent.md'), agent_md, dry)
+
     # Provide AMR helper templates as static commands (no runner required)
     amr_plan_md = """---
 description: AMR PLAN template
@@ -894,8 +801,20 @@ def main():
     p_init.add_argument("--dry-run", action="store_true", help="Preview only")
     
     p_optimize = sub.add_parser("optimize", help="Execute persona queries with SDD context")
-    p_optimize.add_argument("query", nargs="*", help="Query with persona tag")
+    p_optimize.add_argument("query", nargs="*", help="Query or debate topic")
     p_optimize.add_argument("--list-personas", action="store_true")
+    # Flag-based personas for Codex environment
+    p_optimize.add_argument("--persona", choices=['frontend','frontend-ultra','backend','analyzer','architect','high','seq','seq-ultra','debate'])
+    p_optimize.add_argument("--frontend", action="store_true")
+    p_optimize.add_argument("--frontend-ultra", action="store_true")
+    p_optimize.add_argument("--backend", action="store_true")
+    p_optimize.add_argument("--analyzer", action="store_true")
+    p_optimize.add_argument("--architect", action="store_true")
+    p_optimize.add_argument("--high", action="store_true")
+    p_optimize.add_argument("--seq", action="store_true")
+    p_optimize.add_argument("--seq-ultra", action="store_true")
+    p_optimize.add_argument("--debate", action="store_true")
+    p_optimize.add_argument("--rounds", type=int, default=8, help="Debate rounds (2-20)")
 
     # AMR commands
     p_amr_rules = sub.add_parser("amr:rules", help="Generate AMR rule file (05-amr.mdc)")
@@ -964,6 +883,26 @@ def main():
         
         query_text = ' '.join(args.query)
         print("🚀 Super Prompt - Persona Query Processor")
+        # Resolve persona override from flags
+        if getattr(args, 'persona', None):
+            query_text += f" /{args.persona}"
+        else:
+            for flag, tag in [
+                ('frontend_ultra','frontend-ultra'),
+                ('frontend','frontend'),
+                ('backend','backend'),
+                ('analyzer','analyzer'),
+                ('architect','architect'),
+                ('high','high'),
+                ('seq_ultra','seq-ultra'),
+                ('seq','seq'),
+                ('debate','debate'),
+            ]:
+                if getattr(args, flag, False):
+                    query_text += f" /{tag}"
+                    break
+        if getattr(args, 'debate', False) and getattr(args, 'rounds', None):
+            query_text += f" --rounds {int(args.rounds)}"
         success = optimizer.process_query(query_text)
         return 0 if success else 1
     elif args.cmd == "amr:rules":

@@ -105,14 +105,31 @@ async function sleep(ms) {
 
 async function animatedInstall() {
     try {
-        // Step 1.5: Ensure Codex CLI latest (global)
-        console.log(`${colors.cyan}🧠 Ensuring Codex CLI (high reasoning) is up-to-date...${colors.reset}`);
-        try {
-            execSync('npm install -g @openai/codex@latest', { stdio: 'inherit' });
-            completedStep('1.5', 'Codex CLI updated to latest');
-        } catch (e) {
-            console.warn(`${colors.yellow}⚠️  Could not update Codex CLI automatically. You can run:${colors.reset}`);
-            console.warn(`   ${colors.cyan}npm install -g @openai/codex@latest${colors.reset}`);
+        // Step 1.5: Offer Codex CLI install/upgrade (user choice)
+        const wantEnv = process.env.SUPER_PROMPT_CODEX_INSTALL;
+        let wantCodex = null;
+        if (wantEnv === '1' || wantEnv === 'yes' || wantEnv === 'true') wantCodex = true;
+        if (wantEnv === '0' || wantEnv === 'no' || wantEnv === 'false') wantCodex = false;
+        if (wantCodex === null && process.stdin.isTTY) {
+            try {
+                const readline = require('readline-sync');
+                const ans = readline.question(`${colors.cyan}🧠 Install/upgrade Codex CLI now? [Y/n] ${colors.reset}`);
+                wantCodex = !(String(ans || '').toLowerCase().startsWith('n'));
+            } catch (_) {
+                wantCodex = false;
+            }
+        }
+        if (wantCodex) {
+            console.log(`${colors.cyan}🧠 Ensuring Codex CLI (high reasoning) is up-to-date...${colors.reset}`);
+            try {
+                execSync('npm install -g @openai/codex@latest', { stdio: 'inherit' });
+                completedStep('1.5', 'Codex CLI updated to latest');
+            } catch (e) {
+                console.warn(`${colors.yellow}⚠️  Could not update Codex CLI automatically. You can run:${colors.reset}`);
+                console.warn(`   ${colors.cyan}npm install -g @openai/codex@latest${colors.reset}`);
+            }
+        } else {
+            console.log(`${colors.dim}Skipping Codex CLI install/upgrade (set SUPER_PROMPT_CODEX_INSTALL=1 to enable)${colors.reset}`);
         }
 
         // Step 2: Setting up Python CLI
@@ -151,13 +168,12 @@ async function animatedInstall() {
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}\n`);
         
-        console.log(`${colors.dim}   Use personas in CLI:${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt optimize "design strategy /frontend"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt optimize "debug issues /analyzer"${colors.reset}`);
-        console.log(`${colors.dim}   Core Personas:${colors.reset}`);
-        console.log(`   ${colors.yellow}/frontend${colors.reset}  ${colors.yellow}/backend${colors.reset}  ${colors.yellow}/architect${colors.reset}  ${colors.yellow}/analyzer${colors.reset}`);
-        console.log(`   ${colors.yellow}/seq${colors.reset}       ${colors.yellow}/seq-ultra${colors.reset}  ${colors.yellow}/high${colors.reset}       ${colors.yellow}/frontend-ultra${colors.reset}`);
-        console.log(`   ${colors.yellow}/debate${colors.reset}    ${colors.dim}(requires codex CLI)${colors.reset}\n`);
+        console.log(`${colors.dim}   Use personas in CLI (flags — no slash commands needed):${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt optimize --frontend  "design strategy"${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt optimize --backend   "debug intermittent failures"${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt optimize --architect "break down a feature"${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt optimize --debate --rounds 6 "Should we adopt feature flags?"${colors.reset}`);
+        console.log(`${colors.dim}   Tip: control runtime Codex upgrade via SP_SKIP_CODEX_UPGRADE=1 env var.${colors.reset}\n`);
         
         console.log(`${colors.blue}🔗 Package: https://npmjs.com/package/@cdw0424/super-prompt${colors.reset}`);
         console.log(`${colors.green}✨ Ready for next-level prompt engineering!${colors.reset}`);
