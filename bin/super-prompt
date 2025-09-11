@@ -2,6 +2,17 @@
 # Super Prompt CLI Wrapper — robust, self-healing
 set -euo pipefail
 
+# Route 'codex-amr' subcommand to Node CLI without affecting legacy behavior
+if [ "${1-}" = "codex-amr" ]; then
+  shift
+  if command -v node >/dev/null 2>&1; then
+    exec node "$(dirname "$0")/codex-amr.js" "$@"
+  else
+    echo "-------- Node.js is required for codex-amr commands" >&2
+    exit 1
+  fi
+fi
+
 resolve_app_home() {
   local PRG="$0"
   while [ -h "$PRG" ]; do

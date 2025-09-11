@@ -1,18 +1,19 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "description": "Cursor-first prompt engineering toolkit with SDD assist and personas",
   "main": "index.js",
   "bin": {
-    "super-prompt": "./bin/super-prompt"
+    "super-prompt": "./bin/super-prompt",
+    "codex-amr": "./bin/codex-amr.js"
   },
   "scripts": {
     "postinstall": "node install.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "codex:plan": "bin/codex-high",
     "codex:exec": "bin/codex-medium",
-    "amr:rules": "super-prompt amr:rules",
-    "amr:print": "super-prompt amr:print",
+    "amr:rules": "super-prompt amr:rules || npx codex-amr init --target .",
+    "amr:print": "node ./bin/codex-amr.js print-bootstrap",
     "amr:qa": "scripts/codex/prompt-qa.sh"
   },
   "keywords": [
@@ -23,7 +24,10 @@
     "cli",
     "prompt-engineering",
     "productivity",
-    "automation"
+    "automation",
+    "amr",
+    "model-routing",
+    "codex"
   ],
   "author": "Daniel Choi",
   "license": "MIT",
@@ -44,11 +48,13 @@
   ],
   "files": [
     "bin/",
+    "src/",
     "templates/simple_cli.py",
     "templates/simple_tag_executor.py",
     "install.js",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "index.js"
   ],
   "publishConfig": {
     "access": "public"
