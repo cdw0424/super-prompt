@@ -8,7 +8,9 @@
   },
   "scripts": {
     "postinstall": "node install.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "codex:plan": "bin/codex-high",
+    "codex:exec": "bin/codex-medium"
   },
   "keywords": [
     "ai",
