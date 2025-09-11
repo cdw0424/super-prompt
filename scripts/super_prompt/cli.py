@@ -781,10 +781,12 @@ def build_persona_prompt(name: str, query: str, context: str = "") -> str:
     router_check = """#!/usr/bin/env zsh
 set -euo pipefail
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-AGENTS_PATH="$root/.codex/AGENTS.md"
-if [ ! -f "$AGENTS_PATH" ]; then
-  AGENTS_PATH="$root/AGENTS.md"
-fi
+AGENTS_PATH=""
+for p in "$root/.codex/agents.md" "$root/.codex/AGENTS.md" "$root/AGENTS.md"; do
+  if [ -f "$p" ]; then AGENTS_PATH="$p"; break; fi
+done
+if [ -z "$AGENTS_PATH" ]; then
+  echo "--------router-check: FAIL (no agents/AGENTS.md found)"; exit 1; fi
 missing=0
 grep -q "Auto Model Router" "$AGENTS_PATH" || { echo "AGENTS.md missing AMR marker ($AGENTS_PATH)"; missing=1; }
 grep -q "medium ↔ high" "$AGENTS_PATH" || { echo "AGENTS.md missing medium↔high ($AGENTS_PATH)"; missing=1; }
@@ -797,50 +799,7 @@ echo "--------router-check: OK"""
     except Exception:
         pass
 
-    # Provide AMR helper templates as static commands (no runner required)
-    amr_plan_md = """---
-description: AMR PLAN template
----
-/model gpt-5 high
---------router: switch to high (reason=deep_planning)
-
-[Goal]
-- …
-[Plan]
-- …
-[Risk/Trade‑offs]
-- …
-[Test/Verify]
-- Commands:
-  ```bash
-  npm ci
-  npm test -- --watchAll=false
-  ```
-[Rollback]
-- …
-"""
-    write_text(os.path.join(base, 'amr-plan.md'), amr_plan_md, dry)
-
-    amr_exec_md = """---
-description: AMR EXECUTION template
----
-/model gpt-5 medium
---------router: back to medium (reason=execution)
-
-[Diffs]
-```diff
---- a/path
-+++ b/path
-@@
-- old
-+ new
-```
-[Commands]
-```bash
---------run: npm run build && npm test -- --watchAll=false
-```
-"""
-    write_text(os.path.join(base, 'amr-exec.md'), amr_exec_md, dry)
+    # (AMR helper templates are written in install_cursor_commands_in_project)
 
 def show_ascii_logo():
     """Display ASCII logo with version info"""

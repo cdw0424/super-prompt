@@ -27,10 +27,12 @@ exec codex --model gpt-5 -c model_reasoning_effort="medium" "$@"`;
 const ROUTER_CHECK = `#!/usr/bin/env zsh
 set -euo pipefail
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-AGENTS_PATH="$root/AGENTS.md"
-if [ ! -f "$AGENTS_PATH" ]; then
-  AGENTS_PATH="$root/.codex/AGENTS.md"
-fi
+AGENTS_PATH=""
+for p in "$root/.codex/agents.md" "$root/.codex/AGENTS.md" "$root/AGENTS.md"; do
+  if [ -f "$p" ]; then AGENTS_PATH="$p"; break; fi
+done
+if [ -z "$AGENTS_PATH" ]; then
+  echo "--------router-check: FAIL (no agents/AGENTS.md found)"; exit 1; fi
 missing=0
 grep -q "Auto Model Router" "$AGENTS_PATH" || { echo "AGENTS.md missing AMR marker ($AGENTS_PATH)"; missing=1; }
 grep -q "medium ↔ high" "$AGENTS_PATH" || { echo "AGENTS.md missing medium↔high ($AGENTS_PATH)"; missing=1; }
@@ -45,6 +47,7 @@ async function scaffoldCodexAmr(opts = {}) {
   const dir = path.resolve(opts.targetDir || '.');
   const files = [
     ['AGENTS.md', AGENTS_MD],
+    ['agents.md', AGENTS_MD],
     ['prompts/codex_amr_bootstrap_prompt_en.txt', createBootstrap()],
     ['bin/codex-high', BIN_HIGH, 0o755],
     ['bin/codex-medium', BIN_MED, 0o755],
