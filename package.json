@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "Cursor-first prompt engineering toolkit with SDD assist and personas",
   "main": "index.js",
   "bin": {
