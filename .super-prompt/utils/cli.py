@@ -70,7 +70,7 @@ except ImportError:
         def process_todos(self, todos):
             return todos
 
-VERSION = "2.8.0"
+VERSION = "2.9.0"
 
 def log(msg: str): 
     print(f"-------- {msg}")
