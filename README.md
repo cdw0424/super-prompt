@@ -198,6 +198,45 @@ Super Prompt includes a sophisticated AI vs AI debate system for critical decisi
 - “Python CLI not found” after install → re‑run `npm install` or `node install.js`
 - Python < 3.7 → install Python ≥ 3.7 and ensure `python3` points to it
 - Slash commands not visible → check `.cursor/commands/super-prompt/` exists and files are executable (`chmod 755`), restart Cursor
+
+## Codex AMR (medium ↔ high)
+
+This repo includes an Auto Model Router (AMR) and a strict state‑machine bootstrap prompt to improve instruction adherence and output consistency.
+
+Quick start
+- TUI boot:
+  ```bash
+  codex
+  # Paste the bootstrap prompt:
+  # prompts/codex_amr_bootstrap_prompt_en.txt
+  ```
+- Wrappers:
+  ```bash
+  ./bin/codex-high   "Design migration plan (no edits; PLAN only)"
+  ./bin/codex-medium "Apply approved plan and run tests"
+  ```
+- Node scripts:
+  ```bash
+  npm run codex:plan
+  npm run codex:exec
+  ```
+
+Router switching
+- If the environment does not auto‑execute the following lines, copy‑run them in the TUI:
+  ```
+  /model gpt-5 high
+  /model gpt-5 medium
+  ```
+
+Validate the router assets
+```bash
+--------run: scripts/codex/router-check.sh
+# Expect: "--------router-check: OK"
+```
+
+Read more
+- Policy and rules: `AGENTS.md`
+- Usage details: `docs/codex-amr-usage.md`
 - Translation/backends (optional) → if you use external CLIs (`claude`, `codex`), ensure they’re on PATH and configured
 
 ## Roadmap (later)
