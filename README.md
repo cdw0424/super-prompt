@@ -13,7 +13,7 @@ npx @cdw0424/super-prompt --help
 
 Cursor‑first Prompt Engineering toolkit with Spec‑Driven Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your SPEC/PLAN, installs slash commands under `.cursor/commands/super-prompt`, and lets specialized personas help you craft precise prompts inside Cursor.
 
-Note: Super Prompt targets Cursor as the primary environment. Non‑Cursor editors are not supported beyond generating rule files.
+Note: Super Prompt targets Cursor as the primary environment. For Codex, use flag‑based personas (no slash commands).
 
 ## Credits & Attribution
 
@@ -25,16 +25,12 @@ We greatly appreciate the open‑source community. If you are a maintainer of a 
 
 ## Features
 
-- 🎯 **Cursor integration**: rules under `.cursor/rules` + slash commands
+- 🎯 **Cursor integration**: rules under `.cursor/rules` + slash commands (Cursor)
+- 🧠 **AMR**: Auto Model Router (reasoning medium ↔ high) with fixed state machine (INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT)
 - 🚀 **SDD assist**: generate lightweight rules from `specs/**/spec.md` and `specs/**/plan.md`
-- 🎭 **Enhanced Personas**: SuperClaude framework integration with specialized AI personalities
-- 🌊 **Wave System**: Multi-stage execution for complex operations (complexity ≥0.7)
-- 🔗 **MCP Integration**: Context7, Sequential, Magic, Playwright server coordination
-- 🗣️ **Enhanced Debate System**: Real AI vs AI debates (Current Cursor model ↔ Codex) with systematic reasoning
-- ⚡ **Token Efficiency**: Intelligent compression (30-50% reduction) with quality preservation
-- 📋 **Task Management**: Structured workflow execution with progress tracking
-- 🧰 **CLI tools**: rule generation (`super:init`) and persona‑assisted prompting (`optimize`)
-- 📋 **SDD Workflow**: complete SPEC → PLAN → TASKS → Implementation workflow via slash commands
+- 🎭 **Personas**: Flag‑based personas for Codex (`--frontend`, `--backend`, `--architect`, etc.)
+- 🗣️ **Debate (single‑model)**: Positive vs Critical self with structured alternation and synthesis
+- 🧰 **CLI tools**: rule generation (`super:init`), persona prompting (`optimize`), AMR scaffold/print (`codex-amr`)
 
 ## Cursor Quick Start
 
@@ -55,16 +51,15 @@ super-prompt super:init
   - **Enhanced Personas**: `/security`, `/performance`, `/wave`, `/task`, `/ultracompressed`
   - **SDD Workflow**: `/spec`, `/plan`, `/tasks`, `/implement`
 
-4) Run persona‑assisted prompts from the CLI (optional)
+4) Run persona‑assisted prompts from the CLI (Codex‑friendly flags)
 ```bash
-# Persona commands
-npx @cdw0424/super-prompt optimize "design strategy /frontend"
-npx @cdw0424/super-prompt optimize "debug intermittent failures /analyzer"
+# Persona commands (flags; no slash tags needed)
+npx @cdw0424/super-prompt optimize --frontend "Design strategy"
+npx @cdw0424/super-prompt optimize --analyzer "Debug intermittent failures"
 
-# Enhanced AI vs AI debate mode (requires `codex` CLI)
-npx @cdw0424/super-prompt optimize "Choose DB schema migration approach /debate --rounds 12"
-npx @cdw0424/super-prompt optimize "TypeScript vs JavaScript for our project /debate --rounds 5"
-npx @cdw0424/super-prompt optimize "돈을 많이 벌려면 어떻게 해야하지 /debate --interactive"
+# Single‑model debate (Codex; internal Positive vs Critical selves)
+npx @cdw0424/super-prompt optimize --debate --rounds 8 "Choose DB schema migration approach"
+npx @cdw0424/super-prompt optimize --debate --rounds 5 "TypeScript vs JavaScript for our project"
 
 # SDD workflow commands
 npx @cdw0424/super-prompt sdd spec "user authentication system"
@@ -80,7 +75,7 @@ npx @cdw0424/super-prompt sdd implement "login functionality"
   - Options: `--out <dir>` (default `.cursor/rules`), `--dry-run`
 
 ### Persona System
-- `optimize "<query with /tag>"` — Execute a persona‑assisted prompt from the terminal
+- `optimize "<query> [--persona|--frontend|--backend|--architect|--analyzer|--high|--seq|--seq-ultra|--debate]"` — Execute a persona‑assisted prompt (flags for Codex)
 
 ### SDD Workflow 
 - `sdd spec "<description>"` — Create or edit SPEC files with architect persona
@@ -88,7 +83,7 @@ npx @cdw0424/super-prompt sdd implement "login functionality"
 - `sdd tasks "<description>"` — Break down plans into actionable tasks with analyzer persona
 - `sdd implement "<description>"` — Start implementation with SDD compliance checking
 
-## Available Slash Commands
+## Available Slash Commands (Cursor only)
 
 ### Core Persona Commands
 - `/frontend` — Frontend design advisor (UX-focused, MCP: Magic + Playwright)
@@ -142,43 +137,20 @@ Super Prompt includes a complete Spec-Driven Development workflow:
 
 Each step builds on the previous one, with automatic context sharing between phases.
 
-## Enhanced Debate System
+## Debate (Single‑Model, Codex)
 
-Super Prompt includes a sophisticated AI vs AI debate system for critical decision-making:
+A structured internal debate that alternates between two selves and ends with a synthesis:
 
-### How It Works
-- **CREATOR-AI**: Current Cursor model (Grok, Claude, GPT, etc.) provides constructive proposals
-- **CRITIC-AI**: Codex CLI with `model_reasoning_effort=high` provides rigorous analysis
-- **Real Interaction**: Each AI analyzes and responds to the other's specific points
+- Positive Self (Builder): constructive, solution‑oriented
+- Critical Self (Skeptic): risk‑focused, assumption testing
 
-### Features
-- 🎯 **Systematic Analysis**: Each turn builds on previous responses with evidence-based reasoning
-- 🔄 **Interactive Mode**: Run debates one round at a time with `--interactive`
-- 📊 **Progress Tracking**: Built-in checkpoints and synthesis generation
-- 🌍 **Multilingual**: Supports Korean, English, and other languages
-- 💾 **State Management**: Auto-saves debate state for resumable sessions
-
-### Usage Examples
+Usage
 ```bash
-# Basic debate (10 rounds)
-/debate "Should we use microservices or monoliths?"
-
-# Custom rounds
-/debate "TypeScript vs JavaScript --rounds 5"
-
-# Interactive mode (one round at a time)
-/debate "API design strategy --interactive"
-
-# Korean language support
-/debate "돈을 많이 벌려면 어떻게 해야하지 --rounds 3"
+super-prompt optimize --debate --rounds 8 "Should we use microservices or a modular monolith?"
 ```
 
-### Debate Flow
-1. **CREATOR-AI** presents initial position with actionable steps
-2. **CRITIC-AI** analyzes assumptions, identifies risks, proposes validations
-3. **CREATOR-AI** addresses critiques with improved approach and mitigation strategies
-4. **Process repeats** for specified rounds, building toward consensus
-5. **Final Synthesis** combines best insights from both perspectives
+Flow
+1) Alternate Positive → Critical for N rounds; 2) keep sections: [INTENT][TASK_CLASSIFY][PLAN][EXECUTE][VERIFY][REPORT]; 3) finish with a concise synthesis and next steps.
 
 ## Generated Files
 
@@ -190,14 +162,14 @@ Super Prompt includes a sophisticated AI vs AI debate system for critical decisi
 - macOS or Linux
 - Node.js ≥ 14
 - Python ≥ 3.7
-- Codex CLI (auto-upgraded): the tool attempts `npm install -g @openai/codex@latest` during install/run
-- **For Enhanced Debate**: Codex CLI is required for CRITIC-AI functionality
+- Codex CLI (optional): install/upgrade choice at install time. To auto‑install non‑interactively: `SUPER_PROMPT_CODEX_INSTALL=1 npm i -g @cdw0424/super-prompt`
+- Tests: `npm test` (Node’s built‑in `node --test`)
 
 ## Troubleshooting
 
 - “Python CLI not found” after install → re‑run `npm install` or `node install.js`
 - Python < 3.7 → install Python ≥ 3.7 and ensure `python3` points to it
-- Slash commands not visible → check `.cursor/commands/super-prompt/` exists and files are executable (`chmod 755`), restart Cursor
+- Slash commands not visible (Cursor) → ensure `.cursor/commands/super-prompt/` exists, files executable (`chmod 755`), restart Cursor
 
 ## Codex AMR (medium ↔ high)
 
@@ -221,6 +193,14 @@ Quick start
   npm run codex:exec
   ```
 
+codex-amr CLI
+```bash
+# Print bootstrap prompt
+npx codex-amr print-bootstrap
+# Scaffold AMR assets (AGENTS.md, prompt, wrappers, router-check)
+npx codex-amr init --target .
+```
+
 AMR utilities
 - Generate Cursor AMR rule: `npm run amr:rules` → writes `.cursor/rules/05-amr.mdc`
 - Print bootstrap prompt: `npm run amr:print` (copy to Codex TUI)
@@ -243,6 +223,7 @@ Read more
 - Policy and rules: `AGENTS.md`
 - Usage details: `docs/codex-amr-usage.md`
 - Translation/backends (optional) → if you use external CLIs (`claude`, `codex`), ensure they’re on PATH and configured
+ - AMR internals and CLI: `docs/codex-amr.md`
 
 ## Roadmap (later)
 
