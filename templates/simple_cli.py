@@ -1756,7 +1756,7 @@ def show_ascii_logo():
    ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║██║        ██║   
    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝   
 \033[0m
-\033[2m              Cursor-first Prompt Engineering Toolkit\033[0m
+\033[2m              Dual IDE Prompt Engineering Toolkit\033[0m
 \033[2m                     v2.0.0 | @cdw0424/super-prompt\033[0m
 \033[2m                          Made by \033[0m\033[35mDaniel Choi\033[0m
 """

@@ -7,7 +7,7 @@ All functionality in a single file to avoid import issues
 import argparse, glob, os, sys, re, json, datetime, textwrap, subprocess, shutil
 from typing import Dict, List, Optional
 
-VERSION = "1.0.0"
+VERSION = "2.7.2"
 
 def log(msg: str): 
     print(f"-------- {msg}")
@@ -1236,7 +1236,7 @@ Review the existing SPEC and PLAN documents, then provide:
 
 def show_ascii_logo():
     """Display ASCII logo with version info"""
-    logo = """
+    logo = f"""
 \033[36m\033[1m
    ███████╗██╗   ██╗██████╗ ███████╗██████╗ 
    ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗
@@ -1252,8 +1252,8 @@ def show_ascii_logo():
    ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║██║        ██║   
    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝   
 \033[0m
-\033[2m              Cursor-first Prompt Engineering Toolkit\033[0m
-\033[2m                     v1.0.4 | @cdw0424/super-prompt\033[0m
+\033[2m              Dual IDE Prompt Engineering Toolkit\033[0m
+\033[2m                     v{VERSION} | @cdw0424/super-prompt\033[0m
 \033[2m                          Made by \033[0m\033[35mDaniel Choi\033[0m
 """
     print(logo)
