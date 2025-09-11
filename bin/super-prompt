@@ -32,7 +32,7 @@ resolve_app_home() {
 }
 
 APP_HOME="$(resolve_app_home)"
-CLI_SCRIPT="${APP_HOME}/scripts/super_prompt/cli.py"
+CLI_SCRIPT="${APP_HOME}/.super-prompt/utils/cli.py"
 
 ensure_codex_latest() {
   if [ "${SP_SKIP_CODEX_UPGRADE:-0}" = "1" ]; then return 0; fi

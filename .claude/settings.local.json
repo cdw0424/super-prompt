@@ -14,7 +14,12 @@
       "Bash(gtimeout:*)",
       "Bash(SP_DEBUG=1 python3 debate-processor.py \"Simple test question\" --rounds 1)",
       "Bash(SP_DEBUG=1 python3 debate-processor.py --critic-only \"돈을 벌기\" \"스킬을 개발하자\" 1 1)",
-      "Bash(SP_DEBUG=1 python3 debate-processor.py --critic-only \"TypeScript vs JavaScript\" \"TypeScript is better for large projects\" 1 1)"
+      "Bash(SP_DEBUG=1 python3 debate-processor.py --critic-only \"TypeScript vs JavaScript\" \"TypeScript is better for large projects\" 1 1)",
+      "Bash(.codex/router-check.sh:*)",
+      "Bash(find:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(sudo chown:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,6 @@
 ---
 description: tasks command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["sdd tasks ${input}"]
 ---
 

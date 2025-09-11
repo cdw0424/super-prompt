@@ -35,7 +35,7 @@ ${colors.cyan}${colors.bold}
    ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║██║        ██║   
    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝   
 ${colors.reset}
-${colors.dim}              Cursor-first Prompt Engineering Toolkit${colors.reset}
+${colors.dim}              Dual IDE Prompt Engineering Toolkit${colors.reset}
 ${colors.dim}                     v${pkg.version} | @cdw0424/super-prompt${colors.reset}
 ${colors.dim}                          Made by ${colors.reset}${colors.magenta}Daniel Choi${colors.reset}
 `;
@@ -139,7 +139,7 @@ async function animatedInstall() {
         ensureDir(scriptsDir);
         
         copyFile(
-            path.join(__dirname, 'templates/simple_cli.py'),
+            path.join(__dirname, '.super-prompt/utils/cli.py'),
             path.join(scriptsDir, 'cli.py'),
             'Python CLI engine'
         );

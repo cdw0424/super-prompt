@@ -1,6 +1,6 @@
 ---
 description: seq command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["${input} /seq"]
 ---
 

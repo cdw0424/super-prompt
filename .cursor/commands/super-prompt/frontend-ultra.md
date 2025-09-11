@@ -1,6 +1,6 @@
 ---
 description: frontend-ultra command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["${input} /frontend-ultra"]
 ---
 

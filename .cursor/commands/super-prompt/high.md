@@ -1,6 +1,6 @@
 ---
 description: high command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["${input} /high"]
 ---
 

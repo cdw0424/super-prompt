@@ -1,6 +1,6 @@
 ---
 description: ultracompressed command
-run: "./tag-executor.py" 
+run: "./tag-executor.sh" 
 args: ["${{input}} /uc"]
 ---
 

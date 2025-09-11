@@ -1,6 +1,6 @@
 ---
 description: wave command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["${{input}} /wave"]
 ---
 

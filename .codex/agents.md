@@ -1,23 +1,16 @@
-# Codex Agent — Project Guidance (AMR + State Machine)
+# AGENTS.md — Super-Prompt × Codex: Auto Model Router (medium ↔ high)
 
-## Memory & Merge Order
-- Codex merges AGENTS.md top‑down:
-  1) `~/.codex/AGENTS.md` (global)
-  2) `AGENTS.md` at repo root (shared)
-  3) `AGENTS.md` in current working directory (feature‑specific)
-- This file (`.codex/agents.md`) provides Codex‑specific guidance for this repo.
+## Policy: Language & Logs
+- Output language: English. Tone: precise, concise, production-oriented.
+- All debug/console lines MUST start with `--------`.
 
-## Language & Logging
-- English only. Keep tone precise, concise, production‑oriented.
-- All incidental logs MUST start with: `--------`.
-- Never print real secrets; mask like `sk-***`.
-
-## Auto Model Router (AMR: medium ↔ high)
-- Start in `gpt-5` reasoning=medium.
-- Heavy reasoning (architecture, security/perf review, root‑cause, multi‑module, ambiguous):
-  - Switch up: `/model gpt-5 high` then `--------router: switch to high (reason=deep_planning)`
-  - After planning: `/model gpt-5 medium` then `--------router: back to medium (reason=execution)`
-- Failures/flaky/unclear root cause → analyze at high, then execute at medium.
+## Router Rules (AMR)
+- Start: gpt-5, reasoning=medium.
+- L0/L1 stay medium. H → switch to high for PLAN/REVIEW, then back to medium for EXECUTION.
+- To high: first line `/model gpt-5 high` → log `--------router: switch to high (reason=deep_planning)`
+- Back to medium: first line `/model gpt-5 medium` → log `--------router: back to medium (reason=execution)`
+- Failures/flaky/unclear → analyze at high, execute at medium.
+- User override respected.
 
 ## Fixed State Machine (per turn)
 - `[INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]`
@@ -27,11 +20,53 @@
 
 ## Personas (Codex‑friendly flags)
 - Use CLI flags (no slash commands in Codex):
-  - `super-prompt optimize --frontend  "Design responsive layout"`
-  - `super-prompt optimize --backend   "Retry + idempotency strategy"`
-  - `super-prompt optimize --architect "Modular structure for feature X"`
-- Single‑model debate (Positive vs Critical selves):
-  - `super-prompt optimize --debate --rounds 8 "Should we adopt feature flags?"`
+
+### Simplified Syntax (--sp-* flags, recommended)
+  - `super-prompt optimize --sp-frontend  "Design responsive layout"`
+  - `super-prompt optimize --sp-frontend-ultra "Elite UX/UI architecture"`
+  - `super-prompt optimize --sp-backend   "Retry + idempotency strategy"`
+  - `super-prompt optimize --sp-analyzer  "Debug intermittent failures"`
+  - `super-prompt optimize --sp-architect "Modular structure for feature X"`
+  - `super-prompt optimize --sp-high      "Strategic architectural decision"`
+  - `super-prompt optimize --sp-seq       "Sequential analysis (5 iterations)"`
+  - `super-prompt optimize --sp-seq-ultra "Advanced sequential (10 iterations)"`
+  - `super-prompt optimize --sp-performance "Bottleneck elimination & optimization"`
+  - `super-prompt optimize --sp-security    "Threat modeling & vulnerability assessment"`
+  - `super-prompt optimize --sp-task        "Task management & workflow execution"`
+  - `super-prompt optimize --sp-wave        "Multi-stage execution orchestration"`
+  - `super-prompt optimize --sp-ultracompressed "Token efficiency (30-50% reduction)"`
+  - `super-prompt optimize --sp-debate --rounds 8 "Should we adopt feature flags?"`
+
+### Original Syntax (still supported)
+  - `super-prompt optimize --frontend`, `--backend`, `--analyzer`, `--architect`
+  - `super-prompt optimize --high`, `--seq`, `--seq-ultra`, `--debate`
+  - `super-prompt optimize --performance`, `--security`, `--task`, `--wave`, `--ultracompressed`
+
+### Available Personas Summary
+**All Personas**: frontend, frontend-ultra, backend, analyzer, architect, high, seq, seq-ultra, debate, performance, security, task, wave, ultracompressed
+**Simplified Syntax**: Add `--sp-` prefix to any persona flag (recommended for cleaner commands)
+
+## Python Utils Structure
+- All Python utilities are organized in `.super-prompt/utils/`:
+  - `.super-prompt/utils/cli.py` - Main CLI implementation
+  - `.super-prompt/utils/personas.py` - Persona helpers for Codex
+  - `.super-prompt/utils/cursor-processors/` - Cursor-specific processors
+  - `.super-prompt/utils/templates/` - Template files
+
+## SDD Workflow (Simplified Flag Syntax for Codex CLI)
+- `super-prompt optimize --sp-sdd-spec "feature description"` - Create SPEC documents
+- `super-prompt optimize --sp-sdd-plan "implementation approach"` - Create PLAN documents
+- `super-prompt optimize --sp-sdd-tasks "break down implementation"` - Create TASKS documents
+- `super-prompt optimize --sp-sdd-implement "start development" --validate` - Implementation guidance
+
+### SDD Examples
+```bash
+# Complete SDD workflow with simplified syntax
+super-prompt optimize --sp-sdd-spec "user authentication system"
+super-prompt optimize --sp-sdd-plan "OAuth2 + JWT implementation"
+super-prompt optimize --sp-sdd-tasks "break down auth tasks"
+super-prompt optimize --sp-sdd-implement "start development" --validate
+```
 
 ## Codex Tips
 - File search: type `@` and select a path.

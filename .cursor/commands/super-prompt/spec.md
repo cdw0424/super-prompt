@@ -1,6 +1,6 @@
 ---
 description: spec command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["sdd spec ${input}"]
 ---
 

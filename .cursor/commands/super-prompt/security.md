@@ -1,6 +1,6 @@
 ---
 description: security command
-run: "./tag-executor.py"
+run: "./tag-executor.sh"
 args: ["${{input}} /security"]
 ---
 
