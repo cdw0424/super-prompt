@@ -1,4 +1,4 @@
-# Super Prompt (Cursor‑first)
+# Super Prompt (Cursor, Codex CLI)
 
 [![npm version](https://img.shields.io/npm/v/%40cdw0424%2Fsuper-prompt?logo=npm)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/%40cdw0424%2Fsuper-prompt?logo=npm)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -11,9 +11,9 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
-Cursor‑first Prompt Engineering toolkit with Spec‑Driven Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your SPEC/PLAN, installs slash commands under `.cursor/commands/super-prompt`, and lets specialized personas help you craft precise prompts inside Cursor.
+Prompt Engineering toolkit for Cursor and Codex CLI with Spec‑Driven Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your SPEC/PLAN, installs slash commands under `.cursor/commands/super-prompt` (Cursor), and lets specialized personas help you craft precise prompts inside Cursor or via flag‑based personas in Codex.
 
-Note: Super Prompt targets Cursor as the primary environment. For Codex, use flag‑based personas (no slash commands).
+Note: Super Prompt targets Cursor and Codex CLI. For Codex, use flag‑based personas (no slash commands).
 
 ## Credits & Attribution
 
