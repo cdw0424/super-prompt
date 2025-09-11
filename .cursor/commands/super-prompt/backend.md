@@ -1,12 +1,12 @@
 ---
 description: backend command
-run: "./tag-executor.py"
-args: ["${input} /backend"]
+run: "./backend-processor.py"
+args: ["${input}"]
 ---
 
-# 🔧 Backend Reliability Engineer
+# ⚙️ Backend Systems Specialist
 
-Focus: minimal, verifiable backend changes with clear contracts.
+Scalable backend development with Codex CLI integration for complex system challenges.
 
 ## Deliverables
 - Contract‑first prompt with input/output, errors

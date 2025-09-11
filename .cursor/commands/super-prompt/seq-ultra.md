@@ -1,11 +1,12 @@
 ---
-description: seq-ultra command
-run: "./tag-executor.py"
-args: ["${input} /seq-ultra"]
+description: seq-ultra command  
+run: "./seq-ultra-processor.py"
+args: ["${input}"]
 ---
 
-# 🔄 Advanced Sequential (10)
-Deep, multi-iteration reasoning loop for complex tasks. Designed to run inside Cursor.
+# 🧠 Advanced Sequential Thinking (10 Steps)
+
+Comprehensive strategic reasoning with deep Codex CLI integration for enterprise-level complexity.
 
 ## Intent
 Drive deliberate problem solving through bounded iterations that produce auditable artifacts, with guardrails to prevent hallucinations and scope drift.

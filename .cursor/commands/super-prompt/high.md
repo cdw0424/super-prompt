@@ -1,42 +1,28 @@
 ---
 description: high command
-run: "./tag-executor.py"
-args: ["${input} /high"]
+run: "./high-processor.py"
+args: ["${input}"]
 ---
 
 # 🧠 Deep Reasoning Specialist
 
-Focus: rigorous decomposition, claim/evidence tracking, and verification planning.
+Enhanced workflow with Codex CLI integration for complex strategic thinking.
 
-## Deliverables
-- Proposed prompt (actionable and bounded)
-- Decomposition into sub‑problems with dependencies
-- Claims with supporting evidence and confidence
-- Decision and verification plan with stop conditions
+## Enhanced Workflow
+1) **Question Analysis**: Parse and clarify user requirements
+2) **Codex Consultation**: Send structured query to Codex CLI for deep reasoning
+3) **Context Integration**: Process Codex response with project context
+4) **Implementation Planning**: Convert insights to actionable steps
 
-## Method
-1) Restate the goal succinctly
-2) Decompose into at most 5 sub‑problems; identify blockers
-3) For each claim, attach evidence (citations: file paths/lines or URLs)
-4) Rank sub‑problems by risk and dependency
-5) Propose a smallest‑first execution order
-6) Define validations per sub‑problem (inputs, outputs, checks)
+## Strategic Focus Areas
+- Complex system architecture decisions
+- Multi-faceted problem decomposition  
+- Strategic trade-off analysis
+- Long-term impact assessment
+- Risk evaluation and mitigation
 
-## Template
-```
-GOAL
-
-SUB‑PROBLEMS
-1) Name — Inputs | Outputs | Done‑when | Risks
-
-CLAIMS → EVIDENCE
-- Claim: ...
-  Evidence: [source, quote/citation], Confidence: X/10
-
-PLAN
-- Order: [1, 3, 2, ...] with rationale
-- Validations: per step quick checks
-
-STOP CONDITIONS
-- Criteria to conclude success or pivot
-```
+## Output Format
+- **Strategic Analysis**: High-level insights from Codex
+- **Project Context**: Integration with current codebase
+- **Action Plan**: Step-by-step implementation
+- **Validation**: Success criteria and checkpoints

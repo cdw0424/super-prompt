@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "2.2.0",
+  "version": "2.2.2",
   "description": "Cursor-first prompt engineering toolkit with SDD assist and personas",
   "main": "index.js",
   "bin": {
@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/choi-dong-won/super-prompt.git"
+    "url": "git+https://github.com/cdw0424/super-promt.git"
   },
   "bugs": {
-    "url": "https://github.com/choi-dong-won/super-prompt/issues"
+    "url": "https://github.com/cdw0424/super-promt/issues"
   },
-  "homepage": "https://github.com/choi-dong-won/super-prompt#readme",
+  "homepage": "https://github.com/cdw0424/super-promt#readme",
   "engines": {
     "node": ">=14.0.0"
   },

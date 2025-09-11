@@ -1,12 +1,12 @@
 ---
 description: frontend command
-run: "./tag-executor.py"
-args: ["${input} /frontend"]
+run: "./frontend-processor.py"
+args: ["${input}"]
 ---
 
-# 🎨 Frontend Design Advisor
+# 🎨 Frontend Development Specialist
 
-Focus: actionable prompts for UI/UX and component design with a11y and performance.
+User-centered frontend development with Codex CLI integration for complex UX challenges.
 
 ## Usage
 - Write your request and append `/frontend` (e.g., "Refactor header /frontend").
