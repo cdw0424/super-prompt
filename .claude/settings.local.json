@@ -6,7 +6,15 @@
       "Bash(super-prompt:*)",
       "Read(//opt/homebrew/lib/node_modules/@cdw0424/super-prompt/**)",
       "Bash(bash bin/super-prompt:*)",
-      "Bash(/opt/homebrew/bin/super-prompt:*)"
+      "Bash(/opt/homebrew/bin/super-prompt:*)",
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(codex:*)",
+      "Bash(timeout 30 python3 debate-processor.py \"Test question\" --rounds 1)",
+      "Bash(gtimeout:*)",
+      "Bash(SP_DEBUG=1 python3 debate-processor.py \"Simple test question\" --rounds 1)",
+      "Bash(SP_DEBUG=1 python3 debate-processor.py --critic-only \"돈을 벌기\" \"스킬을 개발하자\" 1 1)",
+      "Bash(SP_DEBUG=1 python3 debate-processor.py --critic-only \"TypeScript vs JavaScript\" \"TypeScript is better for large projects\" 1 1)"
     ],
     "deny": [],
     "ask": []

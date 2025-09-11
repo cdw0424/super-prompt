@@ -30,6 +30,7 @@ We greatly appreciate the open‑source community. If you are a maintainer of a 
 - 🎭 **Enhanced Personas**: SuperClaude framework integration with specialized AI personalities
 - 🌊 **Wave System**: Multi-stage execution for complex operations (complexity ≥0.7)
 - 🔗 **MCP Integration**: Context7, Sequential, Magic, Playwright server coordination
+- 🗣️ **Enhanced Debate System**: Real AI vs AI debates (Current Cursor model ↔ Codex) with systematic reasoning
 - ⚡ **Token Efficiency**: Intelligent compression (30-50% reduction) with quality preservation
 - 📋 **Task Management**: Structured workflow execution with progress tracking
 - 🧰 **CLI tools**: rule generation (`super:init`) and persona‑assisted prompting (`optimize`)
@@ -60,8 +61,10 @@ super-prompt super:init
 npx @cdw0424/super-prompt optimize "design strategy /frontend"
 npx @cdw0424/super-prompt optimize "debug intermittent failures /analyzer"
 
-# Debate mode (requires `codex` CLI)
+# Enhanced AI vs AI debate mode (requires `codex` CLI)
 npx @cdw0424/super-prompt optimize "Choose DB schema migration approach /debate --rounds 12"
+npx @cdw0424/super-prompt optimize "TypeScript vs JavaScript for our project /debate --rounds 5"
+npx @cdw0424/super-prompt optimize "돈을 많이 벌려면 어떻게 해야하지 /debate --interactive"
 
 # SDD workflow commands
 npx @cdw0424/super-prompt sdd spec "user authentication system"
@@ -96,6 +99,7 @@ npx @cdw0424/super-prompt sdd implement "login functionality"
 - `/high` — Deep reasoning specialist (strategic thinking, MCP: Sequential + Context7)
 - `/seq` — Sequential thinking (5 iterations, structured reasoning)
 - `/seq-ultra` — Advanced sequential thinking (10 iterations, comprehensive analysis)
+- `/debate` — Enhanced AI vs AI debate system (Current Cursor model ↔ Codex with `model_reasoning_effort=high`)
 
 ### Enhanced SuperClaude Personas
 - `/security` — Threat modeler & vulnerability specialist (zero trust, defense in depth)
@@ -138,6 +142,44 @@ Super Prompt includes a complete Spec-Driven Development workflow:
 
 Each step builds on the previous one, with automatic context sharing between phases.
 
+## Enhanced Debate System
+
+Super Prompt includes a sophisticated AI vs AI debate system for critical decision-making:
+
+### How It Works
+- **CREATOR-AI**: Current Cursor model (Grok, Claude, GPT, etc.) provides constructive proposals
+- **CRITIC-AI**: Codex CLI with `model_reasoning_effort=high` provides rigorous analysis
+- **Real Interaction**: Each AI analyzes and responds to the other's specific points
+
+### Features
+- 🎯 **Systematic Analysis**: Each turn builds on previous responses with evidence-based reasoning
+- 🔄 **Interactive Mode**: Run debates one round at a time with `--interactive`
+- 📊 **Progress Tracking**: Built-in checkpoints and synthesis generation
+- 🌍 **Multilingual**: Supports Korean, English, and other languages
+- 💾 **State Management**: Auto-saves debate state for resumable sessions
+
+### Usage Examples
+```bash
+# Basic debate (10 rounds)
+/debate "Should we use microservices or monoliths?"
+
+# Custom rounds
+/debate "TypeScript vs JavaScript --rounds 5"
+
+# Interactive mode (one round at a time)
+/debate "API design strategy --interactive"
+
+# Korean language support
+/debate "돈을 많이 벌려면 어떻게 해야하지 --rounds 3"
+```
+
+### Debate Flow
+1. **CREATOR-AI** presents initial position with actionable steps
+2. **CRITIC-AI** analyzes assumptions, identifies risks, proposes validations
+3. **CREATOR-AI** addresses critiques with improved approach and mitigation strategies
+4. **Process repeats** for specified rounds, building toward consensus
+5. **Final Synthesis** combines best insights from both perspectives
+
 ## Generated Files
 
 - Rules: `.cursor/rules/00-organization.mdc`, `10-sdd-core.mdc`, `20-frontend.mdc`, `30-backend.mdc`
@@ -148,7 +190,8 @@ Each step builds on the previous one, with automatic context sharing between pha
 - macOS or Linux
 - Node.js ≥ 14
 - Python ≥ 3.7
- - Codex CLI (auto-upgraded): the tool attempts `npm install -g @openai/codex@latest` during install/run
+- Codex CLI (auto-upgraded): the tool attempts `npm install -g @openai/codex@latest` during install/run
+- **For Enhanced Debate**: Codex CLI is required for CRITIC-AI functionality
 
 ## Troubleshooting
 

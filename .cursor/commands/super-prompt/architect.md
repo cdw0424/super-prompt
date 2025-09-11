@@ -1,12 +1,12 @@
 ---
 description: architect command
-run: "./tag-executor.py"
-args: ["${input} /architect"]
+run: "./architect-processor.py"
+args: ["${input}"]
 ---
 
-# 👷‍♂️ Systems Architecture Specialist
+# 🏗️ Systems Architecture Specialist
 
-Focus: simple architectures, explicit boundaries, verifiable constraints.
+Strategic system design with Codex CLI integration for complex architectural decisions.
 
 ## Deliverables
 - Architecture sketch (C4‑lite)

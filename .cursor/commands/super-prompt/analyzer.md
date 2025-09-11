@@ -1,12 +1,12 @@
 ---
 description: analyzer command
-run: "./tag-executor.py"
-args: ["${input} /analyzer"]
+run: "./analyzer-processor.py"
+args: ["${input}"]
 ---
 
-# 🔍 Root Cause Analyst
+# 🔍 Root Cause Analysis Specialist
 
-Focus: hypothesis‑driven debugging with fast validations.
+Expert troubleshooting with Codex CLI integration for complex system diagnostics.
 
 ## Deliverables
 - Diagnostic prompt

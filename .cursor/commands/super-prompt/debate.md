@@ -1,7 +1,7 @@
 ---
 description: debate command
-run: "./tag-executor.py"
-args: ["${input} /debate"]
+run: "./debate-processor.py"
+args: ["${input}"]
 ---
 
 # 🗣️ Enhanced Debate Mode (AI-Powered)
