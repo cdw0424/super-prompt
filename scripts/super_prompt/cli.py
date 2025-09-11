@@ -722,7 +722,7 @@ State machine (per turn):
 
 All logs MUST start with: `--------` and all content MUST be in English.
 """
-    write_text(os.path.join(agent_dir, 'agent.md'), agent_md, dry)
+    write_text(os.path.join(agent_dir, 'agents.md'), agent_md, dry)
     personas_py = """
 #!/usr/bin/env python3
 # Codex Personas Helper — programmatic prompt builders (English only).
