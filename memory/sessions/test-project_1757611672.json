@@ -1,0 +1,10 @@
+{
+  "session_id": "test-project_1757611672",
+  "project_id": "test-project",
+  "current_stage": "specify",
+  "active_contexts": [],
+  "context_history": [],
+  "injection_policy": "selective",
+  "token_budget": 32000,
+  "used_tokens": 0
+}

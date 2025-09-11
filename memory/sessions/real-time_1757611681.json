@@ -1,0 +1,10 @@
+{
+  "session_id": "real-time_1757611681",
+  "project_id": "real-time",
+  "current_stage": "specify",
+  "active_contexts": [],
+  "context_history": [],
+  "injection_policy": "selective",
+  "token_budget": 32000,
+  "used_tokens": 0
+}

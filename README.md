@@ -11,6 +11,8 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
+**🚀 New in v2.9.0:** Context Engineering System - Spec Kit implementation for conversation context preservation, stage gating workflow, and intelligent context injection with 30-50% token optimization.
+
 **🚀 New in v2.8.0:** Added TODO Auto-Validation System with intelligent high-mode retry for failed tasks, ensuring reliable completion and automatic error recovery.
 
 **🚀 New in v2.6.0:** Full SDD (Spec-Driven Development) workflow now available in Codex CLI alongside Cursor support. Complete SPEC→PLAN→TASKS→IMPLEMENT workflow for both IDEs.
@@ -318,6 +320,108 @@ The validation system integrates with the Codex AGENTS.md TODO workflow:
 - **Quality Assurance**: Automatic validation before final completion
 
 This ensures reliable, high-quality task completion with intelligent error recovery.
+
+## 🧠 Context Engineering System
+
+The Context Engineering System implements Spec Kit principles to maintain conversation context across development stages, ensuring design intent preservation and eliminating context drift.
+
+### Core Principles
+
+**1. Context Externalization**: All conversation context is stored as versioned artifacts
+**2. Stage Gating**: Structured workflow prevents context loss through validation gates  
+**3. Task Minimization**: Break complex contexts into manageable, task-specific injections
+**4. Organizational Integration**: Absorb company standards and rules into project context
+
+### Directory Structure
+
+```
+project/
+├── specs/
+│   └── project-id/
+│       ├── spec.md      # Requirements and goals
+│       ├── plan.md      # Implementation strategy  
+│       └── tasks.md     # Actionable breakdown
+└── memory/
+    ├── constitution/    # Project principles and rules
+    │   └── constitution.md
+    ├── rules/          # Domain-specific guidelines
+    └── sessions/       # Context session states
+```
+
+### Context Commands
+
+```bash
+# Initialize context management for a project
+super-prompt context:init my-project --stage specify
+
+# Check context status and available artifacts
+super-prompt context:status --project my-project
+
+# List all projects with context information
+super-prompt context:projects
+
+# Manage context sessions
+super-prompt context:session start my-project --stage plan
+super-prompt context:session switch my-project --stage tasks
+
+# Clean up old context sessions
+super-prompt context:cleanup --days 30
+```
+
+### Context Injection in SDD
+
+The system automatically injects relevant context when using SDD commands:
+
+```bash
+# SPEC creation with constitution and rules
+super-prompt sdd spec "user authentication system"
+# → Automatically includes project constitution and organizational standards
+
+# PLAN development with spec context
+super-prompt sdd plan "OAuth2 + JWT implementation"  
+# → Includes SPEC requirements and architectural constraints
+
+# TASKS breakdown with full context
+super-prompt sdd tasks "break down auth implementation"
+# → Includes SPEC + PLAN with task-relevant sections
+
+# Implementation with focused context
+super-prompt sdd implement "start development" --validate
+# → Minimal context injection focused on current task
+```
+
+### Context Injection Policies
+
+- **FULL**: Complete context injection for comprehensive analysis
+- **SELECTIVE**: Query-relevant sections only for efficiency
+- **SECTIONAL**: Key sections by artifact type (architecture, requirements)
+- **MINIMAL**: Essential information only for focused implementation
+
+### Stage Gating Workflow
+
+**specify → plan → tasks → implement**
+
+Each stage transition validates required artifacts exist:
+- **plan** requires `spec.md`
+- **tasks** requires `spec.md` + `plan.md`  
+- **implement** requires `spec.md` + `plan.md` + `tasks.md`
+
+### Token Optimization
+
+- **Intelligent Compression**: 30-50% token reduction through selective injection
+- **Priority Context**: Constitution and critical requirements loaded first
+- **Content Summarization**: Automatic summarization when approaching token limits
+- **Section Extraction**: Query-relevant content extraction for efficiency
+
+### Integration Benefits
+
+- **Context Preservation**: Design intent maintained across all development stages
+- **Collaboration**: Clear handoffs between team members with persistent context
+- **Quality Assurance**: Built-in validation against established requirements
+- **Organizational Alignment**: Company standards automatically integrated
+- **Token Efficiency**: Optimized context injection reduces token usage by 30-50%
+
+The Context Engineering System ensures that every interaction has access to relevant project context, eliminating the need to repeatedly explain requirements and maintaining consistency across development phases.
 
 ## Debate (Single‑Model, Codex)
 

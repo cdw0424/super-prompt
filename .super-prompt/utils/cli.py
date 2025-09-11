@@ -28,6 +28,38 @@ except ImportError:
     class TodoValidator:
         def __init__(self):
             self.session_file = ".todo_session.json"
+
+# Import Context Manager components
+try:
+    from context_manager import ContextManager, InjectionPolicy, ContextType
+    from context_injector import ContextInjector
+except ImportError:
+    # Fallback: define minimal classes for when context system is not available
+    class InjectionPolicy:
+        FULL = "full"
+        SELECTIVE = "selective"
+        SECTIONAL = "sectional"
+        MINIMAL = "minimal"
+    
+    class ContextType:
+        SPEC = "spec"
+        PLAN = "plan"
+        TASKS = "tasks"
+        MEMORY = "memory"
+    
+    class ContextManager:
+        def __init__(self, project_root="."):
+            pass
+        def list_projects(self):
+            return []
+        def get_session_status(self):
+            return {"status": "context_system_unavailable"}
+    
+    class ContextInjector:
+        def __init__(self, project_root="."):
+            pass
+        def inject_context_for_command(self, command, query, project_id=None):
+            return query, {"status": "context_system_unavailable"}
         
         def load_session(self):
             return []
@@ -980,7 +1012,15 @@ echo "--------router-check: OK"""
     # (AMR helper templates are written in install_cursor_commands_in_project)
 
 def handle_sdd_command(args):
-    """Handle SDD workflow commands: spec, plan, tasks, implement"""
+    """Handle SDD workflow commands with context injection: spec, plan, tasks, implement"""
+    
+    # Initialize context injector
+    try:
+        context_injector = ContextInjector()
+        context_manager = ContextManager()
+    except:
+        context_injector = None
+        context_manager = None
     
     def generate_file_name(description: str, cmd_type: str) -> str:
         """Generate a suitable filename from description"""
@@ -996,8 +1036,26 @@ def handle_sdd_command(args):
         os.makedirs(out_dir, exist_ok=True)
         return out_dir
     
-    def create_sdd_prompt(cmd_type: str, description: str, context: dict) -> str:
-        """Create SDD-specific prompt for different command types"""
+    def create_sdd_prompt(cmd_type: str, description: str, context: dict, project_id: str = None) -> str:
+        """Create SDD-specific prompt with context injection"""
+        
+        # Use context injector if available
+        if context_injector and project_id:
+            try:
+                command_map = {
+                    "spec": "sdd_spec",
+                    "plan": "sdd_plan", 
+                    "tasks": "sdd_tasks",
+                    "implement": "sdd_implement"
+                }
+                command = command_map.get(cmd_type, f"sdd_{cmd_type}")
+                enhanced_prompt, metadata = context_injector.inject_context_for_command(command, description, project_id)
+                print(f"--------sdd: context injected ({metadata.get('context_tokens', 0)} tokens)")
+                return enhanced_prompt
+            except Exception as e:
+                print(f"--------sdd: context injection failed: {e}")
+        
+        # Fallback to original prompt format
         base_context = f"""
 **[SDD Context]**
 - Frameworks: {context['frameworks']}
@@ -1192,6 +1250,15 @@ Review the existing SPEC and PLAN documents, then provide:
         
         return base_context
     
+    # Extract project ID from description or generate one
+    project_id = None
+    if context_injector:
+        project_id = context_injector._detect_project_id(args.description)
+        if not project_id:
+            # Generate project ID from description
+            words = re.findall(r'\b\w+\b', args.description.lower())
+            project_id = "-".join(words[:2]) if len(words) >= 2 else "default-project"
+    
     # Get SDD context
     sdd_context = get_project_sdd_context()
     out_dir = ensure_sdd_dir(getattr(args, 'out', 'specs'))
@@ -1199,9 +1266,11 @@ Review the existing SPEC and PLAN documents, then provide:
     print(f"🚀 SDD {args.sdd_cmd.upper()} Generator")
     print(f"📁 Output directory: {out_dir}")
     print(f"🎯 Description: {args.description}")
+    if project_id:
+        print(f"📋 Project: {project_id}")
     
-    # Generate appropriate prompt
-    prompt = create_sdd_prompt(args.sdd_cmd, args.description, sdd_context)
+    # Generate appropriate prompt with context injection
+    prompt = create_sdd_prompt(args.sdd_cmd, args.description, sdd_context, project_id)
     
     # Generate filename
     filename = generate_file_name(args.description, args.sdd_cmd)
@@ -1386,6 +1455,24 @@ def main():
     
     p_todo_status = sub.add_parser("todo:status", help="Show current TODO session status")
     p_todo_status.add_argument("--session-file", default=".todo_session.json", help="TODO session file path")
+
+    # Context Management System
+    p_context_init = sub.add_parser("context:init", help="Initialize context management system for project")
+    p_context_init.add_argument("project_id", help="Project identifier")
+    p_context_init.add_argument("--stage", default="specify", choices=["specify", "plan", "tasks", "implement"], help="Initial stage")
+    
+    p_context_status = sub.add_parser("context:status", help="Show current context session status")
+    p_context_status.add_argument("--project", help="Project ID to check")
+    
+    p_context_projects = sub.add_parser("context:projects", help="List all projects with context")
+    
+    p_context_session = sub.add_parser("context:session", help="Manage context sessions")
+    p_context_session.add_argument("action", choices=["start", "load", "switch"], help="Session action")
+    p_context_session.add_argument("project_id", help="Project identifier")
+    p_context_session.add_argument("--stage", choices=["specify", "plan", "tasks", "implement"], help="Target stage")
+    
+    p_context_cleanup = sub.add_parser("context:cleanup", help="Clean up old context sessions")
+    p_context_cleanup.add_argument("--days", type=int, default=30, help="Remove sessions older than N days")
 
     args = parser.parse_args()
     if not args.cmd: 
@@ -1593,6 +1680,21 @@ def main():
         
     elif args.cmd == "todo:status":
         return handle_todo_status_command(args)
+        
+    elif args.cmd == "context:init":
+        return handle_context_init_command(args)
+        
+    elif args.cmd == "context:status":
+        return handle_context_status_command(args)
+        
+    elif args.cmd == "context:projects":
+        return handle_context_projects_command(args)
+        
+    elif args.cmd == "context:session":
+        return handle_context_session_command(args)
+        
+    elif args.cmd == "context:cleanup":
+        return handle_context_cleanup_command(args)
     
     log(f"Unknown command: {args.cmd}")
     return 2
@@ -1692,6 +1794,239 @@ def handle_todo_status_command(args):
         
     except Exception as e:
         print(f"❌ TODO status failed: {str(e)}")
+        return 1
+
+def handle_context_init_command(args):
+    """Handle context initialization command"""
+    try:
+        context_manager = ContextManager()
+        session_id = context_manager.start_session(args.project_id, args.stage)
+        
+        print(f"🧠 Context Management System Initialized")
+        print(f"📋 Project: {args.project_id}")
+        print(f"🎯 Stage: {args.stage}")
+        print(f"🔑 Session: {session_id}")
+        
+        # Show directory structure
+        specs_dir = context_manager.specs_dir / args.project_id
+        memory_dir = context_manager.memory_dir
+        
+        print(f"\n📁 Directory Structure:")
+        print(f"   ├── specs/{args.project_id}/")
+        print(f"   │   ├── spec.md")
+        print(f"   │   ├── plan.md")
+        print(f"   │   └── tasks.md")
+        print(f"   └── memory/")
+        print(f"       ├── constitution/constitution.md")
+        print(f"       ├── rules/")
+        print(f"       └── sessions/")
+        
+        print(f"\n💡 Next Steps:")
+        print(f"   1. Create SPEC: super-prompt sdd spec \"your feature description\"")
+        print(f"   2. Check status: super-prompt context:status --project {args.project_id}")
+        print(f"   3. View projects: super-prompt context:projects")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Context initialization failed: {str(e)}")
+        return 1
+
+def handle_context_status_command(args):
+    """Handle context status command"""
+    try:
+        context_manager = ContextManager()
+        
+        if args.project:
+            # Show specific project status
+            session_started = False
+            try:
+                sessions_dir = context_manager.memory_dir / "sessions"
+                if sessions_dir.exists():
+                    for session_file in sessions_dir.glob(f"{args.project}_*.json"):
+                        session_id = session_file.stem
+                        if context_manager.load_session(session_id):
+                            session_started = True
+                            break
+            except:
+                pass
+                
+            if not session_started:
+                context_manager.start_session(args.project, "specify")
+                
+            status = context_manager.get_session_status()
+            
+            print(f"🧠 Context Status for Project: {args.project}")
+            print(f"📋 Session: {status.get('session_id', 'N/A')}")
+            print(f"🎯 Current Stage: {status.get('current_stage', 'N/A')}")
+            print(f"📊 Available Artifacts: {', '.join(status.get('artifacts', [])) or 'None'}")
+            print(f"🔄 Can Advance: {'✅ Yes' if status.get('can_advance', False) else '❌ No'}")
+            print(f"💾 Token Usage: {status.get('token_usage', 'N/A')}")
+            print(f"⚙️ Injection Policy: {status.get('injection_policy', 'N/A')}")
+            
+        else:
+            # Show all projects status
+            projects = context_manager.list_projects()
+            print(f"🧠 Context Management System Status")
+            print(f"📋 Total Projects: {len(projects)}")
+            
+            if projects:
+                print(f"\n📁 Projects:")
+                for project in projects:
+                    artifacts = []
+                    project_dir = context_manager.specs_dir / project
+                    if (project_dir / "spec.md").exists():
+                        artifacts.append("spec")
+                    if (project_dir / "plan.md").exists():
+                        artifacts.append("plan")
+                    if (project_dir / "tasks.md").exists():
+                        artifacts.append("tasks")
+                    
+                    status_icon = "🟢" if len(artifacts) >= 2 else "🟡" if len(artifacts) == 1 else "🔴"
+                    print(f"   {status_icon} {project}: {', '.join(artifacts) or 'No artifacts'}")
+            else:
+                print(f"\n💡 No projects found. Initialize with: super-prompt context:init <project-id>")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Context status failed: {str(e)}")
+        return 1
+
+def handle_context_projects_command(args):
+    """Handle context projects listing command"""
+    try:
+        context_manager = ContextManager()
+        projects = context_manager.list_projects()
+        
+        print(f"🧠 Context Management - All Projects")
+        print(f"=" * 50)
+        
+        if projects:
+            for i, project in enumerate(projects, 1):
+                project_dir = context_manager.specs_dir / project
+                artifacts = []
+                
+                # Check artifact status
+                artifact_files = ["spec.md", "plan.md", "tasks.md"]
+                for artifact_file in artifact_files:
+                    if (project_dir / artifact_file).exists():
+                        with open(project_dir / artifact_file, 'r') as f:
+                            content = f.read()
+                            tokens = len(content) // 4  # Rough token estimate
+                            artifacts.append(f"{artifact_file.replace('.md', '')} ({tokens}t)")
+                
+                # Determine stage
+                stage = "specify"
+                if len(artifacts) >= 3:
+                    stage = "implement"
+                elif len(artifacts) >= 2:
+                    stage = "tasks"
+                elif len(artifacts) >= 1:
+                    stage = "plan"
+                
+                stage_icons = {
+                    "specify": "📝",
+                    "plan": "🏗️",
+                    "tasks": "📋",
+                    "implement": "⚡"
+                }
+                
+                print(f"{i:2d}. {stage_icons.get(stage, '❓')} {project}")
+                print(f"     Stage: {stage}")
+                print(f"     Artifacts: {', '.join(artifacts) if artifacts else 'None'}")
+                print()
+        else:
+            print("No projects found.")
+            print("\n💡 Create your first project:")
+            print("   super-prompt context:init my-project")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Context projects listing failed: {str(e)}")
+        return 1
+
+def handle_context_session_command(args):
+    """Handle context session management command"""
+    try:
+        context_manager = ContextManager()
+        
+        if args.action == "start":
+            stage = args.stage or "specify"
+            session_id = context_manager.start_session(args.project_id, stage)
+            print(f"🧠 Context session started")
+            print(f"📋 Project: {args.project_id}")
+            print(f"🎯 Stage: {stage}")
+            print(f"🔑 Session: {session_id}")
+            
+        elif args.action == "load":
+            # Find and load existing session
+            sessions_dir = context_manager.memory_dir / "sessions"
+            session_found = False
+            
+            if sessions_dir.exists():
+                for session_file in sessions_dir.glob(f"{args.project_id}_*.json"):
+                    session_id = session_file.stem
+                    if context_manager.load_session(session_id):
+                        print(f"🧠 Context session loaded")
+                        print(f"📋 Project: {args.project_id}")
+                        print(f"🔑 Session: {session_id}")
+                        
+                        status = context_manager.get_session_status()
+                        print(f"🎯 Current Stage: {status.get('current_stage', 'N/A')}")
+                        session_found = True
+                        break
+            
+            if not session_found:
+                print(f"❌ No session found for project: {args.project_id}")
+                print(f"💡 Create new session: super-prompt context:session start {args.project_id}")
+                return 1
+                
+        elif args.action == "switch":
+            if not args.stage:
+                print("❌ Stage required for switch action")
+                return 1
+                
+            # Load existing session and switch stage
+            sessions_dir = context_manager.memory_dir / "sessions"
+            session_found = False
+            
+            if sessions_dir.exists():
+                for session_file in sessions_dir.glob(f"{args.project_id}_*.json"):
+                    session_id = session_file.stem
+                    if context_manager.load_session(session_id):
+                        if context_manager.update_stage(args.stage):
+                            print(f"🧠 Context stage switched")
+                            print(f"📋 Project: {args.project_id}")
+                            print(f"🎯 New Stage: {args.stage}")
+                            session_found = True
+                        else:
+                            print(f"❌ Cannot switch to stage '{args.stage}' - missing required artifacts")
+                            return 1
+                        break
+            
+            if not session_found:
+                print(f"❌ No session found for project: {args.project_id}")
+                return 1
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Context session management failed: {str(e)}")
+        return 1
+
+def handle_context_cleanup_command(args):
+    """Handle context cleanup command"""
+    try:
+        context_manager = ContextManager()
+        context_manager.cleanup_old_sessions(args.days)
+        print(f"🧠 Context cleanup completed")
+        print(f"🗑️ Removed sessions older than {args.days} days")
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Context cleanup failed: {str(e)}")
         return 1
 
 if __name__ == "__main__":
