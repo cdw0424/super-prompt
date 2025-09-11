@@ -226,6 +226,38 @@ Read more
 - Translation/backends (optional) → if you use external CLIs (`claude`, `codex`), ensure they’re on PATH and configured
  - AMR internals and CLI: `docs/codex-amr.md`
 
+## Architecture & Why It Performs Well
+
+### Component Map
+- Router: `src/amr/router.js` — classifies tasks (L0/L1/H) and advises medium↔high switches
+- State Machine: `src/state-machine/index.js` — fixed loop (INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT)
+- Bootstrap Prompt: `src/prompts/codexAmrBootstrap.en.js` — AMR‑aware TUI starter
+- Scaffold: `src/scaffold/codexAmr.js` — one‑shot bootstrap into a repo
+- Python CLI: `scripts/super_prompt/cli.py` — flag personas, single‑model debate, project SDD helpers
+- Codex Agent: `.codex/agents.md` + `.codex/personas.py` — Codex‑specific guidance & builders
+
+### Mechanisms → Effects → Performance
+- Fixed Loop (structured decoding)
+  - Mechanism: always follow INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT
+  - Effect: smaller search space; consistent turn shape; easy verification
+  - Result: lower variance, higher instruction adherence
+- AMR (medium↔high with explicit switching)
+  - Mechanism: heavy tasks plan at high reasoning; execution at medium
+  - Effect: deep planning where needed; faster/cheaper execution otherwise
+  - Result: better plans without runaway verbosity
+- Language & Persona Closure
+  - Mechanism: English‑only, fixed tone, flag personas; logs prefixed with `--------`
+  - Effect: stylistic stability; easy log parsing in scripts/CI
+  - Result: repeatable outputs, fewer formatting failures
+- Memory Hygiene
+  - Mechanism: repo facts vs. per‑turn discoveries kept explicit (rules + transcripts)
+  - Effect: reduced hallucination; easier auditability and rollbacks
+  - Result: long‑run consistency and safer automation
+- Templates & Guards
+  - Mechanism: minimal diffs; mandatory commands; router checks; prompt QA
+  - Effect: deterministic patches; quick CI validation; predictable UX
+  - Result: faster iteration and fewer regressions
+
 ## Roadmap (later)
 
 - Expand execution paths that use Anthropic Claude and Codex CLIs
