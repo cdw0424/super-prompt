@@ -696,7 +696,9 @@ fi
         content = f"---\ndescription: {name} command\nrun: \"./tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
         write_text(os.path.join(base, f'{name}.md'), content, dry)
 
-    # Codex agent config (flag-based personas, English only)
+    # (Codex agent assets are created conditionally in write_codex_agent_assets())
+
+def write_codex_agent_assets(dry: bool = False):
     agent_dir = os.path.join('.codex')
     os.makedirs(agent_dir, exist_ok=True)
     agent_md = """# Codex Agent — Super Prompt Integration
@@ -721,6 +723,50 @@ State machine (per turn):
 All logs MUST start with: `--------` and all content MUST be in English.
 """
     write_text(os.path.join(agent_dir, 'agent.md'), agent_md, dry)
+    personas_py = """
+#!/usr/bin/env python3
+# Codex Personas Helper — programmatic prompt builders (English only).
+from textwrap import dedent
+
+def build_debate_prompt(topic: str, rounds: int = 8) -> str:
+    rounds = max(2, min(int(rounds or 8), 20))
+    return dedent(f'''\
+    You are a single model simulating a structured internal debate with two clearly separated selves:
+    - Positive Self (Builder): constructive, solution-focused.
+    - Critical Self (Skeptic): risk-driven, assumption-testing.
+
+    Rules:
+    - English only. Keep each turn concise (<= 6 lines).
+    - Alternate strictly: Positive → Critical → Positive → ... ({rounds} rounds).
+    - No repetition; each turn must add new reasoning.
+    - End with a Synthesis that integrates strengths + mitigations.
+
+    Topic: {topic}
+
+    Output template:
+    [INTENT]
+    - Debate: {topic}
+    [TASK_CLASSIFY]
+    - Class: H (multi-step reasoning & evaluation)
+    [PLAN]
+    - Rounds: {rounds}
+    - Criteria: correctness, risks, minimal viable path
+    [EXECUTE]
+    1) Positive Self: ...
+    2) Critical Self: ...
+    ... (continue alternating up to {rounds})
+    [VERIFY]
+    - Checks: factuality, feasibility, risk coverage
+    [REPORT]
+    - Synthesis: final position, plan, and guardrails
+    ''')
+
+def build_persona_prompt(name: str, query: str, context: str = "") -> str:
+    # Return a minimal persona-wrapped prompt.
+    header = f"**[Persona]** {name}\n\n"
+    return header + (context or "") + f"\n\n**[User's Request]**\n{query}\n"
+"""
+    write_text(os.path.join(agent_dir, 'personas.py'), personas_py, dry)
 
     # Provide AMR helper templates as static commands (no runner required)
     amr_plan_md = """---
@@ -851,6 +897,25 @@ def main():
         install_cursor_commands_in_project(args.dry_run)
         print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
         print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra\033[0m\n")
+        # Optional Codex integration prompt (.codex/*)
+        want_codex = os.environ.get('SUPER_PROMPT_INIT_CODEX')
+        yn = None
+        if want_codex is not None:
+            yn = want_codex.lower() in ('1','true','yes','y')
+        elif sys.stdin.isatty():
+            try:
+                ans = input("Extend Codex CLI integration now (.codex assets)? [Y/n] ").strip().lower()
+            except Exception:
+                ans = ''
+            yn = not ans.startswith('n')
+        else:
+            yn = False
+        if yn:
+            print("\033[36m📦 Creating .codex agent and helpers...\033[0m")
+            write_codex_agent_assets(args.dry_run)
+            print(f"\033[32m✓\033[0m \033[1mStep 4:\033[0m Codex agent configured → .codex/")
+        else:
+            print("\033[2mSkipping Codex CLI extension (set SUPER_PROMPT_INIT_CODEX=1 to auto-enable)\033[0m")
         
         if not sdd_context['sdd_compliance']:
             print("\033[33m⚠️  Optional SDD Setup:\033[0m")

@@ -43,6 +43,7 @@ npm install -g @cdw0424/super-prompt
 ```bash
 super-prompt super:init
 ```
+ - During init you will be asked to extend Codex CLI integration; answering Yes creates `.codex/` with `agent.md` and `personas.py`. Non‑interactive opt‑in: `SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init`.
 
 3) Use inside Cursor
 - Open Cursor; rules from `.cursor/rules/*.mdc` are applied.
