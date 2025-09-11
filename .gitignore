@@ -1,0 +1,5 @@
+# Local analysis reports and sessions
+.codex/reports/
+memory/
+memory-bank/
+.DS_Store

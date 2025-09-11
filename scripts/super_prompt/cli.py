@@ -342,6 +342,7 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         if re.search(r'--backend(\s|$)', input_text): return 'backend'
         if re.search(r'--architect(\s|$)', input_text): return 'architect'
         if re.search(r'--analyzer(\s|$)', input_text): return 'analyzer'
+        if re.search(r'--sp-analyzer(\s|$)', input_text): return 'analyzer'
         if re.search(r'--debate(\s|$)', input_text): return 'debate'
         return None
 
@@ -351,7 +352,7 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             cleaned = re.sub(f'/{persona}|--persona-{persona}', '', cleaned)
         return re.sub(r'--\w+(?:\s+\S+)?', '', cleaned).strip()
 
-    def execute(self, persona: str, query: str) -> bool:
+    def execute(self, persona: str, query: str, *, safe: bool=False, out_path: Optional[str]=None) -> bool:
         if persona not in self.PERSONAS:
             log(f"Unknown persona: {persona}")
             return False
@@ -402,10 +403,24 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             if cli_tool == 'claude':
                 model = config.get('model', 'claude-sonnet-4-20250514')
                 full_prompt = f"{persona_prompt}\n\n{context}\n\n**[User's Request]**\n{query}"
+                if safe or out_path:
+                    if out_path:
+                        write_text(out_path, full_prompt, dry=False)
+                        log(f"Saved analyzer prompt → {out_path}")
+                    else:
+                        print(full_prompt)
+                    return True
                 result = subprocess.run(['claude', '--model', model, '-p', full_prompt], timeout=120)
                 return result.returncode == 0
             elif cli_tool == 'codex':
                 full_prompt = f"{persona_prompt}\n\n{context}\n\n**[User's Request]**\n{query}"
+                if safe or out_path:
+                    if out_path:
+                        write_text(out_path, full_prompt, dry=False)
+                        log(f"Saved analyzer prompt → {out_path}")
+                    else:
+                        print(full_prompt)
+                    return True
                 result = subprocess.run(['codex', 'exec', '-c', 'model_reasoning_effort=high', full_prompt], timeout=120)
                 return result.returncode == 0
         except subprocess.TimeoutExpired:
@@ -843,12 +858,14 @@ def main():
     p_optimize.add_argument("--frontend-ultra", action="store_true")
     p_optimize.add_argument("--backend", action="store_true")
     p_optimize.add_argument("--analyzer", action="store_true")
+    p_optimize.add_argument("--sp-analyzer", action="store_true", help="Alias for --analyzer with safe output mode")
     p_optimize.add_argument("--architect", action="store_true")
     p_optimize.add_argument("--high", action="store_true")
     p_optimize.add_argument("--seq", action="store_true")
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
     p_optimize.add_argument("--rounds", type=int, default=8, help="Debate rounds (2-20)")
+    p_optimize.add_argument("--out", help="When used with --sp-analyzer, save prompt to this file (e.g., .codex/reports/analysis.md)")
 
     # AMR commands
     p_amr_rules = sub.add_parser("amr:rules", help="Generate AMR rule file (05-amr.mdc)")
@@ -948,6 +965,7 @@ def main():
                 ('frontend_ultra','frontend-ultra'),
                 ('frontend','frontend'),
                 ('backend','backend'),
+                ('sp_analyzer','analyzer'),
                 ('analyzer','analyzer'),
                 ('architect','architect'),
                 ('high','high'),
@@ -960,6 +978,22 @@ def main():
                     break
         if getattr(args, 'debate', False) and getattr(args, 'rounds', None):
             query_text += f" --rounds {int(args.rounds)}"
+        # Safe mode for --sp-analyzer: do not execute external CLI, print or save the composed prompt
+        if getattr(args, 'sp_analyzer', False):
+            out_path = getattr(args, 'out', None)
+            if out_path is None:
+                # Default to .codex/reports
+                ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                os.makedirs(os.path.join('.codex','reports'), exist_ok=True)
+                out_path = os.path.join('.codex','reports', f'analysis_{ts}.md')
+            # Build context and compose without executing external tool
+            persona = 'analyzer'
+            clean_query = optimizer.clean_input(query_text)
+            # Reuse execute in safe mode to persist the composed prompt
+            ok = optimizer.execute(persona, clean_query, safe=True, out_path=out_path)
+            if ok:
+                print(f"Saved analyzer prompt (safe mode) → {out_path}")
+            return 0 if ok else 1
         success = optimizer.process_query(query_text)
         return 0 if success else 1
     elif args.cmd == "amr:rules":
