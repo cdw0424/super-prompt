@@ -27,9 +27,13 @@ exec codex --model gpt-5 -c model_reasoning_effort="medium" "$@"`;
 const ROUTER_CHECK = `#!/usr/bin/env zsh
 set -euo pipefail
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+AGENTS_PATH="$root/AGENTS.md"
+if [ ! -f "$AGENTS_PATH" ]; then
+  AGENTS_PATH="$root/.codex/AGENTS.md"
+fi
 missing=0
-grep -q "Auto Model Router" "$root/AGENTS.md" || { echo "AGENTS.md missing AMR marker"; missing=1; }
-grep -q "medium ↔ high" "$root/AGENTS.md" || { echo "AGENTS.md missing medium↔high"; missing=1; }
+grep -q "Auto Model Router" "$AGENTS_PATH" || { echo "AGENTS.md missing AMR marker ($AGENTS_PATH)"; missing=1; }
+grep -q "medium ↔ high" "$AGENTS_PATH" || { echo "AGENTS.md missing medium↔high ($AGENTS_PATH)"; missing=1; }
 if [ "$missing" -ne 0 ]; then echo "--------router-check: FAIL"; exit 1; fi
 echo "--------router-check: OK"`;
 
@@ -59,4 +63,3 @@ async function scaffoldCodexAmr(opts = {}) {
 }
 
 module.exports = { scaffoldCodexAmr };
-

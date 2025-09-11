@@ -14,7 +14,7 @@ async function main() {
   if (cmd === 'init') {
     const overwrite = args.includes('--overwrite');
     const tIdx = Math.max(args.indexOf('--target'), args.indexOf('-C'));
-    const targetDir = tIdx >= 0 && args[tIdx + 1] ? args[tIdx + 1] : '.';
+    const targetDir = tIdx >= 0 && args[tIdx + 1] ? args[tIdx + 1] : '.codex';
     const { scaffoldCodexAmr } = require('../src/scaffold/codexAmr');
     try {
       await scaffoldCodexAmr({ targetDir, overwrite });
@@ -36,4 +36,3 @@ async function main() {
 }
 
 main();
-

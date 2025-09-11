@@ -767,6 +767,35 @@ def build_persona_prompt(name: str, query: str, context: str = "") -> str:
     return header + (context or "") + f"\n\n**[User's Request]**\n{query}\n"
 """
     write_text(os.path.join(agent_dir, 'personas.py'), personas_py, dry)
+    # Copy/write bootstrap prompt for Codex in .codex as a convenience
+    try:
+        bootstrap_src = os.path.join('prompts', 'codex_amr_bootstrap_prompt_en.txt')
+        if os.path.isfile(bootstrap_src):
+            content = read_text(bootstrap_src)
+        else:
+            content = "See codex-amr print-bootstrap to generate the latest bootstrap prompt."
+        write_text(os.path.join(agent_dir, 'bootstrap_prompt_en.txt'), content, dry)
+    except Exception as e:
+        log(f"bootstrap write failed: {e}")
+    # Router-check inside .codex (portable)
+    router_check = """#!/usr/bin/env zsh
+set -euo pipefail
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+AGENTS_PATH="$root/.codex/AGENTS.md"
+if [ ! -f "$AGENTS_PATH" ]; then
+  AGENTS_PATH="$root/AGENTS.md"
+fi
+missing=0
+grep -q "Auto Model Router" "$AGENTS_PATH" || { echo "AGENTS.md missing AMR marker ($AGENTS_PATH)"; missing=1; }
+grep -q "medium ↔ high" "$AGENTS_PATH" || { echo "AGENTS.md missing medium↔high ($AGENTS_PATH)"; missing=1; }
+if [ "$missing" -ne 0 ]; then echo "--------router-check: FAIL"; exit 1; fi
+echo "--------router-check: OK""" 
+    write_text(os.path.join(agent_dir, 'router-check.sh'), router_check, dry)
+    try:
+        if not dry:
+            os.chmod(os.path.join(agent_dir, 'router-check.sh'), 0o755)
+    except Exception:
+        pass
 
     # Provide AMR helper templates as static commands (no runner required)
     amr_plan_md = """---
