@@ -226,6 +226,46 @@ Read more
 - Translation/backends (optional) → if you use external CLIs (`claude`, `codex`), ensure they’re on PATH and configured
  - AMR internals and CLI: `docs/codex-amr.md`
 
+## Codex CLI Setup & Usage
+
+### Setup (create .codex assets)
+Pick one of the following:
+- Super Prompt init (asks interactively):
+  ```bash
+  super-prompt super:init
+  # Answer Y to: Extend Codex CLI integration now (.codex assets)? [Y/n]
+  ```
+- Non‑interactive opt‑in:
+  ```bash
+  SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init
+  ```
+- Codex‑only quick setup (no Cursor files):
+  ```bash
+  super-prompt codex:init
+  # or
+  npx codex-amr init           # defaults to .codex
+  ```
+
+This creates `.codex/agents.md`, `.codex/personas.py`, `.codex/bootstrap_prompt_en.txt`, and `.codex/router-check.sh`.
+
+### Using with Codex TUI
+1) Open Codex:
+```bash
+codex
+```
+2) Paste the bootstrap prompt from `.codex/bootstrap_prompt_en.txt` (or print it: `npx codex-amr print-bootstrap`).
+3) Run your workflow; when using the Super Prompt CLI alongside Codex, prefer flag‑based personas:
+```bash
+super-prompt optimize --frontend "Design a responsive layout"
+super-prompt optimize --backend  "Retry + idempotency strategy"
+super-prompt optimize --debate --rounds 8 "Feature flags now?"
+```
+4) Router switches (if not auto‑executed by your environment), copy‑run in TUI:
+```
+/model gpt-5 high
+/model gpt-5 medium
+```
+
 ## Architecture & Why It Performs Well
 
 ### Component Map

@@ -861,6 +861,10 @@ def main():
     p_amr_qa = sub.add_parser("amr:qa", help="Validate a transcript for AMR/state-machine conformance")
     p_amr_qa.add_argument("file", help="Transcript/text file to check")
 
+    # Codex-only setup (write .codex/* without Cursor assets)
+    p_codex_init = sub.add_parser("codex:init", help="Create Codex CLI assets in .codex/ (agents.md, personas.py, bootstrap, router-check)")
+    p_codex_init.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
     if not args.cmd: 
         args.cmd = "super:init"
@@ -990,6 +994,10 @@ def main():
             log("High switch found without returning to medium"); ok = False
         print("--------qa: OK" if ok else "--------qa: FAIL")
         return 0 if ok else 1
+    elif args.cmd == "codex:init":
+        write_codex_agent_assets(getattr(args, 'dry_run', False))
+        print("--------codex:init: .codex assets created")
+        return 0
     
     log(f"Unknown command: {args.cmd}")
     return 2
