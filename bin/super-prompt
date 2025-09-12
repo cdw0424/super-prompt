@@ -34,6 +34,19 @@ resolve_app_home() {
 APP_HOME="$(resolve_app_home)"
 CLI_SCRIPT="${APP_HOME}/.super-prompt/cli.py"
 
+# Opportunistic project bootstrap: ensure .super-prompt exists on init
+maybe_bootstrap_super_prompt() {
+  # Non-destructive bootstrap: if missing locally, copy bundled assets
+  if [ ! -d ".super-prompt" ] && [ -d "${APP_HOME}/.super-prompt" ]; then
+    echo "-------- Installing project .super-prompt utilities"
+    cp -R "${APP_HOME}/.super-prompt" ".super-prompt" 2>/dev/null || true
+    # Best-effort: ensure python files are executable
+    if command -v find >/dev/null 2>&1; then
+      find .super-prompt -type f -name "*.py" -exec chmod 755 {} + 2>/dev/null || true
+    fi
+  fi
+}
+
 ensure_codex_latest() {
   if [ "${SP_SKIP_CODEX_UPGRADE:-0}" = "1" ]; then return 0; fi
   if command -v npm >/dev/null 2>&1; then
@@ -43,8 +56,11 @@ ensure_codex_latest() {
 }
 
 ensure_self_latest() {
-  # Auto-update this package unless skipped
-  if [ "${SP_SKIP_SELF_UPDATE:-0}" = "1" ]; then return 0; fi
+  # Opt-in self-update to avoid accidental downgrade
+  if [ "${SP_SELF_UPDATE:-0}" != "1" ]; then
+    # honor legacy skip flag too
+    return 0
+  fi
   if command -v npm >/dev/null 2>&1; then
     echo "-------- Checking Super Prompt updates (@cdw0424/super-prompt)"
     npm install -g @cdw0424/super-prompt@latest >/dev/null 2>&1 || true
@@ -70,6 +86,9 @@ if ! ensure_cli; then
   echo "   - or run: node '${APP_HOME}/install.js'"
   exit 1
 fi
+
+# Perform bootstrap if needed (non-destructive), for any command
+maybe_bootstrap_super_prompt
 
 # Check Python version
 python3 - <<'PY' || { echo "❌ Python 3.7+ required"; exit 1; }

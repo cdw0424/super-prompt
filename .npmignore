@@ -32,3 +32,11 @@ jspm_packages/
 # OS
 .DS_Store
 Thumbs.db
+
+# Python build artifacts
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class

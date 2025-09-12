@@ -377,6 +377,40 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             "cli": "codex",
             "prompt": "",
         },
+        "ultracompressed": {
+            "desc": "Ultra‑Compressed Output (30–50% token savings)",
+            "cli": "claude",
+            "prompt": """Minimize tokens aggressively while preserving accuracy and structure.
+Rules:
+- English only; concise bulleting; shorten variable names only if safe.
+- Omit trivial narration and boilerplate; keep code fences around code.
+- Prefer tables/lists over prose; no redundant headers.
+Output: best‑effort minimal form keeping content fidelity.""",
+        },
+        "performance": {
+            "desc": "Performance Tuning Advisor",
+            "cli": "claude",
+            "prompt": """Identify performance hotspots and propose low‑risk optimizations.
+Include: measurement strategy, quick wins, trade‑offs, rollout checks.""",
+        },
+        "security": {
+            "desc": "Security Hardening Advisor",
+            "cli": "claude",
+            "prompt": """Find security risks and propose mitigations.
+Cover: authz/authn, input validation, secrets handling, logging, supply chain.""",
+        },
+        "task": {
+            "desc": "Task Breakdown Assistant",
+            "cli": "claude",
+            "prompt": """Break scope into small tasks with IDs, ACs, estimates, dependencies.
+Assume SDD context (SPEC/PLAN) where present.""",
+        },
+        "wave": {
+            "desc": "Wave Planning (phased delivery)",
+            "cli": "claude",
+            "prompt": """Plan delivery in waves: Wave‑1 (MVP), Wave‑2 (enhancements), Wave‑3 (hardening).
+Each wave: goals, tasks, risks, exit criteria.""",
+        },
     }
 
     def detect_tag(self, input_text: str) -> Optional[str]:
@@ -404,6 +438,16 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             return "analyzer"
         if re.search(r"--debate(\s|$)", input_text):
             return "debate"
+        if re.search(r"--ultracompressed(\s|$)", input_text):
+            return "ultracompressed"
+        if re.search(r"--performance(\s|$)", input_text):
+            return "performance"
+        if re.search(r"--security(\s|$)", input_text):
+            return "security"
+        if re.search(r"--task(\s|$)", input_text):
+            return "task"
+        if re.search(r"--wave(\s|$)", input_text):
+            return "wave"
         return None
 
     def clean_input(self, input_text: str) -> str:
@@ -561,10 +605,14 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
 
     def process_query(self, input_text: str) -> bool:
         if not input_text.strip():
-            print('❌ Usage: super-prompt optimize "your question /tag"')
-            print("\nAvailable Tags:")
+            print('❌ Usage: super-prompt optimize "your question" --persona-name')
+            print('❌ Or: super-prompt optimize "your question /tag"')
+            print("\nAvailable Personas:")
             for persona, config in self.PERSONAS.items():
                 print(f"  /{persona:<15} - {config['desc']}")
+            print("\nExamples:")
+            print('  super-prompt optimize "design strategy" --sp-frontend')
+            print('  super-prompt optimize "debug errors /analyzer"')
             return False
 
         persona = self.detect_tag(input_text)
@@ -611,6 +659,11 @@ BUILTIN_PERSONAS = {
     "seq": "# Sequential Thinking (5) — English-only placeholder",
     "seq-ultra": "# Advanced Sequential (10) — English-only placeholder",
     "debate": "# Debate Mode — English-only placeholder",
+    "ultracompressed": "# Ultra‑Compressed — English-only placeholder",
+    "performance": "# Performance Advisor — English-only placeholder",
+    "security": "# Security Advisor — English-only placeholder",
+    "task": "# Task Breakdown — English-only placeholder",
+    "wave": "# Wave Planning — English-only placeholder",
 }
 
 
@@ -816,10 +869,66 @@ fi
             "seq-ultra",
             "🔄 Advanced Sequential (10)\\nIn-depth step-by-step problem solving.",
         ),
+        (
+            "debate",
+            "⚖️ Internal Debate (Positive vs Critical)\\nStructured alternating reasoning with synthesis.",
+        ),
+        (
+            "ultracompressed",
+            "🗜️ Ultra‑Compressed Output\\nToken‑efficient answers with preserved fidelity.",
+        ),
+        (
+            "performance",
+            "🚀 Performance Advisor\\nHotspots, quick wins, roll‑out checks.",
+        ),
+        (
+            "security",
+            "🔐 Security Advisor\\nThreats, mitigations, safe defaults.",
+        ),
+        (
+            "task",
+            "🧩 Task Breakdown\\nSmall tasks with IDs, ACs, deps.",
+        ),
+        (
+            "wave",
+            "🌊 Wave Planning\\nPhased delivery (MVP → hardening).",
+        ),
     ]
     for name, desc in personas:
         content = f'---\ndescription: {name} command\nrun: "./tag-executor.sh"\nargs: ["${{input}} /{name}"]\n---\n\n{desc}'
         write_text(os.path.join(base, f"{name}.md"), content, dry)
+
+    # SDD convenience commands (spec/plan/review/tasks/implement)
+    sdd_cmds = [
+        (
+            "spec",
+            "📋 Create SPEC (SDD)",
+            "${input} /architect Create a SPEC file for this feature following SDD guidelines: goals, success criteria, scope boundaries, and user value",
+        ),
+        (
+            "plan",
+            "🗺️ Create PLAN (SDD)",
+            "${input} /architect Create a PLAN file for this feature following SDD guidelines: architecture, constraints, NFRs, risks, and security considerations",
+        ),
+        (
+            "review",
+            "🔍 Review against SPEC/PLAN (SDD)",
+            "${input} /high Review this implementation against SDD SPEC/PLAN files and provide compliance assessment",
+        ),
+        (
+            "tasks",
+            "🧩 Break down into TASKS (SDD)",
+            "${input} /architect Break work into small, testable tasks with IDs, acceptance criteria, estimates, and dependencies, referencing SPEC/PLAN",
+        ),
+        (
+            "implement",
+            "⚙️ Implement minimal change (SDD)",
+            "${input} /high Implement the smallest viable change based on SPEC/PLAN and tasks; output minimal diffs, tests, and docs",
+        ),
+    ]
+    for slug, desc, arg in sdd_cmds:
+        content = f'---\ndescription: {desc}\nrun: "./tag-executor.sh"\nargs: ["{arg}"]\n---\n\n{desc}'
+        write_text(os.path.join(base, f"{slug}.md"), content, dry)
 
     # (Codex agent assets are created conditionally in write_codex_agent_assets())
 
@@ -829,13 +938,88 @@ def write_codex_agent_assets(dry: bool = False):
     os.makedirs(agent_dir, exist_ok=True)
     agent_md = """# Codex Agent — Super Prompt Integration
 
-Use flag-based personas (no slash commands in Codex):
+Use flag-based personas (no slash commands in Codex). Each persona supports a long flag and an `--sp-` alias. The `optimize` verb is optional — you can omit it:
+
 ```bash
-super-prompt optimize --frontend   "Design a responsive layout"
-super-prompt optimize --backend    "Outline retry/idempotency for order API"
-super-prompt optimize --architect  "Propose modular structure for feature X"
-super-prompt optimize --debate --rounds 6 "Should we adopt feature flags now?"
+# Frontend (simplified syntax recommended - optimize command is optional)
+super-prompt --sp-frontend "Design a responsive layout"
+super-prompt optimize --sp-frontend "Design a responsive layout"  # also works
+super-prompt --frontend "Design a responsive layout"  # original syntax still supported
+
+# Frontend Ultra
+super-prompt --sp-frontend-ultra "Create a design system architecture"
+super-prompt --sp-frontend-ultra "Create a design system architecture"
+
+# Backend
+super-prompt --sp-backend "Outline retry/idempotency for order API"
+super-prompt --sp-backend "Outline retry/idempotency for order API"
+
+# Architect
+super-prompt --sp-architect "Propose modular structure for feature X"
+super-prompt --sp-architect "Propose modular structure for feature X"
+
+# Analyzer (safe mode supports --out)
+super-prompt --sp-analyzer "Audit error handling and logging"
+super-prompt --sp-analyzer --out .codex/reports/analysis.md "Audit error handling and logging"
+
+# High reasoning
+super-prompt --sp-high "Draft a migration plan with risks"
+super-prompt --sp-high "Draft a migration plan with risks"
+
+# Sequential (Cursor-oriented, still routable)
+super-prompt --sp-seq "Refactor module into smaller units"
+super-prompt --sp-seq "Refactor module into smaller units"
+
+# Sequential Ultra
+super-prompt --sp-seq-ultra "Full-stack feature breakdown and plan"
+super-prompt --sp-seq-ultra "Full-stack feature breakdown and plan"
+
+# Debate mode
+super-prompt --sp-debate --rounds 6 "Should we adopt feature flags now?"
+super-prompt --sp-debate --rounds 6 "Should we adopt feature flags now?"
 ```
+
+# Enhanced Advisors
+super-prompt --sp-ultracompressed "Summarize design to minimal token form"
+super-prompt --sp-performance "Profile and tune HTTP handler"
+super-prompt --sp-security "Review auth flow for common risks"
+super-prompt --sp-task "Break feature into tasks"
+super-prompt --sp-wave "Propose phased delivery waves"
+
+## SDD Workflow (flag-based)
+
+Use these convenience flags to drive SDD tasks directly (recommended). The `optimize` verb is optional:
+
+```bash
+# Create SPEC draft for a feature (Architect persona)
+super-prompt --sp-sdd-spec "User authentication system"
+# or: super-prompt optimize --sp-sdd-spec "User authentication system"
+# or: super-prompt sdd spec "User authentication system"
+
+# Create PLAN draft from context (Architect persona)
+super-prompt --sp-sdd-plan "User authentication system"
+# or: super-prompt optimize --sp-sdd-plan "User authentication system"
+# or: super-prompt sdd plan "User authentication system"
+
+# Review implementation against SPEC/PLAN (High reasoning)
+super-prompt --sp-sdd-review "Login refactor PR #123"
+# or: super-prompt optimize --sp-sdd-review "Login refactor PR #123"
+# or: super-prompt sdd review "Login refactor PR #123"
+
+# Break work into TASKS (Architect persona)
+super-prompt --sp-sdd-tasks "User authentication system"
+# or: super-prompt optimize --sp-sdd-tasks "User authentication system"
+# or: super-prompt sdd tasks "User authentication system"
+
+# Implement minimal change (High reasoning)
+super-prompt --sp-sdd-implement "User authentication system — task T-001"
+# or: super-prompt optimize --sp-sdd-implement "User authentication system — task T-001"
+# or: super-prompt sdd implement "User authentication system — task T-001"
+```
+
+Tips:
+- Alternative style: `--persona <name>` also works (e.g., `--persona frontend`).
+- Logs MUST start with `--------`; keep all content in English.
 
 Auto Model Router (AMR: medium ↔ high):
 - Start medium; plan/review/root-cause at high, then back to medium.
@@ -845,8 +1029,6 @@ Auto Model Router (AMR: medium ↔ high):
 
 State machine (per turn):
 [INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
-
-All logs MUST start with: `--------` and all content MUST be in English.
 """
     write_text(os.path.join(agent_dir, "agents.md"), agent_md, dry)
     personas_py = """
@@ -982,6 +1164,11 @@ def main():
             "seq",
             "seq-ultra",
             "debate",
+            "ultracompressed",
+            "performance",
+            "security",
+            "task",
+            "wave",
         ],
     )
     p_optimize.add_argument("--frontend", action="store_true")
@@ -998,6 +1185,11 @@ def main():
     p_optimize.add_argument("--seq", action="store_true")
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
+    p_optimize.add_argument("--ultracompressed", action="store_true")
+    p_optimize.add_argument("--performance", action="store_true")
+    p_optimize.add_argument("--security", action="store_true")
+    p_optimize.add_argument("--task", action="store_true")
+    p_optimize.add_argument("--wave", action="store_true")
 
     # New shortcut flags (super-prompt prefix)
     p_optimize.add_argument(
@@ -1023,6 +1215,23 @@ def main():
     p_optimize.add_argument(
         "--sp-seq-ultra", action="store_true", help="Shortcut for seq-ultra persona"
     )
+    p_optimize.add_argument(
+        "--sp-ultracompressed",
+        action="store_true",
+        help="Shortcut for ultracompressed persona",
+    )
+    p_optimize.add_argument(
+        "--sp-performance", action="store_true", help="Shortcut for performance persona"
+    )
+    p_optimize.add_argument(
+        "--sp-security", action="store_true", help="Shortcut for security persona"
+    )
+    p_optimize.add_argument(
+        "--sp-task", action="store_true", help="Shortcut for task persona"
+    )
+    p_optimize.add_argument(
+        "--sp-wave", action="store_true", help="Shortcut for wave persona"
+    )
 
     # SDD shortcuts
     p_optimize.add_argument(
@@ -1035,6 +1244,16 @@ def main():
         "--sp-ssd-review",
         action="store_true",
         help="SDD implementation review shortcut",
+    )
+    p_optimize.add_argument(
+        "--sp-ssd-tasks",
+        action="store_true",
+        help="SDD TASKS breakdown shortcut",
+    )
+    p_optimize.add_argument(
+        "--sp-ssd-implement",
+        action="store_true",
+        help="SDD IMPLEMENT execution shortcut",
     )
     p_optimize.add_argument(
         "--rounds", type=int, default=8, help="Debate rounds (2-20)"
@@ -1072,9 +1291,51 @@ def main():
     )
     p_codex_init.add_argument("--dry-run", action="store_true")
 
-    args = parser.parse_args()
-    if not args.cmd:
-        args.cmd = "super:init"
+    # SDD workflow commands (explicit subcommands)
+    p_sdd = sub.add_parser(
+        "sdd",
+        help="SDD workflow shortcuts: spec, plan, review, tasks, implement",
+    )
+    sdd_sub = p_sdd.add_subparsers(dest="sdd_cmd")
+    for sdd_cmd, help_text in [
+        ("spec", "Create SPEC draft"),
+        ("plan", "Create PLAN draft"),
+        ("review", "Review against SPEC/PLAN"),
+        ("tasks", "Break down into TASKS"),
+        ("implement", "Implement minimal change"),
+    ]:
+        p = sdd_sub.add_parser(sdd_cmd, help=help_text)
+        p.add_argument("query", nargs="*", help="Topic or context")
+
+    # Smart routing: 'optimize' is the default action.
+    # Behavior:
+    # - No args           → optimize --list-personas (helpful default)
+    # - Known subcommand  → use as-is
+    # - --sp-* flags      → route to optimize (automatic)
+    # - Otherwise         → route to optimize (flags and query)
+    raw_argv = sys.argv[1:]
+    known_cmds = {
+        "super:init",
+        "optimize",
+        "amr:rules",
+        "amr:print",
+        "amr:qa",
+        "codex:init",
+        "sdd",
+    }
+
+    # Check if any argument starts with --sp- (simplified flags)
+    has_sp_flag = any(arg.startswith("--sp-") for arg in raw_argv)
+
+    if not raw_argv:
+        args = parser.parse_args(["optimize", "--list-personas"])
+    elif raw_argv[0] in known_cmds:
+        args = parser.parse_args(raw_argv)
+    elif has_sp_flag or any(arg.startswith("--") for arg in raw_argv):
+        # Route flags to optimize command automatically
+        args = parser.parse_args(["optimize", *raw_argv])
+    else:
+        args = parser.parse_args(["optimize", *raw_argv])
 
     if args.cmd == "super:init":
         show_ascii_logo()
@@ -1098,7 +1359,7 @@ def main():
         install_cursor_commands_in_project(args.dry_run)
         print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
         print(
-            "   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra\033[0m\n"
+            "   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /spec /plan /review /tasks /implement\033[0m\n"
         )
         # Optional Codex integration prompt (.codex/*)
         want_codex = os.environ.get("SUPER_PROMPT_INIT_CODEX")
@@ -1146,7 +1407,7 @@ def main():
             "   \033[2mIn Cursor, type:\033[0m \033[33m/frontend\033[0m \033[2mor\033[0m \033[33m/architect\033[0m \033[2min your prompt\033[0m"
         )
         print(
-            '   \033[2mFrom CLI:\033[0m \033[36msuper-prompt optimize "design strategy /frontend"\033[0m'
+            '   \033[2mFrom CLI:\033[0m \033[36msuper-prompt --frontend "design strategy"\033[0m'
         )
         print("")
         print("\033[32m✨ Ready for next-level prompt engineering!\033[0m")
@@ -1163,8 +1424,11 @@ def main():
 
         if not args.query:
             print("🚀 Super Prompt - Persona Query Processor")
-            print("❌ Please provide a query with persona tag")
-            print('Example: super-prompt optimize "design strategy /frontend"')
+            print("❌ Please provide a query with persona flag or tag")
+            print("Examples:")
+            print('  super-prompt optimize "design strategy" --sp-frontend')
+            print('  super-prompt optimize "design strategy /frontend"')
+            print('  super-prompt optimize --sp-architect "system design"')
             return 1
 
         query_text = " ".join(args.query)
@@ -1185,6 +1449,11 @@ def main():
                 ("seq_ultra", "seq-ultra"),
                 ("seq", "seq"),
                 ("debate", "debate"),
+                ("ultracompressed", "ultracompressed"),
+                ("performance", "performance"),
+                ("security", "security"),
+                ("task", "task"),
+                ("wave", "wave"),
             ]:
                 if getattr(args, flag, False):
                     query_text += f" /{tag}"
@@ -1199,6 +1468,11 @@ def main():
                 ("sp_high", "high"),
                 ("sp_seq", "seq"),
                 ("sp_seq_ultra", "seq-ultra"),
+                ("sp_ultracompressed", "ultracompressed"),
+                ("sp_performance", "performance"),
+                ("sp_security", "security"),
+                ("sp_task", "task"),
+                ("sp_wave", "wave"),
             ]:
                 if getattr(args, flag, False):
                     query_text += f" /{tag}"
@@ -1211,6 +1485,10 @@ def main():
                 query_text += " /architect Create a PLAN file for this feature following SDD guidelines: architecture, constraints, NFRs, risks, and security considerations"
             elif getattr(args, "sp_ssd_review", False):
                 query_text += " /high Review this implementation against SDD SPEC/PLAN files and provide compliance assessment"
+            elif getattr(args, "sp_ssd_tasks", False):
+                query_text += " /architect Break work into small, testable tasks with IDs, acceptance criteria, estimates, and dependencies, referencing SPEC/PLAN"
+            elif getattr(args, "sp_ssd_implement", False):
+                query_text += " /high Implement the smallest viable change based on SPEC/PLAN and tasks; output minimal diffs, tests, and docs"
         if getattr(args, "debate", False) and getattr(args, "rounds", None):
             query_text += f" --rounds {int(args.rounds)}"
         # Safe mode for --sp-analyzer: do not execute external CLI, print or save the composed prompt
@@ -1239,7 +1517,20 @@ def main():
         p = getattr(args, "path", "prompts/codex_amr_bootstrap_prompt_en.txt")
         data = read_text(p)
         if not data:
-            print("No bootstrap prompt found.")
+            # Fallback to JS generator if local prompt file not present
+            try:
+                res = subprocess.run(
+                    ["codex-amr", "print-bootstrap"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if res.returncode == 0 and (res.stdout or "").strip():
+                    print(res.stdout)
+                    return 0
+            except Exception:
+                pass
+            print("No bootstrap prompt found. Try: codex-amr print-bootstrap")
             return 1
         print(data)
         return 0
@@ -1273,6 +1564,50 @@ def main():
         write_codex_agent_assets(getattr(args, "dry_run", False))
         print("--------codex:init: .codex assets created")
         return 0
+    elif args.cmd == "sdd":
+        # Route SDD subcommands through optimizer with appropriate persona+instruction
+        if not getattr(args, "sdd_cmd", None):
+            print(
+                '❌ Usage: super-prompt sdd <spec|plan|review|tasks|implement> "topic..."'
+            )
+            print('❌ Or: super-prompt optimize --sp-sdd-spec "topic"')
+            print("\nExamples:")
+            print('  super-prompt sdd spec "user authentication system"')
+            print('  super-prompt optimize --sp-sdd-plan "OAuth2 implementation"')
+            return 2
+        topic = " ".join(getattr(args, "query", [])).strip()
+        if not topic:
+            print(
+                '❌ Provide a topic/context. Example: super-prompt sdd spec "user authentication"'
+            )
+            return 2
+        mapping = {
+            "spec": (
+                "architect",
+                "Create a SPEC file for this feature following SDD guidelines: goals, success criteria, scope boundaries, and user value",
+            ),
+            "plan": (
+                "architect",
+                "Create a PLAN file for this feature following SDD guidelines: architecture, constraints, NFRs, risks, and security considerations",
+            ),
+            "review": (
+                "high",
+                "Review this implementation against SDD SPEC/PLAN files and provide compliance assessment",
+            ),
+            "tasks": (
+                "architect",
+                "Break work into small, testable tasks with IDs, acceptance criteria, estimates, and dependencies, referencing SPEC/PLAN",
+            ),
+            "implement": (
+                "high",
+                "Implement the smallest viable change based on SPEC/PLAN and tasks; output minimal diffs, tests, and docs",
+            ),
+        }
+        persona, instr = mapping[args.sdd_cmd]
+        query_text = f"{topic} /{persona} {instr}"
+        optimizer = PromptOptimizer()
+        ok = optimizer.process_query(query_text)
+        return 0 if ok else 1
 
     log(f"Unknown command: {args.cmd}")
     return 2

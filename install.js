@@ -76,51 +76,60 @@ function ensureDir(dirPath) {
     }
 }
 
+function isGlobalInstall() {
+    // Common signals for global install
+    if (String(process.env.npm_config_global || '').toLowerCase() === 'true') return true;
+    const dir = __dirname.replace(/\\/g, '/');
+    return /(^|\/)lib\/node_modules\//.test(dir);
+}
+
 function findProjectRoot() {
-    // Find the project root for npm postinstall
-    // When running as postinstall, we need to find the actual project root
-    
-    // Try different strategies to find project root
-    
-    // Strategy 1: Check if we're in node_modules
-    if (__dirname.includes('node_modules')) {
-        // We're in node_modules/@cdw0424/super-prompt
-        // Go up to find the project root
-        let nodeModulesIndex = __dirname.lastIndexOf('node_modules');
-        if (nodeModulesIndex !== -1) {
-            return __dirname.substring(0, nodeModulesIndex - 1);
-        }
+    // Prefer INIT_CWD which points to the original cwd for the install
+    const initCwd = process.env.INIT_CWD;
+    if (initCwd) {
+        try {
+            const pj = path.join(initCwd, 'package.json');
+            if (fs.existsSync(pj)) {
+                const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
+                if (p && p.name !== '@cdw0424/super-prompt') return initCwd;
+            }
+        } catch (_) {}
     }
-    
-    // Strategy 2: Use npm environment variables
+
+    // If we're in node_modules, walk up until just above node_modules
+    const parts = __dirname.split(path.sep);
+    const nmIndex = parts.lastIndexOf('node_modules');
+    if (nmIndex !== -1) {
+        // Parent of node_modules is the project root for local installs
+        return parts.slice(0, nmIndex).join(path.sep) || path.sep;
+    }
+
+    // npm user dir (fallback)
     if (process.env.npm_config_user_dir) {
         return process.env.npm_config_user_dir;
     }
-    
+
+    // PWD fallback
     if (process.env.PWD && process.env.PWD !== process.cwd()) {
         return process.env.PWD;
     }
-    
-    // Strategy 3: Walk up from current directory
+
+    // Walk up from cwd and choose first package.json that isn't ours
     let projectRoot = process.cwd();
     let currentDir = projectRoot;
-    
     while (currentDir !== path.dirname(currentDir)) {
-        if (fs.existsSync(path.join(currentDir, 'package.json'))) {
-            // Make sure it's not our own package.json
+        const pj = path.join(currentDir, 'package.json');
+        if (fs.existsSync(pj)) {
             try {
-                const pkg = JSON.parse(fs.readFileSync(path.join(currentDir, 'package.json'), 'utf8'));
-                if (pkg.name !== '@cdw0424/super-prompt') {
+                const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
+                if (p.name !== '@cdw0424/super-prompt') {
                     projectRoot = currentDir;
                     break;
                 }
-            } catch (e) {
-                // If we can't read package.json, try parent
-            }
+            } catch (_) {}
         }
         currentDir = path.dirname(currentDir);
     }
-    
     return projectRoot;
 }
 
@@ -218,8 +227,12 @@ async function animatedInstall() {
 
         // Step 2: Setting up Python CLI
         console.log(`${colors.cyan}🐍 Setting up Python CLI components...${colors.reset}`);
-        
+
         const projectRoot = findProjectRoot();
+        const globalInstall = isGlobalInstall();
+        if (globalInstall) {
+            console.log(`${colors.dim}Detected global install — will not modify your current directory${colors.reset}`);
+        }
         const scriptsDir = path.join(projectRoot, 'scripts/super_prompt');
         ensureDir(scriptsDir);
         
@@ -240,13 +253,17 @@ async function animatedInstall() {
 
         // Step 2.5: Setting up .super-prompt directory
         console.log(`${colors.cyan}📁 Installing .super-prompt utilities...${colors.reset}`);
-        
-        const superPromptDir = path.join(projectRoot, '.super-prompt');
-        copyDirectory(
-            path.join(__dirname, '.super-prompt'),
-            superPromptDir,
-            'Super Prompt utility suite'
-        );
+
+        if (!globalInstall) {
+            const superPromptDir = path.join(projectRoot, '.super-prompt');
+            copyDirectory(
+                path.join(__dirname, '.super-prompt'),
+                superPromptDir,
+                'Super Prompt utility suite'
+            );
+        } else {
+            console.log(`${colors.dim}Skipping .super-prompt copy on global install${colors.reset}`);
+        }
         
         await sleep(300);
         completedStep('2.5', '.super-prompt utilities installed');
@@ -255,6 +272,8 @@ async function animatedInstall() {
         console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
         console.log(`${colors.dim}   Run this inside your project to install rules & commands:${colors.reset}`);
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
+        console.log(`   ${colors.cyan}# or if not globally installed:${colors.reset}`);
+        console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
         await sleep(300);
         completedStep(3, 'Project integration ready')
 
@@ -265,12 +284,12 @@ async function animatedInstall() {
         console.log(`${colors.dim}   Initialize in your project:${colors.reset}`);
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}\n`);
-        
-        console.log(`${colors.dim}   Use personas in CLI (flags — no slash commands needed):${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt optimize --frontend  "design strategy"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt optimize --backend   "debug intermittent failures"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt optimize --architect "break down a feature"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt optimize --debate --rounds 6 "Should we adopt feature flags?"${colors.reset}`);
+
+        console.log(`${colors.dim}   Use personas in CLI (optimize command is optional):${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt --sp-frontend  "design strategy"${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt --sp-backend   "debug intermittent failures"${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt --sp-architect "break down a feature"${colors.reset}`);
+        console.log(`   ${colors.cyan}super-prompt --sp-debate --rounds 6 "Should we adopt feature flags?"${colors.reset}`);
         console.log(`${colors.dim}   Tip: control runtime Codex upgrade via SP_SKIP_CODEX_UPGRADE=1 env var.${colors.reset}\n`);
         
         console.log(`${colors.blue}🔗 Package: https://npmjs.com/package/@cdw0424/super-prompt${colors.reset}`);

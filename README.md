@@ -5,97 +5,132 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Quick install (scoped package):
+
 ```bash
 npm i -g @cdw0424/super-prompt
 # or just use npx
 npx @cdw0424/super-prompt --help
 ```
 
-**🚀 New in v2.9.0:** Context Engineering System - Spec Kit implementation for conversation context preservation, stage gating workflow, and intelligent context injection with 30-50% token optimization.
+**🚀 New in v2.9.0:** Context Engineering System - Spec Kit implementation for
+conversation context preservation, stage gating workflow, and intelligent
+context injection with 30-50% token optimization.
 
-**🚀 New in v2.8.0:** Added TODO Auto-Validation System with intelligent high-mode retry for failed tasks, ensuring reliable completion and automatic error recovery.
+**🚀 New in v2.8.0:** Added TODO Auto-Validation System with intelligent
+high-mode retry for failed tasks, ensuring reliable completion and automatic
+error recovery.
 
-**🚀 New in v2.6.0:** Full SDD (Spec-Driven Development) workflow now available in Codex CLI alongside Cursor support. Complete SPEC→PLAN→TASKS→IMPLEMENT workflow for both IDEs.
+**🚀 New in v2.6.0:** Full SDD (Spec-Driven Development) workflow now available
+in Codex CLI alongside Cursor support. Complete SPEC→PLAN→TASKS→IMPLEMENT
+workflow for both IDEs.
 
-Prompt Engineering toolkit supporting both Cursor and Codex CLI with Spec‑Driven Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your SPEC/PLAN, installs slash commands for Cursor, and provides flag‑based personas for Codex CLI - giving you flexibility to work with either IDE seamlessly.
+Prompt Engineering toolkit supporting both Cursor and Codex CLI with Spec‑Driven
+Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your
+SPEC/PLAN, installs slash commands for Cursor, and provides flag‑based personas
+for Codex CLI - giving you flexibility to work with either IDE seamlessly.
 
-**Dual IDE Support**: Works seamlessly with both Cursor (slash commands) and Codex CLI (flag-based personas).
+**Dual IDE Support**: Works seamlessly with both Cursor (slash commands) and
+Codex CLI (flag-based personas).
 
 ## Credits & Attribution
 
-This project is a reconstruction that references and integrates ideas from various open‑source tools and community snippets. In particular, it draws inspiration from:
+This project is a reconstruction that references and integrates ideas from
+various open‑source tools and community snippets. In particular, it draws
+inspiration from:
+
 - speckit
 - superclaude
 
-We greatly appreciate the open‑source community. If you are a maintainer of a referenced project and would like additional attribution or adjustments, please open an issue.
+We greatly appreciate the open‑source community. If you are a maintainer of a
+referenced project and would like additional attribution or adjustments, please
+open an issue.
 
 ## Features
 
 - 🎯 **Dual IDE Support**: Cursor slash commands + Codex CLI flag-based personas
-- 🧠 **AMR**: Auto Model Router (reasoning medium ↔ high) with fixed state machine (INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT)
-- 🚀 **SDD assist**: generate lightweight rules from `specs/**/spec.md` and `specs/**/plan.md`
-- 🎭 **Personas**: Specialized AI personalities (`--frontend`, `--backend`, `--architect`, etc.)
-- 🗣️ **Debate (single‑model)**: Positive vs Critical self with structured alternation and synthesis
-- 🧰 **CLI tools**: rule generation (`super:init`), persona prompting (`optimize`), AMR scaffold/print (`codex-amr`)
+- 🧠 **AMR**: Auto Model Router (reasoning medium ↔ high) with fixed state
+  machine (INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT)
+- 🚀 **SDD assist**: generate lightweight rules from `specs/**/spec.md` and
+  `specs/**/plan.md`
+- 🎭 **Personas**: Specialized AI personalities (`--frontend`, `--backend`,
+  `--architect`, etc.)
+- 🗣️ **Debate (single‑model)**: Positive vs Critical self with structured
+  alternation and synthesis
+- 🧰 **CLI tools**: rule generation (`super:init`), persona prompting
+  (`optimize`), AMR scaffold/print (`codex-amr`)
 
 ## Quick Start
 
-1) Install
+1. Install
+
 ```bash
 npm install -g @cdw0424/super-prompt
 ```
 
-2) Initialize in your project (sets up rules + Cursor slash commands)
+2. Initialize in your project (sets up rules + Cursor slash commands)
+
 ```bash
 super-prompt super:init
+# or if not globally installed:
+npx @cdw0424/super-prompt super:init
 ```
- - During init you will be asked to extend Codex CLI integration; answering Yes creates `.codex/` with `agent.md` and `personas.py`. Non‑interactive opt‑in: `SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init`.
 
-3) Use with your preferred IDE
+- During init you will be asked to extend Codex CLI integration; answering Yes
+  creates `.codex/` with `agent.md` and `personas.py`. Non‑interactive opt‑in:
+  `SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init`.
+
+3. Use with your preferred IDE
 
 **In Cursor:**
+
 - Open Cursor; rules from `.cursor/rules/*.mdc` are applied.
 - Use slash commands in your prompt:
-  - **Core Personas**: `/frontend`, `/frontend-ultra`, `/backend`, `/analyzer`, `/architect`, `/high`, `/seq`, `/seq-ultra`, `/debate`
-  - **Enhanced Personas**: `/security`, `/performance`, `/wave`, `/task`, `/ultracompressed`
+  - **Core Personas**: `/frontend`, `/frontend-ultra`, `/backend`, `/analyzer`,
+    `/architect`, `/high`, `/seq`, `/seq-ultra`, `/debate`
+  - **Enhanced Personas**: `/security`, `/performance`, `/wave`, `/task`,
+    `/ultracompressed`
   - **SDD Workflow**: `/spec`, `/plan`, `/tasks`, `/implement`
 
 **In Codex CLI:**
+
 ```bash
-# Simplified persona flags with --sp-* prefix (recommended)
-npx @cdw0424/super-prompt optimize --sp-frontend "Design strategy"
-npx @cdw0424/super-prompt optimize --sp-analyzer "Debug intermittent failures"
-npx @cdw0424/super-prompt optimize --sp-backend "API design patterns"
-npx @cdw0424/super-prompt optimize --sp-architect "System architecture review"
+# Simplified persona flags (--sp-* prefix, optimize command is optional)
+super-prompt --sp-frontend "Design strategy"
+super-prompt --sp-analyzer "Debug intermittent failures"
+super-prompt --sp-backend "API design patterns"
+super-prompt --sp-architect "System architecture review"
 
 # Original flag syntax (still supported)
-npx @cdw0424/super-prompt optimize --frontend "Design strategy"
-npx @cdw0424/super-prompt optimize --analyzer "Debug intermittent failures"
+super-prompt --frontend "Design strategy"
+super-prompt --analyzer "Debug intermittent failures"
 
 # Single‑model debate (internal Positive vs Critical selves)
-npx @cdw0424/super-prompt optimize --sp-debate --rounds 8 "Choose DB schema migration approach"
-npx @cdw0424/super-prompt optimize --sp-debate --rounds 5 "TypeScript vs JavaScript for our project"
+super-prompt --sp-debate --rounds 8 "Choose DB schema migration approach"
+super-prompt --sp-debate --rounds 5 "TypeScript vs JavaScript for our project"
 
 # SDD workflow commands - simplified flag syntax
-npx @cdw0424/super-prompt optimize --sp-sdd-spec "user authentication system"
-npx @cdw0424/super-prompt optimize --sp-sdd-plan "API endpoints design"
-npx @cdw0424/super-prompt optimize --sp-sdd-tasks "break down into development tasks"
-npx @cdw0424/super-prompt optimize --sp-sdd-implement "login functionality"
+super-prompt --sp-sdd-spec "user authentication system"
+super-prompt --sp-sdd-plan "API endpoints design"
+super-prompt --sp-sdd-tasks "break down into development tasks"
+super-prompt --sp-sdd-implement "login functionality"
 ```
 
 ## Commands
 
 ### 🆕 Simplified Command Syntax (v2.7.0+)
 
-Super Prompt now offers streamlined `--sp-*` flags for both personas and SDD workflows, making commands cleaner and more intuitive:
+Super Prompt now offers streamlined `--sp-*` flags for both personas and SDD
+workflows, making commands cleaner and more intuitive:
 
-**Benefits of --sp-* syntax:**
+__Benefits of --sp-_ syntax:_*
+
 - **Shorter commands**: `--sp-frontend` vs `--frontend`
 - **Consistent naming**: All Super Prompt flags use the same `--sp-` prefix
 - **Future-proof**: New features will follow this pattern
 - **Backward compatible**: Original flags still work
 
 **Quick Comparison:**
+
 ```bash
 # New simplified syntax (recommended)
 super-prompt optimize --sp-frontend "Create responsive UI"
@@ -106,44 +141,72 @@ super-prompt optimize --frontend "Create responsive UI"
 super-prompt sdd spec "user authentication"
 ```
 
-**All available --sp-* flags:**
-- **Personas**: `--sp-frontend`, `--sp-backend`, `--sp-analyzer`, `--sp-architect`, `--sp-high`, `--sp-seq`, `--sp-seq-ultra`, `--sp-debate`, `--sp-performance`, `--sp-security`, `--sp-task`, `--sp-wave`, `--sp-ultracompressed`
-- **SDD Workflow**: `--sp-sdd-spec`, `--sp-sdd-plan`, `--sp-sdd-tasks`, `--sp-sdd-implement`
+__All available --sp-_ flags:_*
+
+- **Personas**: `--sp-frontend`, `--sp-backend`, `--sp-analyzer`,
+  `--sp-architect`, `--sp-high`, `--sp-seq`, `--sp-seq-ultra`, `--sp-debate`,
+  `--sp-performance`, `--sp-security`, `--sp-task`, `--sp-wave`,
+  `--sp-ultracompressed`
+- **SDD Workflow**: `--sp-sdd-spec`, `--sp-sdd-plan`, `--sp-sdd-tasks`,
+  `--sp-sdd-implement`
 
 ### Core Setup
+
 - `super:init` — Generate SDD rule files under `.cursor/rules/`
   - Options: `--out <dir>` (default `.cursor/rules`), `--dry-run`
 
 ### Persona System
-- `optimize "<query> [--persona|--frontend|--backend|--architect|--analyzer|--high|--seq|--seq-ultra|--debate]"` — Execute a persona‑assisted prompt (flags for Codex)
-- **New**: Simplified syntax with `--sp-*` prefix for cleaner commands (recommended)
+
+- `"<query>" [--persona|--frontend|--backend|--architect|--analyzer|--high|--seq|--seq-ultra|--debate]`
+  — Execute a persona‑assisted prompt (flags for Codex, optimize command is
+  optional)
+- **New**: Simplified syntax with `--sp-*` prefix for cleaner commands
+  (recommended)
 
 ### SDD Workflow (Available in both Cursor and Codex CLI)
+
 **Cursor (slash commands):**
+
 - `/spec "<description>"` — Create or edit SPEC files with architect persona
-- `/plan "<description>"` — Create or edit PLAN files with architect persona  
-- `/tasks "<description>"` — Break down plans into actionable tasks with analyzer persona
-- `/implement "<description>"` — Start implementation with SDD compliance checking
+- `/plan "<description>"` — Create or edit PLAN files with architect persona
+- `/tasks "<description>"` — Break down plans into actionable tasks with
+  analyzer persona
+- `/implement "<description>"` — Start implementation with SDD compliance
+  checking
 
 **Codex CLI (simplified flags):**
-- `optimize --sp-sdd-spec "<description>"` — Create or edit SPEC files
-- `optimize --sp-sdd-plan "<description>"` — Create or edit PLAN files
-- `optimize --sp-sdd-tasks "<description>"` — Break down plans into tasks  
-- `optimize --sp-sdd-implement "<description>"` — Start implementation
+
+- `--sp-sdd-spec "<description>"` — Create or edit SPEC files (optimize command
+  optional)
+- `--sp-sdd-plan "<description>"` — Create or edit PLAN files (optimize command
+  optional)
+- `--sp-sdd-tasks "<description>"` — Break down plans into tasks (optimize
+  command optional)
+- `--sp-sdd-implement "<description>"` — Start implementation (optimize command
+  optional)
 
 **Example SDD Workflow (Codex CLI simplified syntax):**
+
 ```bash
-# 1. Create specification
-super-prompt optimize --sp-sdd-spec "user authentication system"
+# 1. Create specification (optimize command is optional)
+super-prompt --sp-sdd-spec "user authentication system"
+# or: super-prompt optimize --sp-sdd-spec "user authentication system"
+# or: super-prompt sdd spec "user authentication system"
 
 # 2. Design implementation plan
-super-prompt optimize --sp-sdd-plan "OAuth2 + JWT authentication"
+super-prompt --sp-sdd-plan "OAuth2 + JWT authentication"
+# or: super-prompt optimize --sp-sdd-plan "OAuth2 + JWT authentication"
+# or: super-prompt sdd plan "OAuth2 + JWT authentication"
 
 # 3. Break down into tasks
-super-prompt optimize --sp-sdd-tasks "authentication implementation"
+super-prompt --sp-sdd-tasks "authentication implementation"
+# or: super-prompt optimize --sp-sdd-tasks "authentication implementation"
+# or: super-prompt sdd tasks "authentication implementation"
 
 # 4. Get implementation guidance
-super-prompt optimize --sp-sdd-implement "start authentication development" --validate
+super-prompt --sp-sdd-implement "start authentication development" --validate
+# or: super-prompt optimize --sp-sdd-implement "start authentication development" --validate
+# or: super-prompt sdd implement "start authentication development"
 ```
 
 ## Available Commands
@@ -151,6 +214,7 @@ super-prompt optimize --sp-sdd-implement "start authentication development" --va
 ### Core Persona Commands
 
 **Cursor (slash commands):**
+
 - `/frontend` — Frontend design advisor (UX-focused)
 - `/frontend-ultra` — Elite UX/UI architect (top-tier design)
 - `/backend` — Backend reliability engineer (99.9% uptime)
@@ -161,7 +225,8 @@ super-prompt optimize --sp-sdd-implement "start authentication development" --va
 - `/seq-ultra` — Advanced sequential thinking (10 iterations)
 - `/debate` — AI vs AI debate system
 
-**Codex CLI (simplified --sp-* flags, recommended):**
+__Codex CLI (simplified --sp-_ flags, recommended):_*
+
 - `--sp-frontend` — Frontend design advisor
 - `--sp-frontend-ultra` — Elite UX/UI architect
 - `--sp-backend` — Backend reliability engineer
@@ -178,10 +243,14 @@ super-prompt optimize --sp-sdd-implement "start authentication development" --va
 - `--sp-ultracompressed` — Token efficiency (30-50% reduction)
 
 **Codex CLI (original flags, still supported):**
-- `--frontend`, `--backend`, `--analyzer`, `--architect`, `--high`, `--seq`, `--seq-ultra`
-- `--debate`, `--performance`, `--security`, `--task`, `--wave`, `--ultracompressed`
+
+- `--frontend`, `--backend`, `--analyzer`, `--architect`, `--high`, `--seq`,
+  `--seq-ultra`
+- `--debate`, `--performance`, `--security`, `--task`, `--wave`,
+  `--ultracompressed`
 
 ### Enhanced Personas (Cursor only)
+
 - `/security` — Threat modeler & vulnerability specialist
 - `/performance` — Optimization specialist (metrics-driven)
 - `/wave` — Wave system orchestrator (multi-stage execution)
@@ -189,22 +258,28 @@ super-prompt optimize --sp-sdd-implement "start authentication development" --va
 - `/ultracompressed` — Token efficiency mode (30-50% reduction)
 
 ### SDD Workflow Commands (Cursor slash commands)
+
 - `/spec` — Create detailed specifications for features and requirements
 - `/plan` — Design implementation plans based on specifications
-- `/tasks` — Break down plans into actionable development tasks  
+- `/tasks` — Break down plans into actionable development tasks
 - `/implement` — Start implementation with SDD compliance checking
 
-**Note**: SDD workflow is also available in Codex CLI using the `sdd` command (see examples above)
+**Note**: SDD workflow is also available in Codex CLI using the `sdd` command
+(see examples above)
 
-Add your own personas in `.cursor/commands/super-prompt/**/*.{md,mdc,py}`. Markdown with front‑matter and Python files with leading docstrings are recognized.
+Add your own personas in `.cursor/commands/super-prompt/**/*.{md,mdc,py}`.
+Markdown with front‑matter and Python files with leading docstrings are
+recognized.
 
 ## SDD Workflow
 
-Super Prompt includes a complete Spec-Driven Development workflow available in **both Cursor and Codex CLI**:
+Super Prompt includes a complete Spec-Driven Development workflow available in
+**both Cursor and Codex CLI**:
 
 ### 🎯 SDD Methodology
 
-**Spec-Driven Development** ensures you build the right thing, the right way, at the right time by following a structured approach:
+**Spec-Driven Development** ensures you build the right thing, the right way, at
+the right time by following a structured approach:
 
 1. **SPEC** — Define WHAT to build (Requirements & Success Criteria)
 2. **PLAN** — Define HOW to build it (Architecture & Implementation Strategy)
@@ -214,18 +289,26 @@ Super Prompt includes a complete Spec-Driven Development workflow available in *
 ### 📋 SDD Commands
 
 **In Cursor** (slash commands):
+
 - `/spec` — Create detailed specifications
-- `/plan` — Design implementation plans  
+- `/plan` — Design implementation plans
 - `/tasks` — Break down into tasks
 - `/implement` — Start implementation
 
 **In Codex CLI** (simplified flag commands):
+
 ```bash
 # Complete SDD workflow
 super-prompt optimize --sp-sdd-spec "user authentication system"
-super-prompt optimize --sp-sdd-plan "OAuth2 + JWT implementation"  
+super-prompt optimize --sp-sdd-plan "OAuth2 + JWT implementation"
 super-prompt optimize --sp-sdd-tasks "break down auth tasks"
 super-prompt optimize --sp-sdd-implement "start development" --validate
+
+# Or use the dedicated sdd subcommand
+super-prompt sdd spec "user authentication system"
+super-prompt sdd plan "OAuth2 + JWT implementation"
+super-prompt sdd tasks "break down auth tasks"
+super-prompt sdd implement "start development"
 ```
 
 ### 🔄 SDD Workflow Example
@@ -233,21 +316,25 @@ super-prompt optimize --sp-sdd-implement "start development" --validate
 ```bash
 # 1. SPEC: Define requirements
 super-prompt optimize --sp-sdd-spec "real-time chat system with file sharing"
+# or: super-prompt sdd spec "real-time chat system with file sharing"
 # → Creates comprehensive specification document
 # → Defines user stories, success criteria, constraints
 
-# 2. PLAN: Design architecture  
+# 2. PLAN: Design architecture
 super-prompt optimize --sp-sdd-plan "WebSocket-based chat with S3 file storage"
+# or: super-prompt sdd plan "WebSocket-based chat with S3 file storage"
 # → Creates technical implementation plan
 # → Defines architecture, data design, security approach
 
 # 3. TASKS: Break down work
-super-prompt optimize --sp-sdd-tasks "implement chat system components" 
+super-prompt optimize --sp-sdd-tasks "implement chat system components"
+# or: super-prompt sdd tasks "implement chat system components"
 # → Creates actionable task list with priorities
 # → Includes estimates, dependencies, acceptance criteria
 
 # 4. IMPLEMENT: Build with guidance
 super-prompt optimize --sp-sdd-implement "start chat backend development" --validate
+# or: super-prompt sdd implement "start chat backend development"
 # → Provides implementation guidance
 # → Validates compliance with SPEC and PLAN
 ```
@@ -260,18 +347,25 @@ super-prompt optimize --sp-sdd-implement "start chat backend development" --vali
 - **Collaboration**: Clear handoffs between team members
 - **Compliance**: Built-in validation and quality gates
 
-Each step builds on the previous one, with automatic context sharing between phases and intelligent validation.
+Each step builds on the previous one, with automatic context sharing between
+phases and intelligent validation.
 
 ## ✅ TODO Auto-Validation System
 
-The TODO validation system automatically monitors task completion and triggers high-reasoning mode retries for failed tasks. This ensures reliable task completion and intelligent error recovery.
+The TODO validation system automatically monitors task completion and triggers
+high-reasoning mode retries for failed tasks. This ensures reliable task
+completion and intelligent error recovery.
 
 ### Features
 
-- **Automatic Validation**: Validates task completion using multiple criteria (file changes, syntax, tests, builds)
-- **Intelligent Retry**: Failed tasks automatically retry in high-reasoning mode with enhanced context
-- **Progress Tracking**: Real-time session management with attempt tracking and error logging
-- **Quality Gates**: Built-in validation for syntax, testing, security, and documentation
+- **Automatic Validation**: Validates task completion using multiple criteria
+  (file changes, syntax, tests, builds)
+- **Intelligent Retry**: Failed tasks automatically retry in high-reasoning mode
+  with enhanced context
+- **Progress Tracking**: Real-time session management with attempt tracking and
+  error logging
+- **Quality Gates**: Built-in validation for syntax, testing, security, and
+  documentation
 
 ### TODO Commands
 
@@ -314,23 +408,29 @@ When validation fails:
 
 The validation system integrates with the Codex AGENTS.md TODO workflow:
 
-- **Mandatory Planning**: All complex tasks (3+ steps) must start with TODO planning
+- **Mandatory Planning**: All complex tasks (3+ steps) must start with TODO
+  planning
 - **Progress Tracking**: Real-time updates after each task completion
 - **Evidence-Based**: Tasks marked complete only with validation evidence
 - **Quality Assurance**: Automatic validation before final completion
 
-This ensures reliable, high-quality task completion with intelligent error recovery.
+This ensures reliable, high-quality task completion with intelligent error
+recovery.
 
 ## 🧠 Context Engineering System
 
-The Context Engineering System implements Spec Kit principles to maintain conversation context across development stages, ensuring design intent preservation and eliminating context drift.
+The Context Engineering System implements Spec Kit principles to maintain
+conversation context across development stages, ensuring design intent
+preservation and eliminating context drift.
 
 ### Core Principles
 
-**1. Context Externalization**: All conversation context is stored as versioned artifacts
-**2. Stage Gating**: Structured workflow prevents context loss through validation gates  
-**3. Task Minimization**: Break complex contexts into manageable, task-specific injections
-**4. Organizational Integration**: Absorb company standards and rules into project context
+**1. Context Externalization**: All conversation context is stored as versioned
+artifacts **2. Stage Gating**: Structured workflow prevents context loss through
+validation gates\
+**3. Task Minimization**: Break complex contexts into manageable, task-specific
+injections **4. Organizational Integration**: Absorb company standards and rules
+into project context
 
 ### Directory Structure
 
@@ -402,66 +502,88 @@ super-prompt sdd implement "start development" --validate
 **specify → plan → tasks → implement**
 
 Each stage transition validates required artifacts exist:
+
 - **plan** requires `spec.md`
-- **tasks** requires `spec.md` + `plan.md`  
+- **tasks** requires `spec.md` + `plan.md`
 - **implement** requires `spec.md` + `plan.md` + `tasks.md`
 
 ### Token Optimization
 
-- **Intelligent Compression**: 30-50% token reduction through selective injection
+- **Intelligent Compression**: 30-50% token reduction through selective
+  injection
 - **Priority Context**: Constitution and critical requirements loaded first
-- **Content Summarization**: Automatic summarization when approaching token limits
+- **Content Summarization**: Automatic summarization when approaching token
+  limits
 - **Section Extraction**: Query-relevant content extraction for efficiency
 
 ### Integration Benefits
 
-- **Context Preservation**: Design intent maintained across all development stages
+- **Context Preservation**: Design intent maintained across all development
+  stages
 - **Collaboration**: Clear handoffs between team members with persistent context
 - **Quality Assurance**: Built-in validation against established requirements
 - **Organizational Alignment**: Company standards automatically integrated
-- **Token Efficiency**: Optimized context injection reduces token usage by 30-50%
+- **Token Efficiency**: Optimized context injection reduces token usage by
+  30-50%
 
-The Context Engineering System ensures that every interaction has access to relevant project context, eliminating the need to repeatedly explain requirements and maintaining consistency across development phases.
+The Context Engineering System ensures that every interaction has access to
+relevant project context, eliminating the need to repeatedly explain
+requirements and maintaining consistency across development phases.
 
 ## Debate (Single‑Model, Codex)
 
-A structured internal debate that alternates between two selves and ends with a synthesis:
+A structured internal debate that alternates between two selves and ends with a
+synthesis:
 
 - Positive Self (Builder): constructive, solution‑oriented
 - Critical Self (Skeptic): risk‑focused, assumption testing
 
 Usage
+
 ```bash
-super-prompt optimize --debate --rounds 8 "Should we use microservices or a modular monolith?"
+super-prompt --sp-debate --rounds 8 "Should we use microservices or a modular monolith?"
+# or: super-prompt optimize --sp-debate --rounds 8 "Should we use microservices or a modular monolith?"
+# or: super-prompt --debate --rounds 8 "Should we use microservices or a modular monolith?"
 ```
 
 Flow
-1) Alternate Positive → Critical for N rounds; 2) keep sections: [INTENT][TASK_CLASSIFY][PLAN][EXECUTE][VERIFY][REPORT]; 3) finish with a concise synthesis and next steps.
+
+1. Alternate Positive → Critical for N rounds; 2) keep sections:
+   [INTENT][TASK_CLASSIFY][PLAN][EXECUTE][VERIFY][REPORT]; 3) finish with a
+   concise synthesis and next steps.
 
 ## Generated Files
 
-- Rules: `.cursor/rules/00-organization.mdc`, `10-sdd-core.mdc`, `20-frontend.mdc`, `30-backend.mdc`
-- Commands: `.cursor/commands/super-prompt/tag-executor.sh` and multiple `.md` entries
+- Rules: `.cursor/rules/00-organization.mdc`, `10-sdd-core.mdc`,
+  `20-frontend.mdc`, `30-backend.mdc`
+- Commands: `.cursor/commands/super-prompt/tag-executor.sh` and multiple `.md`
+  entries
 
 ## Requirements
 
 - macOS or Linux
 - Node.js ≥ 14
 - Python ≥ 3.7
-- Codex CLI (optional): install/upgrade choice at install time. To auto‑install non‑interactively: `SUPER_PROMPT_CODEX_INSTALL=1 npm i -g @cdw0424/super-prompt`
+- Codex CLI (optional): install/upgrade choice at install time. To auto‑install
+  non‑interactively:
+  `SUPER_PROMPT_CODEX_INSTALL=1 npm i -g @cdw0424/super-prompt`
 - Tests: `npm test` (Node’s built‑in `node --test`)
 
 ## Troubleshooting
 
-- “Python CLI not found” after install → re‑run `npm install` or `node install.js`
+- “Python CLI not found” after install → re‑run `npm install` or
+  `node install.js`
 - Python < 3.7 → install Python ≥ 3.7 and ensure `python3` points to it
-- Slash commands not visible (Cursor) → ensure `.cursor/commands/super-prompt/` exists, files executable (`chmod 755`), restart Cursor
+- Slash commands not visible (Cursor) → ensure `.cursor/commands/super-prompt/`
+  exists, files executable (`chmod 755`), restart Cursor
 
 ## Codex AMR (medium ↔ high)
 
-This repo includes an Auto Model Router (AMR) and a strict state‑machine bootstrap prompt to improve instruction adherence and output consistency.
+This repo includes an Auto Model Router (AMR) and a strict state‑machine
+bootstrap prompt to improve instruction adherence and output consistency.
 
 Quick start
+
 - TUI boot:
   ```bash
   codex
@@ -480,6 +602,7 @@ Quick start
   ```
 
 codex-amr CLI
+
 ```bash
 # Print bootstrap prompt
 npx codex-amr print-bootstrap
@@ -488,33 +611,42 @@ npx codex-amr init --target .
 ```
 
 AMR utilities
-- Generate Cursor AMR rule: `npm run amr:rules` → writes `.cursor/rules/05-amr.mdc`
+
+- Generate Cursor AMR rule: `npm run amr:rules` → writes
+  `.cursor/rules/05-amr.mdc`
 - Print bootstrap prompt: `npm run amr:print` (copy to Codex TUI)
 - Validate a transcript: `npm run amr:qa -- path/to/transcript.txt`
 
 Router switching
-- If the environment does not auto‑execute the following lines, copy‑run them in the TUI:
+
+- If the environment does not auto‑execute the following lines, copy‑run them in
+  the TUI:
   ```
   /model gpt-5 high
   /model gpt-5 medium
   ```
 
 Validate the router assets
+
 ```bash
 --------run: scripts/codex/router-check.sh
 # Expect: "--------router-check: OK"
 ```
 
 Read more
+
 - Policy and rules: `AGENTS.md`
 - Usage details: `docs/codex-amr-usage.md`
-- Translation/backends (optional) → if you use external CLIs (`claude`, `codex`), ensure they’re on PATH and configured
- - AMR internals and CLI: `docs/codex-amr.md`
+- Translation/backends (optional) → if you use external CLIs (`claude`,
+  `codex`), ensure they’re on PATH and configured
+- AMR internals and CLI: `docs/codex-amr.md`
 
 ## Codex CLI Setup & Usage
 
 ### Setup (create .codex assets)
+
 Pick one of the following:
+
 - Super Prompt init (asks interactively):
   ```bash
   super-prompt super:init
@@ -531,21 +663,30 @@ Pick one of the following:
   npx codex-amr init           # defaults to .codex
   ```
 
-This creates `.codex/agents.md`, `.codex/personas.py`, `.codex/bootstrap_prompt_en.txt`, and `.codex/router-check.sh`.
+This creates `.codex/agents.md`, `.codex/personas.py`,
+`.codex/bootstrap_prompt_en.txt`, and `.codex/router-check.sh`.
 
 ### Using with Codex TUI
-1) Open Codex:
+
+1. Open Codex:
+
 ```bash
 codex
 ```
-2) Paste the bootstrap prompt from `.codex/bootstrap_prompt_en.txt` (or print it: `npx codex-amr print-bootstrap`).
-3) Run your workflow; when using the Super Prompt CLI alongside Codex, prefer flag‑based personas:
+
+2. Paste the bootstrap prompt from `.codex/bootstrap_prompt_en.txt` (or print
+   it: `npx codex-amr print-bootstrap`).
+3. Run your workflow; when using the Super Prompt CLI alongside Codex, prefer
+   simplified --sp-* flags (optimize command is optional):
+
 ```bash
-super-prompt optimize --frontend "Design a responsive layout"
-super-prompt optimize --backend  "Retry + idempotency strategy"
-super-prompt optimize --debate --rounds 8 "Feature flags now?"
+super-prompt --sp-frontend "Design a responsive layout"
+super-prompt --sp-backend  "Retry + idempotency strategy"
+super-prompt --sp-debate --rounds 8 "Feature flags now?"
 ```
-4) Router switches (if not auto‑executed by your environment), copy‑run in TUI:
+
+4. Router switches (if not auto‑executed by your environment), copy‑run in TUI:
+
 ```
 /model gpt-5 high
 /model gpt-5 medium
@@ -554,22 +695,32 @@ super-prompt optimize --debate --rounds 8 "Feature flags now?"
 ## Architecture & Why It Performs Well
 
 ### Component Map
-- Router: `src/amr/router.js` — classifies tasks (L0/L1/H) and advises medium↔high switches
-- State Machine: `src/state-machine/index.js` — fixed loop (INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT)
-- Bootstrap Prompt: `src/prompts/codexAmrBootstrap.en.js` — AMR‑aware TUI starter
+
+- Router: `src/amr/router.js` — classifies tasks (L0/L1/H) and advises
+  medium↔high switches
+- State Machine: `src/state-machine/index.js` — fixed loop
+  (INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT)
+- Bootstrap Prompt: `src/prompts/codexAmrBootstrap.en.js` — AMR‑aware TUI
+  starter
 - Scaffold: `src/scaffold/codexAmr.js` — one‑shot bootstrap into a repo
-- Python CLI: `.super-prompt/utils/cli.py` — flag personas, single‑model debate, project SDD helpers
-- Cursor Processors: `.super-prompt/utils/cursor-processors/` — specialized Cursor command processors
-- Codex Agent: `.codex/AGENTS.md` + `.super-prompt/utils/personas.py` — Codex‑specific guidance & builders
+- Python CLI: `.super-prompt/utils/cli.py` — flag personas, single‑model debate,
+  project SDD helpers
+- Cursor Processors: `.super-prompt/utils/cursor-processors/` — specialized
+  Cursor command processors
+- Codex Agent: `.codex/AGENTS.md` + `.super-prompt/utils/personas.py` —
+  Codex‑specific guidance & builders
 
 ### New Modular Structure
-- **`.super-prompt/utils/`**: Centralized Python utilities for better maintainability
+
+- **`.super-prompt/utils/`**: Centralized Python utilities for better
+  maintainability
   - `cli.py`: Main CLI implementation with all personas and SDD workflows
   - `personas.py`: Codex-specific persona helpers and debate builders
   - `cursor-processors/`: Specialized processors for Cursor slash commands
   - `templates/`: Template files for code generation
 
 ### Mechanisms → Effects → Performance
+
 - Fixed Loop (structured decoding)
   - Mechanism: always follow INTENT→CLASSIFY→PLAN→EXECUTE→VERIFY→REPORT
   - Effect: smaller search space; consistent turn shape; easy verification
@@ -579,11 +730,13 @@ super-prompt optimize --debate --rounds 8 "Feature flags now?"
   - Effect: deep planning where needed; faster/cheaper execution otherwise
   - Result: better plans without runaway verbosity
 - Language & Persona Closure
-  - Mechanism: English‑only, fixed tone, flag personas; logs prefixed with `--------`
+  - Mechanism: English‑only, fixed tone, flag personas; logs prefixed with
+    `--------`
   - Effect: stylistic stability; easy log parsing in scripts/CI
   - Result: repeatable outputs, fewer formatting failures
 - Memory Hygiene
-  - Mechanism: repo facts vs. per‑turn discoveries kept explicit (rules + transcripts)
+  - Mechanism: repo facts vs. per‑turn discoveries kept explicit (rules +
+    transcripts)
   - Effect: reduced hallucination; easier auditability and rollbacks
   - Result: long‑run consistency and safer automation
 - Templates & Guards

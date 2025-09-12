@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "2.9.5",
+  "version": "2.9.18",
   "description": "Dual IDE prompt engineering toolkit supporting Cursor and Codex CLI with SDD assist and personas",
   "main": "index.js",
   "bin": {
@@ -8,6 +8,7 @@
     "codex-amr": "./bin/codex-amr.js"
   },
   "scripts": {
+    "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true",
     "postinstall": "node install.js",
     "test": "node --test",
     "codex:plan": "bin/codex-high",
