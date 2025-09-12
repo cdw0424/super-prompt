@@ -194,14 +194,24 @@ async function animatedInstall() {
             const cachePath = execSync('npm config get cache', { encoding: 'utf8' }).trim();
             const isRepoLocalCache = cachePath && (cachePath.startsWith(cwd) || cachePath.startsWith('./') || cachePath.startsWith('.\\'));
             if (isRepoLocalCache) {
-                console.warn(`${colors.yellow}⚠️  Detected npm cache under current repo: ${cachePath}${colors.reset}`);
-                console.warn(`${colors.yellow}   This can create massive .npm-cache/_cacache changes and confuse Git watchers.${colors.reset}`);
-                console.warn(`${colors.dim}   Recommended (non-destructive):${colors.reset}`);
-                console.warn(`   ${colors.cyan}npm config set cache ~/.npm --global${colors.reset}`);
+                console.warn(`${colors.yellow}🚨 CRITICAL: npm cache configured locally - this causes infinite git analysis loops!${colors.reset}`);
+                console.warn(`${colors.red}   Cache path: ${cachePath}${colors.reset}`);
+                console.warn(`${colors.red}   This creates massive .npm-cache/_cacache changes during npm install${colors.reset}`);
+                console.warn(`${colors.red}   Git watchers will get stuck analyzing cache files endlessly${colors.reset}`);
+                console.warn(`${colors.dim}   ════════════════════════════════════════════════════════════${colors.reset}`);
+                console.warn(`${colors.green}   🔧 QUICK FIX (run this now):${colors.reset}`);
+                console.warn(`   ${colors.cyan}npm config set cache ~/.npm${colors.reset}`);
                 if (fs.existsSync('.git')) {
-                    console.warn(`${colors.dim}   Also add to .gitignore if present:${colors.reset}`);
-                    console.warn(`   ${colors.cyan}echo ".npm-cache/" >> .gitignore && git rm -r --cached .npm-cache 2>/dev/null || true${colors.reset}`);
+                    console.warn(`${colors.cyan}   git rm -r --cached .npm-cache/ 2>/dev/null || true${colors.reset}`);
+                    console.warn(`${colors.cyan}   echo ".npm-cache/" >> .gitignore${colors.reset}`);
                 }
+                console.warn(`${colors.dim}   ────────────────────────────────────────────────────────────${colors.reset}`);
+                console.warn(`${colors.blue}   🛠️  ADVANCED: Use the diagnostic script:${colors.reset}`);
+                console.warn(`   ${colors.cyan}npx @cdw0424/super-prompt run scripts/codex/npm-cache-fix.sh --fix${colors.reset}`);
+                console.warn(`${colors.dim}   ════════════════════════════════════════════════════════════${colors.reset}`);
+                console.warn(`${colors.yellow}   Installation will continue but npm cache issues remain.${colors.reset}`);
+                console.warn(`${colors.yellow}   Fix this BEFORE running npm install to avoid git loops!${colors.reset}`);
+                console.warn(``);
             }
         } catch (_) { /* ignore diagnostics */ }
 

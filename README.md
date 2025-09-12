@@ -12,6 +12,10 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
+**🚀 New in v2.9.28:** NPM Cache Git Loop Fix - Automated diagnostic and repair
+system for npm cache misconfiguration that causes infinite git analysis loops.
+Includes `npm-cache-fix.sh` script and enhanced installation warnings.
+
 **🚀 New in v2.9.25:** Enhanced CLI experience with optional `optimize` command,
 improved Cursor usage documentation, and refined command consistency across all
 interfaces.
@@ -642,7 +646,11 @@ Flow
   exists, files executable (`chmod 755`), restart Cursor
  - Infinite Git churn referencing `.npm-cache/_cacache`
    - Cause: npm cache is set to a path inside the repository; installs flood `.npm-cache/` and trigger Git watchers.
-   - Fix (global, recommended):
+   - **Automated Fix (recommended)**:
+     ```bash
+     npx @cdw0424/super-prompt run scripts/codex/npm-cache-fix.sh --fix
+     ```
+   - **Manual Fix**:
      ```bash
      npm config get cache
      npm config set cache ~/.npm --global
