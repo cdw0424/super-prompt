@@ -12,6 +12,10 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
+**🚀 New in v2.9.25:** Enhanced CLI experience with optional `optimize` command,
+improved Cursor usage documentation, and refined command consistency across
+all interfaces.
+
 **🚀 New in v2.9.0:** Context Engineering System - Spec Kit implementation for
 conversation context preservation, stage gating workflow, and intelligent
 context injection with 30-50% token optimization.
@@ -19,10 +23,6 @@ context injection with 30-50% token optimization.
 **🚀 New in v2.8.0:** Added TODO Auto-Validation System with intelligent
 high-mode retry for failed tasks, ensuring reliable completion and automatic
 error recovery.
-
-**🚀 New in v2.6.0:** Full SDD (Spec-Driven Development) workflow now available
-in Codex CLI alongside Cursor support. Complete SPEC→PLAN→TASKS→IMPLEMENT
-workflow for both IDEs.
 
 Prompt Engineering toolkit supporting both Cursor and Codex CLI with Spec‑Driven
 Development assist. Super Prompt generates `.cursor/rules/*.mdc` from your
@@ -205,7 +205,7 @@ slash commands. Here's how to use them:
 Super Prompt now offers streamlined `--sp-*` flags for both personas and SDD
 workflows, making commands cleaner and more intuitive:
 
-__Benefits of --sp-_ syntax:_*
+**Benefits of --sp-* syntax:**
 
 - **Shorter commands**: `--sp-frontend` vs `--frontend`
 - **Consistent naming**: All Super Prompt flags use the same `--sp-` prefix
@@ -236,7 +236,7 @@ super-prompt sdd spec "user authentication"
 **Codex CLI** (uses `--sp-*` flags):
 
 - Command-line interface with flag options
-- Example: `super-prompt --sp-frontend "Design a login form"`
+- Example: `--sp-frontend "Design a login form"`
 - `optimize` command is optional since v2.9.19
 - Terminal-based execution
 
@@ -246,7 +246,7 @@ super-prompt sdd spec "user authentication"
 - Same output quality and features
 - Just different input methods for your preferred interface
 
-__All available --sp-_ flags:_*
+**All available --sp-* flags:**
 
 - **Personas**: `--sp-frontend`, `--sp-backend`, `--sp-analyzer`,
   `--sp-architect`, `--sp-high`, `--sp-seq`, `--sp-seq-ultra`, `--sp-debate`,
@@ -290,29 +290,6 @@ __All available --sp-_ flags:_*
 - `--sp-sdd-implement "<description>"` — Start implementation (optimize command
   optional)
 
-**Example SDD Workflow (Codex CLI simplified syntax):**
-
-```bash
-# 1. Create specification (optimize command is optional)
-super-prompt --sp-sdd-spec "user authentication system"
-# or: super-prompt optimize --sp-sdd-spec "user authentication system"
-# or: super-prompt sdd spec "user authentication system"
-
-# 2. Design implementation plan
-super-prompt --sp-sdd-plan "OAuth2 + JWT authentication"
-# or: super-prompt optimize --sp-sdd-plan "OAuth2 + JWT authentication"
-# or: super-prompt sdd plan "OAuth2 + JWT authentication"
-
-# 3. Break down into tasks
-super-prompt --sp-sdd-tasks "authentication implementation"
-# or: super-prompt optimize --sp-sdd-tasks "authentication implementation"
-# or: super-prompt sdd tasks "authentication implementation"
-
-# 4. Get implementation guidance
-super-prompt --sp-sdd-implement "start authentication development" --validate
-# or: super-prompt optimize --sp-sdd-implement "start authentication development" --validate
-# or: super-prompt sdd implement "start authentication development"
-```
 
 ## Available Commands
 
@@ -330,7 +307,7 @@ super-prompt --sp-sdd-implement "start authentication development" --validate
 - `/seq-ultra` — Advanced sequential thinking (10 iterations)
 - `/debate` — AI vs AI debate system
 
-__Codex CLI (simplified --sp-_ flags, recommended):_*
+**Codex CLI (simplified --sp-* flags, recommended):**
 
 - `--sp-frontend` — Frontend design advisor
 - `--sp-frontend-ultra` — Elite UX/UI architect
@@ -416,33 +393,6 @@ super-prompt sdd tasks "break down auth tasks"
 super-prompt sdd implement "start development"
 ```
 
-### 🔄 SDD Workflow Example
-
-```bash
-# 1. SPEC: Define requirements
-super-prompt optimize --sp-sdd-spec "real-time chat system with file sharing"
-# or: super-prompt sdd spec "real-time chat system with file sharing"
-# → Creates comprehensive specification document
-# → Defines user stories, success criteria, constraints
-
-# 2. PLAN: Design architecture
-super-prompt optimize --sp-sdd-plan "WebSocket-based chat with S3 file storage"
-# or: super-prompt sdd plan "WebSocket-based chat with S3 file storage"
-# → Creates technical implementation plan
-# → Defines architecture, data design, security approach
-
-# 3. TASKS: Break down work
-super-prompt optimize --sp-sdd-tasks "implement chat system components"
-# or: super-prompt sdd tasks "implement chat system components"
-# → Creates actionable task list with priorities
-# → Includes estimates, dependencies, acceptance criteria
-
-# 4. IMPLEMENT: Build with guidance
-super-prompt optimize --sp-sdd-implement "start chat backend development" --validate
-# or: super-prompt sdd implement "start chat backend development"
-# → Provides implementation guidance
-# → Validates compliance with SPEC and PLAN
-```
 
 ### 🎯 SDD Benefits
 
@@ -534,11 +484,13 @@ preservation and eliminating context drift.
 ### Core Principles
 
 **1. Context Externalization**: All conversation context is stored as versioned
-artifacts **2. Stage Gating**: Structured workflow prevents context loss through
-validation gates\
+   artifacts
+**2. Stage Gating**: Structured workflow prevents context loss through
+   validation gates
 **3. Task Minimization**: Break complex contexts into manageable, task-specific
-injections **4. Organizational Integration**: Absorb company standards and rules
-into project context
+   injections
+**4. Organizational Integration**: Absorb company standards and rules
+   into project context
 
 ### Directory Structure
 
@@ -656,9 +608,9 @@ super-prompt --sp-debate --rounds 8 "Should we use microservices or a modular mo
 
 Flow
 
-1. Alternate Positive → Critical for N rounds; 2) keep sections:
-   [INTENT][TASK_CLASSIFY][PLAN][EXECUTE][VERIFY][REPORT]; 3) finish with a
-   concise synthesis and next steps.
+1. Alternate Positive → Critical for N rounds
+2. Keep sections: [INTENT][TASK_CLASSIFY][PLAN][EXECUTE][VERIFY][REPORT]
+3. Finish with a concise synthesis and next steps
 
 ## Generated Files
 
