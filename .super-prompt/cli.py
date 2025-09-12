@@ -70,6 +70,34 @@ def slugify(name: str) -> str:
 def ylist(items):
     return "[" + ", ".join(json.dumps(i) for i in items) + "]"
 
+# Context7 MCP detection and guidance
+def detect_context7_mcp() -> bool:
+    try:
+        if os.environ.get('CONTEXT7_MCP','').lower() in ('1','true','yes','y'):
+            return True
+        if shutil.which('context7') or shutil.which('c7'):
+            return True
+        if os.path.isdir(os.path.join(os.getcwd(), '.context7')):
+            return True
+        home=os.path.expanduser('~')
+        if os.path.isdir(os.path.join(home, '.context7')):
+            return True
+    except Exception:
+        pass
+    return False
+
+def mcp_usage_block(enabled: bool) -> str:
+    if enabled:
+        return ("\n**[MCP Integration — Context7]**\n- Detected: ✅\n- Use Context7 MCP to collect only verifiable, project‑real information (code, docs, configs).\n- Cite artifacts (paths/IDs/URLs) and prefer MCP data over assumptions.\n- If a provider is unavailable, state the limitation.\n")
+    return ("\n**[MCP Integration — Context7]**\n- Detected: ❌\n- Proceed now with best effort using local context.\n- After this run, set up Context7 MCP for real‑source grounding.\n  Hint: install Context7 MCP (vendor docs), then export CONTEXT7_MCP=1.\n")
+
+def print_mcp_banner():
+    on = detect_context7_mcp()
+    if on:
+        log("Context7 MCP: detected — use MCP providers for real sources (code/docs/configs)")
+    else:
+        log("Context7 MCP: not detected — proceeding now; install and set CONTEXT7_MCP=1 to ground planning/implementation in real sources")
+
 # SDD (Spec-Driven Development) utilities
 def detect_frameworks():
     """Detect project frameworks for general development context"""
@@ -362,6 +390,12 @@ Assume SDD context (SPEC/PLAN) where present."""
             'prompt': """Plan delivery in waves: Wave‑1 (MVP), Wave‑2 (enhancements), Wave‑3 (hardening).
 Each wave: goals, tasks, risks, exit criteria."""
         }
+        ,
+        'db-expert': {
+            'desc': 'Database Expert (Prisma + 3NF)',
+            'cli': 'codex',
+            'prompt': """You are a Senior Database Expert. Your job is to design, review, and document database schemas and queries tailored to the service domain, with Prisma as the default ORM.\n\nNon‑Negotiables:\n- Use Context7 MCP to gather real information from codebase/docs/configs. If unavailable, proceed now but call out that full verification requires MCP.\n- English only. All logs start with '--------'.\n- Prefer 3rd Normal Form (3NF) baseline. Deviate only for clear, measured reasons (write the trade‑off).\n- Consistent naming, explicit constraints (PK/FK/UNIQUE/CHECK), indexes for access paths, safe migrations.\n- Produce clean, maintainable DB documentation.\n\nProcess:\n1) Domain Review (MCP): Identify core entities, relationships, cardinalities, and lifecycle.\n2) Normalization: 1NF → 2NF → 3NF. Call out functional dependencies and rationale.\n3) Prisma Schema: Provide a first version with models, relations, indexes, and constraints.\n4) Migrations & Safety: Outline migration steps, rollback path, and data backfill strategy.\n5) Performance: Propose indexes, query patterns, pagination, and hot‑path diagnostics.\n6) Documentation: ERD summary, model meanings, constraints, and example queries.\n\nOutput Format:\n[DOMAIN]\\n- Entities/Relations (with rationale)\\n[SCHEMA]\\n```prisma\\n...\\n```\\n[MIGRATIONS]\\n- Steps, rollback, verification\\n[PERFORMANCE]\\n- Index plan, query plan hints\\n[DOCS]\\n- Overview, glossary, examples\\n[TRADE‑OFFS]\\n- Normalization vs denormalization, partitioning, etc."""
+        }
     }
 
     def detect_tag(self, input_text: str) -> Optional[str]:
@@ -379,6 +413,8 @@ Each wave: goals, tasks, risks, exit criteria."""
         if re.search(r'--analyzer(\s|$)', input_text): return 'analyzer'
         if re.search(r'--sp-analyzer(\s|$)', input_text): return 'analyzer'
         if re.search(r'--debate(\s|$)', input_text): return 'debate'
+        if re.search(r'--db-expert(\s|$)', input_text): return 'db-expert'
+        if re.search(r'--docs-refector(\s|$)', input_text): return 'docs-refector'
         if re.search(r'--ultracompressed(\s|$)', input_text): return 'ultracompressed'
         if re.search(r'--performance(\s|$)', input_text): return 'performance'
         if re.search(r'--security(\s|$)', input_text): return 'security'
@@ -402,11 +438,15 @@ Each wave: goals, tasks, risks, exit criteria."""
         
         # Handle sequential thinking modes (no external CLI)
         if not cli_tool:
+            mcp_on = detect_context7_mcp()
+            print(mcp_usage_block(mcp_on))
             if 'process' in config:
                 print(config['process'])
             else:
                 log(f"-------- {config['desc']}")
                 log("Sequential thinking mode - run inside Cursor.")
+            if not mcp_on:
+                log("Context7 MCP not detected — consider installing and setting CONTEXT7_MCP=1 for real‑source grounding")
             return True
         
         if not shutil.which(cli_tool):
@@ -415,10 +455,15 @@ Each wave: goals, tasks, risks, exit criteria."""
         
         log(f"-------- {config['desc']} ({cli_tool.title()})")
         
-        # Enhanced SDD-compliant project context
+        # Enhanced SDD-compliant project context + MCP guidance
         sdd_context = get_project_sdd_context()
+        mcp_on = detect_context7_mcp()
         sdd_rules = generate_prompt_rules() if persona in ['architect', 'analyzer', 'high'] else ""
         
+        docs_block = ''
+        if persona == 'docs-refector':
+            docs_block = f"\n**[Docs Inventory]**\n{self._get_docs_inventory()}\n"
+
         context = f"""**[Project Context]**
 - Current Directory: {os.getcwd()}
 - Detected Frameworks: {sdd_context['frameworks']}
@@ -428,6 +473,10 @@ Each wave: goals, tasks, risks, exit criteria."""
 - Project File Tree: {self._get_project_files()}
 
 {sdd_rules}
+
+{mcp_usage_block(mcp_on)}
+
+{docs_block}
 
 **[Organization Guardrails]**
 - Language: English only in documentation and rules
@@ -451,7 +500,10 @@ Each wave: goals, tasks, risks, exit criteria."""
                         print(full_prompt)
                     return True
                 result = subprocess.run(['claude', '--model', model, '-p', full_prompt], timeout=120)
-                return result.returncode == 0
+                ok = (result.returncode == 0)
+                if not mcp_on and persona in ('architect','high','analyzer','backend','frontend'):
+                    log("Context7 MCP not detected — consider installing and setting CONTEXT7_MCP=1 for real‑source grounding")
+                return ok
             elif cli_tool == 'codex':
                 full_prompt = f"{persona_prompt}\n\n{context}\n\n**[User's Request]**\n{query}"
                 if safe or out_path:
@@ -462,7 +514,10 @@ Each wave: goals, tasks, risks, exit criteria."""
                         print(full_prompt)
                     return True
                 result = subprocess.run(['codex', 'exec', '-c', 'model_reasoning_effort=high', full_prompt], timeout=120)
-                return result.returncode == 0
+                ok = (result.returncode == 0)
+                if not mcp_on and persona in ('architect','high','analyzer','backend','frontend'):
+                    log("Context7 MCP not detected — consider installing and setting CONTEXT7_MCP=1 for real‑source grounding")
+                return ok
         except subprocess.TimeoutExpired:
             log("Execution timed out")
         except Exception as e:
@@ -479,6 +534,25 @@ Each wave: goals, tasks, risks, exit criteria."""
             return ', '.join(files[:20])  # Max 20 files total
         except:
             return "No files found"
+
+    def _get_docs_inventory(self, limit: int = 120) -> str:
+        try:
+            pats = ['**/*.md','**/*.mdx','**/*.rst','**/*.adoc','**/*.txt']
+            docs = []
+            for p in pats:
+                docs.extend(glob.glob(p, recursive=True))
+            docs = sorted(set(docs))
+            items=[]
+            for p in docs[:limit]:
+                try:
+                    mtime=datetime.datetime.fromtimestamp(os.path.getmtime(p)).strftime('%Y-%m-%d')
+                except Exception:
+                    mtime='?'
+                items.append(f"- {p} (last modified {mtime})")
+            more = '' if len(docs)<=limit else f"\n- ... and {len(docs)-limit} more"
+            return "\n".join(items)+more
+        except Exception:
+            return "(no docs found)"
     
     # Database/schema discovery intentionally omitted to keep prompts vendor‑agnostic
 
@@ -752,6 +826,7 @@ fi
         ('security', '🔐 Security Advisor\\nThreats, mitigations, safe defaults.'),
         ('task', '🧩 Task Breakdown\\nSmall tasks with IDs, ACs, deps.'),
         ('wave', '🌊 Wave Planning\\nPhased delivery (MVP → hardening).'),
+        ('docs-refector', '📚 Documentation Consolidation\\nAudit and unify docs with MCP-grounded sources.'),
     ]
     for name, desc in personas:
         content = f"---\ndescription: {name} command\nrun: \"./tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
@@ -841,6 +916,7 @@ super-prompt --sp-performance "Profile and tune HTTP handler"
 super-prompt --sp-security "Review auth flow for common risks"
 super-prompt --sp-task "Break feature into tasks"
 super-prompt --sp-wave "Propose phased delivery waves"
+super-prompt --sp-docs-refector "Audit and consolidate all docs"
 
 ## SDD Workflow (flag-based)
 
@@ -875,6 +951,11 @@ Auto Model Router (AMR: medium ↔ high):
 
 State machine (per turn):
 [INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
+
+## MCP Integration (Context7)
+- Auto‑detects Context7 MCP (env `CONTEXT7_MCP=1`, `context7`/`c7` on PATH, or `.context7/`).
+- Planning/implementation personas include an MCP usage block to ground answers in real sources.
+- Not detected? The run proceeds and prints a setup hint. After installation, export `CONTEXT7_MCP=1`.
 """
     write_text(os.path.join(agent_dir, 'agents.md'), agent_md, dry)
     personas_py = """
@@ -992,7 +1073,7 @@ def main():
     p_optimize.add_argument("query", nargs="*", help="Query or debate topic")
     p_optimize.add_argument("--list-personas", action="store_true")
     # Flag-based personas for Codex environment
-    p_optimize.add_argument("--persona", choices=['frontend','frontend-ultra','backend','analyzer','architect','high','seq','seq-ultra','debate','ultracompressed','performance','security','task','wave'])
+    p_optimize.add_argument("--persona", choices=['frontend','frontend-ultra','backend','analyzer','architect','high','seq','seq-ultra','debate','docs-refector','ultracompressed','performance','security','task','wave'])
     p_optimize.add_argument("--frontend", action="store_true")
     p_optimize.add_argument("--frontend-ultra", action="store_true")
     p_optimize.add_argument("--backend", action="store_true")
@@ -1003,6 +1084,8 @@ def main():
     p_optimize.add_argument("--seq", action="store_true")
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
+    p_optimize.add_argument("--db-expert", action="store_true")
+    p_optimize.add_argument("--docs-refector", action="store_true")
     p_optimize.add_argument("--ultracompressed", action="store_true")
     p_optimize.add_argument("--performance", action="store_true")
     p_optimize.add_argument("--security", action="store_true")
@@ -1017,6 +1100,8 @@ def main():
     p_optimize.add_argument("--sp-high", action="store_true", help="Shortcut for high persona")
     p_optimize.add_argument("--sp-seq", action="store_true", help="Shortcut for seq persona")
     p_optimize.add_argument("--sp-seq-ultra", action="store_true", help="Shortcut for seq-ultra persona")
+    p_optimize.add_argument("--sp-db-expert", action="store_true", help="Shortcut for db-expert persona")
+    p_optimize.add_argument("--sp-docs-refector", action="store_true", help="Shortcut for docs-refector persona")
     p_optimize.add_argument("--sp-ultracompressed", action="store_true", help="Shortcut for ultracompressed persona")
     p_optimize.add_argument("--sp-performance", action="store_true", help="Shortcut for performance persona")
     p_optimize.add_argument("--sp-security", action="store_true", help="Shortcut for security persona")
@@ -1089,7 +1174,7 @@ def main():
         print("\033[36m⚡ Setting up Cursor slash commands...\033[0m")
         install_cursor_commands_in_project(args.dry_run)
         print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
-        print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /spec /plan /review /tasks /implement\033[0m\n")
+        print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /docs-refector /db-expert /spec /plan /review /tasks /implement\033[0m\n")
         # Optional Codex integration prompt (.codex/*)
         want_codex = os.environ.get('SUPER_PROMPT_INIT_CODEX')
         yn = None
@@ -1125,6 +1210,7 @@ def main():
         return 0
         
     elif args.cmd == "optimize":
+        print_mcp_banner()
         optimizer = PromptOptimizer()
         
         if hasattr(args, 'list_personas') and args.list_personas:
@@ -1157,6 +1243,7 @@ def main():
                 ('seq_ultra','seq-ultra'),
                 ('seq','seq'),
                 ('debate','debate'),
+                ('docs_refector','docs-refector'),
                 ('ultracompressed','ultracompressed'),
                 ('performance','performance'),
                 ('security','security'),
@@ -1176,6 +1263,7 @@ def main():
                 ('sp_high','high'),
                 ('sp_seq','seq'),
                 ('sp_seq_ultra','seq-ultra'),
+                ('sp_docs_refector','docs-refector'),
                 ('sp_ultracompressed','ultracompressed'),
                 ('sp_performance','performance'),
                 ('sp_security','security'),
@@ -1262,6 +1350,7 @@ def main():
         print("--------codex:init: .codex assets created")
         return 0
     elif args.cmd == 'sdd':
+        print_mcp_banner()
         if not getattr(args, 'sdd_cmd', None):
             print("❌ Usage: super-prompt sdd <spec|plan|review|tasks|implement> \"topic...\"")
             return 2

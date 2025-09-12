@@ -94,6 +94,46 @@ def ylist(items):
     return "[" + ", ".join(json.dumps(i) for i in items) + "]"
 
 
+# Context7 MCP detection and guidance
+def detect_context7_mcp() -> bool:
+    """Best-effort detection of Context7 MCP availability.
+    Signals:
+    - Env CONTEXT7_MCP=1/true/yes
+    - context7 or c7 command on PATH
+    - .context7/ directory in project or HOME
+    """
+    try:
+        if os.environ.get("CONTEXT7_MCP", "").lower() in ("1", "true", "yes", "y"):  # noqa: E501
+            return True
+        if shutil.which("context7") or shutil.which("c7"):
+            return True
+        if os.path.isdir(os.path.join(os.getcwd(), ".context7")):
+            return True
+        home = os.path.expanduser("~")
+        if os.path.isdir(os.path.join(home, ".context7")):
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def mcp_usage_block(enabled: bool) -> str:
+    if enabled:
+        return (
+            """\n**[MCP Integration — Context7]**\n- Detected: ✅\n- Requirement: Use Context7 MCP to collect only verifiable, project‑real information (code, docs, configs).\n- Cite the artifacts you read (paths/IDs/URLs). Prefer MCP data over assumptions.\n- If MCP providers are unavailable for a source, state the limitation explicitly.\n"""
+        )
+    return (
+        """\n**[MCP Integration — Context7]**\n- Detected: ❌\n- Proceed now with best effort using local context.\n- After this run, set up Context7 MCP for real‑source grounding.\n  Hint: install Context7 MCP (see vendor docs), then export CONTEXT7_MCP=1.\n"""
+    )
+
+def print_mcp_banner():
+    on = detect_context7_mcp()
+    if on:
+        log("Context7 MCP: detected — use MCP providers for real sources (code/docs/configs)")
+    else:
+        log("Context7 MCP: not detected — proceeding now; install and set CONTEXT7_MCP=1 to ground planning/implementation in real sources")
+
+
 # SDD (Spec-Driven Development) utilities
 def detect_frameworks():
     """Detect project frameworks for general development context"""
@@ -377,6 +417,28 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             "cli": "codex",
             "prompt": "",
         },
+        "docs-refector": {
+            "desc": "Documentation Consolidation & Modernization",
+            "cli": "codex",
+            "prompt": """You are a Documentation Refactor Lead responsible for auditing and consolidating ALL documentation into a consistent, accurate, and succinct set. Use Context7 MCP to ground every claim in real sources. If MCP is unavailable, proceed now but note that full verification requires MCP.
+
+Hard Rules:
+- English only. All logs lines begin with '--------'.
+- Prefer consolidation over deletion; preserve history with redirects/links.
+- Keep legal/license unchanged; be conservative with removals.
+
+Method:
+1) Inventory all docs (paths, type, last modified). Group by themes: onboarding, architecture, SDD (spec/plan), API, runbooks, ADRs, changelog.
+2) Diagnose overlaps, contradictions, stale content; note owners if visible.
+3) Plan a minimal target structure with a single canonical doc per theme; list redirects.
+4) Draft canonical docs with consistent voice, definitions, and context; add 'Sources consulted' and 'Last validated' sections.
+5) Validate links, versions, commands, naming; ensure acceptance criteria.
+6) Deliverables: Canonical set (path→summary), Redirect map (from→to, reason), Risk/Review checklist.
+
+Output Format:
+[INVENTORY]\n- ...\n[DIAGNOSIS]\n- ...\n[PLAN]\n- target-tree: ...\n[REFACTOR-DRAFTS]\n- path: ...\n  ```md\nupdated content\n  ```\n[VALIDATION]\n- ...\n[DELIVERABLES]\n- Canonical: ...\n- Redirects: ...\n- Risks/Checks: ...
+""",
+        },
         "ultracompressed": {
             "desc": "Ultra‑Compressed Output (30–50% token savings)",
             "cli": "claude",
@@ -411,6 +473,30 @@ Assume SDD context (SPEC/PLAN) where present.""",
             "prompt": """Plan delivery in waves: Wave‑1 (MVP), Wave‑2 (enhancements), Wave‑3 (hardening).
 Each wave: goals, tasks, risks, exit criteria.""",
         },
+        "db-expert": {
+            "desc": "Database Expert (Prisma + 3NF)",
+            "cli": "codex",
+            "prompt": """You are a Senior Database Expert. Your job is to design, review, and document database schemas and queries tailored to the service domain, with Prisma as the default ORM.
+
+Non‑Negotiables:
+- Use Context7 MCP to gather real information from codebase/docs/configs. If unavailable, proceed now but call out that full verification requires MCP.
+- English only. All logs start with '--------'.
+- Prefer 3rd Normal Form (3NF) baseline. Deviate only for clear, measured reasons (write the trade‑off).
+- Consistent naming, explicit constraints (PK/FK/UNIQUE/CHECK), indexes for access paths, safe migrations.
+- Produce clean, maintainable DB documentation.
+
+Process:
+1) Domain Review (MCP): Identify core entities, relationships, cardinalities, and lifecycle.
+2) Normalization: 1NF → 2NF → 3NF. Call out functional dependencies and rationale.
+3) Prisma Schema: Provide a first version with models, relations, indexes, and constraints.
+4) Migrations & Safety: Outline migration steps, rollback path, and data backfill strategy.
+5) Performance: Propose indexes, query patterns, pagination, and hot‑path diagnostics.
+6) Documentation: ERD summary, model meanings, constraints, and example queries.
+
+Output Format:
+[DOMAIN]\n- Entities/Relations (with rationale)\n[SCHEMA]\n```prisma\n...\n```\n[MIGRATIONS]\n- Steps, rollback, verification\n[PERFORMANCE]\n- Index plan, query plan hints\n[DOCS]\n- Overview, glossary, examples\n[TRADE‑OFFS]\n- Normalization vs denormalization, partitioning, etc.
+""",
+        },
     }
 
     def detect_tag(self, input_text: str) -> Optional[str]:
@@ -438,6 +524,12 @@ Each wave: goals, tasks, risks, exit criteria.""",
             return "analyzer"
         if re.search(r"--debate(\s|$)", input_text):
             return "debate"
+        if re.search(r"--db-expert(\s|$)", input_text):
+            return "db-expert"
+        if re.search(r"--db-refector(\s|$)", input_text):
+            return "db-expert"
+        if re.search(r"--docs-refector(\s|$)", input_text):
+            return "docs-refector"
         if re.search(r"--ultracompressed(\s|$)", input_text):
             return "ultracompressed"
         if re.search(r"--performance(\s|$)", input_text):
@@ -473,11 +565,16 @@ Each wave: goals, tasks, risks, exit criteria.""",
 
         # Handle sequential thinking modes (no external CLI)
         if not cli_tool:
+            # Print MCP usage block even for internal sequential modes
+            mcp_on = detect_context7_mcp()
+            print(mcp_usage_block(mcp_on))
             if "process" in config:
                 print(config["process"])
             else:
                 log(f"-------- {config['desc']}")
                 log("Sequential thinking mode - run inside Cursor.")
+            if not mcp_on:
+                log("Context7 MCP not detected — consider installing and setting CONTEXT7_MCP=1 for real‑source grounding")
             return True
 
         if not shutil.which(cli_tool):
@@ -486,13 +583,19 @@ Each wave: goals, tasks, risks, exit criteria.""",
 
         log(f"-------- {config['desc']} ({cli_tool.title()})")
 
-        # Enhanced SDD-compliant project context
+        # Enhanced SDD-compliant project context + MCP guidance
         sdd_context = get_project_sdd_context()
+        mcp_on = detect_context7_mcp()
         sdd_rules = (
             generate_prompt_rules()
             if persona in ["architect", "analyzer", "high"]
             else ""
         )
+
+        # Add docs inventory if docs-refector
+        docs_block = ""
+        if persona == "docs-refector":
+            docs_block = f"\n**[Docs Inventory]**\n{self._get_docs_inventory()}\n"
 
         context = f"""**[Project Context]**
 - Current Directory: {os.getcwd()}
@@ -503,6 +606,10 @@ Each wave: goals, tasks, risks, exit criteria.""",
 - Project File Tree: {self._get_project_files()}
 
 {sdd_rules}
+
+{mcp_usage_block(mcp_on)}
+
+{docs_block}
 
 **[Organization Guardrails]**
 - Language: English only in documentation and rules
@@ -530,7 +637,10 @@ Each wave: goals, tasks, risks, exit criteria.""",
                 result = subprocess.run(
                     ["claude", "--model", model, "-p", full_prompt], timeout=120
                 )
-                return result.returncode == 0
+                ok = (result.returncode == 0)
+                if not mcp_on and persona in ["architect", "high", "analyzer", "backend", "frontend"]:
+                    log("Context7 MCP not detected — consider installing and setting CONTEXT7_MCP=1 for real‑source grounding")
+                return ok
             elif cli_tool == "codex":
                 full_prompt = (
                     f"{persona_prompt}\n\n{context}\n\n**[User's Request]**\n{query}"
@@ -546,7 +656,10 @@ Each wave: goals, tasks, risks, exit criteria.""",
                     ["codex", "exec", "-c", "model_reasoning_effort=high", full_prompt],
                     timeout=120,
                 )
-                return result.returncode == 0
+                ok = (result.returncode == 0)
+                if not mcp_on and persona in ["architect", "high", "analyzer", "backend", "frontend"]:
+                    log("Context7 MCP not detected — consider installing and setting CONTEXT7_MCP=1 for real‑source grounding")
+                return ok
         except subprocess.TimeoutExpired:
             log("Execution timed out")
         except Exception as e:
@@ -565,6 +678,25 @@ Each wave: goals, tasks, risks, exit criteria.""",
             return ", ".join(files[:20])  # Max 20 files total
         except:
             return "No files found"
+
+    def _get_docs_inventory(self, limit: int = 120) -> str:
+        try:
+            pats = ["**/*.md", "**/*.mdx", "**/*.rst", "**/*.adoc", "**/*.txt"]
+            docs = []
+            for p in pats:
+                docs.extend(glob.glob(p, recursive=True))
+            docs = sorted(set(docs))
+            items = []
+            for p in docs[:limit]:
+                try:
+                    mtime = datetime.datetime.fromtimestamp(os.path.getmtime(p)).strftime("%Y-%m-%d")
+                except Exception:
+                    mtime = "?"
+                items.append(f"- {p} (last modified {mtime})")
+            more = "" if len(docs) <= limit else f"\n- ... and {len(docs)-limit} more"
+            return "\n".join(items) + more
+        except Exception:
+            return "(no docs found)"
 
     # Database/schema discovery intentionally omitted to keep prompts vendor‑agnostic
 
@@ -893,6 +1025,18 @@ fi
             "wave",
             "🌊 Wave Planning\\nPhased delivery (MVP → hardening).",
         ),
+        (
+            "docs-refector",
+            "📚 Documentation Consolidation\\nAudit and unify docs with MCP-grounded sources.",
+        ),
+        (
+            "db-expert",
+            "🗄️ DB Expert (Prisma+3NF)\\nDesign, migrate, and document robust schemas.",
+        ),
+        (
+            "db-refector",
+            "🗄️ DB Refector (alias)\\nRoute to DB Expert for database refactoring.",
+        ),
     ]
     for name, desc in personas:
         content = f'---\ndescription: {name} command\nrun: "./tag-executor.sh"\nargs: ["${{input}} /{name}"]\n---\n\n{desc}'
@@ -985,6 +1129,7 @@ super-prompt --sp-performance "Profile and tune HTTP handler"
 super-prompt --sp-security "Review auth flow for common risks"
 super-prompt --sp-task "Break feature into tasks"
 super-prompt --sp-wave "Propose phased delivery waves"
+super-prompt --sp-docs-refector "Audit and consolidate all docs"
 
 ## SDD Workflow (flag-based)
 
@@ -1029,6 +1174,12 @@ Auto Model Router (AMR: medium ↔ high):
 
 State machine (per turn):
 [INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
+
+## MCP Integration (Context7)
+- The CLI auto‑detects Context7 MCP (env `CONTEXT7_MCP=1`, `context7`/`c7` on PATH, or `.context7/` present).
+- For planning/implementation personas, prompts include an MCP usage block to ground answers in real sources.
+- If MCP is not detected, it proceeds but prints guidance to install and export `CONTEXT7_MCP=1` after.
+"""
 """
     write_text(os.path.join(agent_dir, "agents.md"), agent_md, dry)
     personas_py = """
@@ -1164,6 +1315,7 @@ def main():
             "seq",
             "seq-ultra",
             "debate",
+            "docs-refector",
             "ultracompressed",
             "performance",
             "security",
@@ -1185,6 +1337,8 @@ def main():
     p_optimize.add_argument("--seq", action="store_true")
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
+    p_optimize.add_argument("--db-expert", action="store_true")
+    p_optimize.add_argument("--docs-refector", action="store_true")
     p_optimize.add_argument("--ultracompressed", action="store_true")
     p_optimize.add_argument("--performance", action="store_true")
     p_optimize.add_argument("--security", action="store_true")
@@ -1214,6 +1368,12 @@ def main():
     )
     p_optimize.add_argument(
         "--sp-seq-ultra", action="store_true", help="Shortcut for seq-ultra persona"
+    )
+    p_optimize.add_argument(
+        "--sp-docs-refector", action="store_true", help="Shortcut for docs-refector persona"
+    )
+    p_optimize.add_argument(
+        "--sp-db-expert", action="store_true", help="Shortcut for db-expert persona"
     )
     p_optimize.add_argument(
         "--sp-ultracompressed",
@@ -1359,7 +1519,7 @@ def main():
         install_cursor_commands_in_project(args.dry_run)
         print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
         print(
-            "   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /spec /plan /review /tasks /implement\033[0m\n"
+            "   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /docs-refector /db-expert /spec /plan /review /tasks /implement\033[0m\n"
         )
         # Optional Codex integration prompt (.codex/*)
         want_codex = os.environ.get("SUPER_PROMPT_INIT_CODEX")
@@ -1414,6 +1574,8 @@ def main():
         return 0
 
     elif args.cmd == "optimize":
+        # Global MCP guidance for all Cursor/Codex flows
+        print_mcp_banner()
         optimizer = PromptOptimizer()
 
         if hasattr(args, "list_personas") and args.list_personas:
@@ -1449,6 +1611,8 @@ def main():
                 ("seq_ultra", "seq-ultra"),
                 ("seq", "seq"),
                 ("debate", "debate"),
+                ("db_expert", "db-expert"),
+                ("docs_refector", "docs-refector"),
                 ("ultracompressed", "ultracompressed"),
                 ("performance", "performance"),
                 ("security", "security"),
@@ -1468,6 +1632,8 @@ def main():
                 ("sp_high", "high"),
                 ("sp_seq", "seq"),
                 ("sp_seq_ultra", "seq-ultra"),
+                ("sp_db_expert", "db-expert"),
+                ("sp_docs_refector", "docs-refector"),
                 ("sp_ultracompressed", "ultracompressed"),
                 ("sp_performance", "performance"),
                 ("sp_security", "security"),
@@ -1565,6 +1731,7 @@ def main():
         print("--------codex:init: .codex assets created")
         return 0
     elif args.cmd == "sdd":
+        print_mcp_banner()
         # Route SDD subcommands through optimizer with appropriate persona+instruction
         if not getattr(args, "sdd_cmd", None):
             print(

@@ -61,13 +61,15 @@ open an issue.
 
 ## Quick Start
 
-1. Install
+### 1. Install
 
 ```bash
 npm install -g @cdw0424/super-prompt
 ```
 
-2. Initialize in your project (sets up rules + Cursor slash commands)
+### 2. Initialize in your project
+
+This sets up Cursor rules and slash commands:
 
 ```bash
 super-prompt super:init
@@ -75,21 +77,90 @@ super-prompt super:init
 npx @cdw0424/super-prompt super:init
 ```
 
-- During init you will be asked to extend Codex CLI integration; answering Yes
-  creates `.codex/` with `agent.md` and `personas.py`. Non‑interactive opt‑in:
-  `SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init`.
+**What happens during initialization:**
+- Creates `.cursor/rules/` with SDD workflow rules
+- Sets up slash commands for Cursor IDE
+- Optionally creates `.codex/` for CLI integration
 
-3. Use with your preferred IDE
+**Non-interactive setup:**
+```bash
+SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init
+```
+
+### 3. Use with your preferred IDE
 
 **In Cursor:**
 
-- Open Cursor; rules from `.cursor/rules/*.mdc` are applied.
-- Use slash commands in your prompt:
-  - **Core Personas**: `/frontend`, `/frontend-ultra`, `/backend`, `/analyzer`,
-    `/architect`, `/high`, `/seq`, `/seq-ultra`, `/debate`
-  - **Enhanced Personas**: `/security`, `/performance`, `/wave`, `/task`,
-    `/ultracompressed`
-  - **SDD Workflow**: `/spec`, `/plan`, `/tasks`, `/implement`
+After running `super-prompt super:init`, Cursor automatically recognizes the slash commands. Here's how to use them:
+
+**Step-by-step usage:**
+1. Open Cursor in your project
+2. Start typing `/` in any prompt or chat
+3. Select from available Super Prompt commands
+
+**Available Commands:**
+
+**Core AI Personas** (for different development tasks):
+- `/frontend` — Frontend design advisor (UX-focused)
+- `/frontend-ultra` — Elite UX/UI architect (top-tier design)
+- `/backend` — Backend reliability engineer (99.9% uptime)
+- `/analyzer` — Root cause analyst (evidence-based debugging)
+- `/architect` — Systems architecture specialist
+- `/high` — Deep reasoning specialist (strategic thinking)
+- `/seq` — Sequential thinking (5 iterations)
+- `/seq-ultra` — Advanced sequential thinking (10 iterations)
+- `/debate` — AI vs AI debate system
+
+**Enhanced Personas** (specialized tools):
+- `/security` — Threat modeler & vulnerability specialist
+- `/performance` — Optimization specialist (metrics-driven)
+- `/wave` — Wave system orchestrator (multi-stage execution)
+- `/task` — Task management mode (structured workflow)
+- `/ultracompressed` — Token efficiency mode (30-50% reduction)
+
+**SDD Workflow** (Spec-Driven Development):
+- `/spec` — Create detailed specifications for features
+- `/plan` — Design implementation plans
+- `/tasks` — Break down plans into actionable tasks
+- `/implement` — Start implementation with SDD compliance checking
+
+**Example Usage Scenarios:**
+
+**Frontend Development:**
+```
+/frontend "Design a responsive login form with validation"
+/frontend-ultra "Create a complete design system for our app"
+/analyzer "Debug why my CSS animations aren't working"
+```
+
+**Backend Development:**
+```
+/backend "Design REST API for user management"
+/architect "Plan database schema for e-commerce platform"
+/high "Evaluate GraphQL vs REST for our use case"
+```
+
+**Full Development Workflow (SDD):**
+```
+/spec "Design a real-time chat feature with file uploads"
+/plan "Implement chat using WebSocket and AWS S3"
+/tasks "Break down chat implementation into development tasks"
+/implement "Start building the chat backend"
+```
+
+**Advanced Usage:**
+```
+/seq "Refactor this monolithic component into smaller pieces"
+/debate --rounds 8 "Should we use TypeScript or JavaScript?"
+/performance "Optimize this slow database query"
+/security "Review this authentication flow for vulnerabilities"
+```
+
+**💡 Pro Tips:**
+- Commands work in any Cursor prompt or chat
+- You can combine commands with regular text
+- Use quotes around multi-word queries
+- Tab completion is available for command names
 
 **In Codex CLI:**
 
@@ -122,8 +193,7 @@ super-prompt --sp-sdd-implement "login functionality"
 Super Prompt now offers streamlined `--sp-*` flags for both personas and SDD
 workflows, making commands cleaner and more intuitive:
 
-__Benefits of --sp-_ syntax:_*
-
+**Benefits of --sp-* syntax:**
 - **Shorter commands**: `--sp-frontend` vs `--frontend`
 - **Consistent naming**: All Super Prompt flags use the same `--sp-` prefix
 - **Future-proof**: New features will follow this pattern
@@ -133,15 +203,34 @@ __Benefits of --sp-_ syntax:_*
 
 ```bash
 # New simplified syntax (recommended)
-super-prompt optimize --sp-frontend "Create responsive UI"
-super-prompt optimize --sp-sdd-spec "user authentication"
+super-prompt --sp-frontend "Create responsive UI"
+super-prompt --sp-sdd-spec "user authentication"
 
 # Original syntax (still supported)
 super-prompt optimize --frontend "Create responsive UI"
 super-prompt sdd spec "user authentication"
 ```
 
-__All available --sp-_ flags:_*
+### 🔄 Command Format Differences
+
+**Cursor IDE** (uses `/tag` format):
+- Type `/` followed by command name in any prompt
+- Example: `/frontend "Design a login form"`
+- Automatically available after `super-prompt super:init`
+- Interactive and visual command selection
+
+**Codex CLI** (uses `--sp-*` flags):
+- Command-line interface with flag options
+- Example: `super-prompt --sp-frontend "Design a login form"`
+- `optimize` command is optional since v2.9.19
+- Terminal-based execution
+
+**Both environments provide identical functionality:**
+- Same AI personas and SDD workflows
+- Same output quality and features
+- Just different input methods for your preferred interface
+
+**All available --sp-* flags:**
 
 - **Personas**: `--sp-frontend`, `--sp-backend`, `--sp-analyzer`,
   `--sp-architect`, `--sp-high`, `--sp-seq`, `--sp-seq-ultra`, `--sp-debate`,
@@ -225,7 +314,7 @@ super-prompt --sp-sdd-implement "start authentication development" --validate
 - `/seq-ultra` — Advanced sequential thinking (10 iterations)
 - `/debate` — AI vs AI debate system
 
-__Codex CLI (simplified --sp-_ flags, recommended):_*
+**Codex CLI (simplified --sp-* flags, recommended):**
 
 - `--sp-frontend` — Frontend design advisor
 - `--sp-frontend-ultra` — Elite UX/UI architect
@@ -382,6 +471,8 @@ super-prompt todo:status
 # Use custom session file
 super-prompt todo:validate --session-file custom_todos.json
 ```
+
+**Note:** TODO commands are currently in development and may change in future versions.
 
 ### Validation Criteria
 
