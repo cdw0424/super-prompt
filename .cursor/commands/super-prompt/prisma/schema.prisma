@@ -1,0 +1,30 @@
+// Prisma schema template (datasource+generator)
+// Adjust provider/url via env; keep migrations safe and incremental.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = env("PRISMA_DB_PROVIDER") // e.g., "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String?
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id String @id @default(cuid())
+  userId String
+  status String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+}
+
+// Extras (indexes/@@map/@@unique etc.)
+// Example composite indexes
+// model Order { ... }
+// @@index([userId, createdAt])

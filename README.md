@@ -123,6 +123,9 @@ slash commands. Here's how to use them:
 - `/wave` — Wave system orchestrator (multi-stage execution)
 - `/task` — Task management mode (structured workflow)
 - `/ultracompressed` — Token efficiency mode (30-50% reduction)
+- `/db-refector` — Database refactoring specialist (Prisma support)
+- `/db-template` — Generate Prisma schema templates
+- `/db-doc` — Generate database documentation
 
 **SDD Workflow** (Spec-Driven Development):
 
@@ -338,6 +341,12 @@ super-prompt sdd spec "user authentication"
 - `/wave` — Wave system orchestrator (multi-stage execution)
 - `/task` — Task management mode (structured workflow)
 - `/ultracompressed` — Token efficiency mode (30-50% reduction)
+
+### Database Tools (Cursor + CLI)
+
+- `/db-refector` — Database schema analysis and optimization
+- `/db-template` — Generate Prisma schema templates
+- `/db-doc` — Generate database documentation from Prisma schema
 
 ### SDD Workflow Commands (Cursor slash commands)
 
