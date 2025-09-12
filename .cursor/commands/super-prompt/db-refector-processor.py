@@ -9,6 +9,7 @@ import os
 import subprocess
 from pathlib import Path
 
+
 def show_usage():
     """Display usage information"""
     print("❌ Usage: db-refector-processor.py <action> [args...]")
@@ -24,6 +25,7 @@ def show_usage():
     print("   - Index and performance optimization")
     print("   - Database refactoring and normalization")
 
+
 def find_db_tools():
     """Find the db_expert_tools.py script"""
     # Check if db_expert_tools.py exists in current directory
@@ -35,7 +37,10 @@ def find_db_tools():
 
     # Try other possible locations
     possible_paths = [
-        Path(__file__).parent.parent.parent / ".super-prompt" / "utils" / "db_expert_tools.py",
+        Path(__file__).parent.parent.parent
+        / ".super-prompt"
+        / "utils"
+        / "db_expert_tools.py",
         Path.cwd() / ".super-prompt" / "utils" / "db_expert_tools.py",
     ]
 
@@ -44,6 +49,7 @@ def find_db_tools():
             return str(path)
 
     return None
+
 
 def main(args):
     if len(args) < 2:
@@ -76,7 +82,9 @@ def main(args):
             # Analyze database schema and provide suggestions
             if len(args) < 3:
                 print("❌ Error: Please provide a description for analysis")
-                print("   Example: db-refector-processor.py analyze \"Review user table schema\"")
+                print(
+                    '   Example: db-refector-processor.py analyze "Review user table schema"'
+                )
                 return 1
 
             description = " ".join(args[2:])
@@ -84,7 +92,9 @@ def main(args):
             print(f"   {description}")
             print("\n💡 Suggestions:")
             print("   1. Use 'template' action to generate Prisma schema starter")
-            print("   2. Use 'doc' action to generate documentation from existing schema")
+            print(
+                "   2. Use 'doc' action to generate documentation from existing schema"
+            )
             print("   3. Check generated files for index and optimization suggestions")
 
             return 0
@@ -105,6 +115,7 @@ def main(args):
     except Exception as e:
         print(f"❌ Error: Failed to execute database tools - {e}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

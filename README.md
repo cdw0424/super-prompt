@@ -13,8 +13,8 @@ npx @cdw0424/super-prompt --help
 ```
 
 **🚀 New in v2.9.25:** Enhanced CLI experience with optional `optimize` command,
-improved Cursor usage documentation, and refined command consistency across
-all interfaces.
+improved Cursor usage documentation, and refined command consistency across all
+interfaces.
 
 **🚀 New in v2.9.0:** Context Engineering System - Spec Kit implementation for
 conversation context preservation, stage gating workflow, and intelligent
@@ -208,7 +208,7 @@ slash commands. Here's how to use them:
 Super Prompt now offers streamlined `--sp-*` flags for both personas and SDD
 workflows, making commands cleaner and more intuitive:
 
-**Benefits of --sp-* syntax:**
+__Benefits of --sp-_ syntax:_*
 
 - **Shorter commands**: `--sp-frontend` vs `--frontend`
 - **Consistent naming**: All Super Prompt flags use the same `--sp-` prefix
@@ -249,7 +249,7 @@ super-prompt sdd spec "user authentication"
 - Same output quality and features
 - Just different input methods for your preferred interface
 
-**All available --sp-* flags:**
+__All available --sp-_ flags:_*
 
 - **Personas**: `--sp-frontend`, `--sp-backend`, `--sp-analyzer`,
   `--sp-architect`, `--sp-high`, `--sp-seq`, `--sp-seq-ultra`, `--sp-debate`,
@@ -293,7 +293,6 @@ super-prompt sdd spec "user authentication"
 - `--sp-sdd-implement "<description>"` — Start implementation (optimize command
   optional)
 
-
 ## Available Commands
 
 ### Core Persona Commands
@@ -310,7 +309,7 @@ super-prompt sdd spec "user authentication"
 - `/seq-ultra` — Advanced sequential thinking (10 iterations)
 - `/debate` — AI vs AI debate system
 
-**Codex CLI (simplified --sp-* flags, recommended):**
+__Codex CLI (simplified --sp-_ flags, recommended):_*
 
 - `--sp-frontend` — Frontend design advisor
 - `--sp-frontend-ultra` — Elite UX/UI architect
@@ -402,7 +401,6 @@ super-prompt sdd tasks "break down auth tasks"
 super-prompt sdd implement "start development"
 ```
 
-
 ### 🎯 SDD Benefits
 
 - **Clarity**: Everyone knows what's being built and why
@@ -493,13 +491,10 @@ preservation and eliminating context drift.
 ### Core Principles
 
 **1. Context Externalization**: All conversation context is stored as versioned
-   artifacts
-**2. Stage Gating**: Structured workflow prevents context loss through
-   validation gates
-**3. Task Minimization**: Break complex contexts into manageable, task-specific
-   injections
-**4. Organizational Integration**: Absorb company standards and rules
-   into project context
+artifacts **2. Stage Gating**: Structured workflow prevents context loss through
+validation gates **3. Task Minimization**: Break complex contexts into
+manageable, task-specific injections **4. Organizational Integration**: Absorb
+company standards and rules into project context
 
 ### Directory Structure
 
