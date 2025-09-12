@@ -22,7 +22,8 @@
       "Bash(sudo chown:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

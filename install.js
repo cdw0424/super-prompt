@@ -87,6 +87,32 @@ function copyFile(src, dest, description) {
     }
 }
 
+function copyDirectory(src, dest, description) {
+    try {
+        ensureDir(dest);
+        const items = fs.readdirSync(src, { withFileTypes: true });
+        
+        for (const item of items) {
+            const srcPath = path.join(src, item.name);
+            const destPath = path.join(dest, item.name);
+            
+            if (item.isDirectory()) {
+                copyDirectory(srcPath, destPath, `${item.name}/`);
+            } else {
+                fs.copyFileSync(srcPath, destPath);
+                // Make Python files executable
+                if (item.name.endsWith('.py')) {
+                    fs.chmodSync(destPath, '755');
+                }
+            }
+        }
+        console.log(`   ${colors.dim}→ ${description}${colors.reset}`);
+    } catch (error) {
+        console.error(`${colors.red}❌ Failed to copy directory ${src}: ${error.message}${colors.reset}`);
+        throw error;
+    }
+}
+
 function writeFile(filePath, content, description) {
     try {
         ensureDir(path.dirname(filePath));
@@ -150,8 +176,21 @@ async function animatedInstall() {
             'Python package initialization'
         );
         
-        await sleep(500);
+        await sleep(300);
         completedStep(2, 'Python CLI components ready');
+
+        // Step 2.5: Setting up .super-prompt directory
+        console.log(`${colors.cyan}📁 Installing .super-prompt utilities...${colors.reset}`);
+        
+        const superPromptDir = '.super-prompt';
+        copyDirectory(
+            path.join(__dirname, '.super-prompt'),
+            superPromptDir,
+            'Super Prompt utility suite'
+        );
+        
+        await sleep(300);
+        completedStep('2.5', '.super-prompt utilities installed');
 
         // Step 3: Ready for project initialization (run in your project)
         console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
