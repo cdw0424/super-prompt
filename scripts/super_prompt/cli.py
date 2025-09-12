@@ -668,15 +668,68 @@ Output Format:
         return False
 
     def _get_project_files(self) -> str:
-        """Get project file tree for context"""
+        """Get project file tree for context - optimized to avoid git infinite loops"""
         try:
             files = []
-            for ext in ["*.ts", "*.tsx", "*.js", "*.json", "*.md"]:
-                files.extend(
-                    glob.glob(f"./**/{ext}", recursive=True)[:10]
-                )  # Limit to 10 files per type
-            return ", ".join(files[:20])  # Max 20 files total
-        except:
+            # Excluded directories that cause performance issues or git loops
+            excluded_dirs = {'.git', 'node_modules', '.next', '.npm-cache', '.cache',
+                           'dist', 'build', '.nuxt', '.output', 'coverage', '.nyc_output',
+                           '__pycache__', '.pytest_cache', '.vscode', '.idea'}
+
+            # Read .gitignore to respect exclusions
+            gitignore_patterns = set()
+            if os.path.exists('.gitignore'):
+                try:
+                    with open('.gitignore', 'r', encoding='utf-8') as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith('#'):
+                                # Simple pattern matching for common cases
+                                if '/' in line or line.startswith('*'):
+                                    gitignore_patterns.add(line)
+                except:
+                    pass
+
+            # Use os.walk with topdown=True to prevent walking into excluded directories
+            file_counts = {'.ts': 0, '.tsx': 0, '.js': 0, '.json': 0, '.md': 0}
+            max_per_type = 5  # Reduced from 10 to 5 for better performance
+            total_limit = 15  # Reduced from 20 to 15 total files
+
+            for root, dirs, filenames in os.walk('.', topdown=True):
+                # Remove excluded directories from dirs list to prevent walking into them
+                dirs[:] = [d for d in dirs if d not in excluded_dirs]
+
+                # Check if current directory should be excluded based on .gitignore
+                should_exclude = False
+                for pattern in gitignore_patterns:
+                    if pattern.startswith('/') and root.startswith(pattern[1:]):
+                        should_exclude = True
+                        break
+                    elif pattern == root[2:] + '/':  # Remove leading './'
+                        should_exclude = True
+                        break
+
+                if should_exclude:
+                    continue
+
+                for filename in filenames:
+                    if len(files) >= total_limit:
+                        break
+
+                    _, ext = os.path.splitext(filename)
+                    if ext in file_counts and file_counts[ext] < max_per_type:
+                        filepath = os.path.join(root, filename)
+                        # Additional check for common large files
+                        if os.path.getsize(filepath) < 1024 * 1024:  # Skip files > 1MB
+                            files.append(filepath[2:])  # Remove leading './'
+                            file_counts[ext] += 1
+
+                if len(files) >= total_limit:
+                    break
+
+            return ', '.join(files) if files else "No files found"
+        except Exception as e:
+            log(f"Project file scan failed: {e}")
             return "No files found"
 
     def _get_docs_inventory(self, limit: int = 120) -> str:

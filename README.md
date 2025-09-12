@@ -12,6 +12,10 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
+**🚀 New in v2.9.29:** Performance Optimization - Fixed infinite git output in analyzer
+command by optimizing `_get_project_files()` function. Added .gitignore pattern filtering,
+excluded large directories (.git, node_modules, .npm-cache), and reduced file scanning limits.
+
 **🚀 New in v2.9.28:** NPM Cache Git Loop Fix - Automated diagnostic and repair
 system for npm cache misconfiguration that causes infinite git analysis loops.
 Includes `npm-cache-fix.sh` script and enhanced installation warnings.
