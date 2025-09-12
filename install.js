@@ -76,6 +76,54 @@ function ensureDir(dirPath) {
     }
 }
 
+function findProjectRoot() {
+    // Find the project root for npm postinstall
+    // When running as postinstall, we need to find the actual project root
+    
+    // Try different strategies to find project root
+    
+    // Strategy 1: Check if we're in node_modules
+    if (__dirname.includes('node_modules')) {
+        // We're in node_modules/@cdw0424/super-prompt
+        // Go up to find the project root
+        let nodeModulesIndex = __dirname.lastIndexOf('node_modules');
+        if (nodeModulesIndex !== -1) {
+            return __dirname.substring(0, nodeModulesIndex - 1);
+        }
+    }
+    
+    // Strategy 2: Use npm environment variables
+    if (process.env.npm_config_user_dir) {
+        return process.env.npm_config_user_dir;
+    }
+    
+    if (process.env.PWD && process.env.PWD !== process.cwd()) {
+        return process.env.PWD;
+    }
+    
+    // Strategy 3: Walk up from current directory
+    let projectRoot = process.cwd();
+    let currentDir = projectRoot;
+    
+    while (currentDir !== path.dirname(currentDir)) {
+        if (fs.existsSync(path.join(currentDir, 'package.json'))) {
+            // Make sure it's not our own package.json
+            try {
+                const pkg = JSON.parse(fs.readFileSync(path.join(currentDir, 'package.json'), 'utf8'));
+                if (pkg.name !== '@cdw0424/super-prompt') {
+                    projectRoot = currentDir;
+                    break;
+                }
+            } catch (e) {
+                // If we can't read package.json, try parent
+            }
+        }
+        currentDir = path.dirname(currentDir);
+    }
+    
+    return projectRoot;
+}
+
 function copyFile(src, dest, description) {
     try {
         fs.copyFileSync(src, dest);
@@ -138,9 +186,19 @@ async function animatedInstall() {
         if (wantEnv === '0' || wantEnv === 'no' || wantEnv === 'false') wantCodex = false;
         if (wantCodex === null && process.stdin.isTTY) {
             try {
-                const readline = require('readline-sync');
-                const ans = readline.question(`${colors.cyan}🧠 Install/upgrade Codex CLI now? [Y/n] ${colors.reset}`);
-                wantCodex = !(String(ans || '').toLowerCase().startsWith('n'));
+                // Try to use readline-sync if available, otherwise default to no
+                let readline;
+                try {
+                    readline = require('readline-sync');
+                } catch (e) {
+                    // readline-sync not available, default to no
+                    wantCodex = false;
+                }
+                
+                if (readline) {
+                    const ans = readline.question(`${colors.cyan}🧠 Install/upgrade Codex CLI now? [Y/n] ${colors.reset}`);
+                    wantCodex = !(String(ans || '').toLowerCase().startsWith('n'));
+                }
             } catch (_) {
                 wantCodex = false;
             }
@@ -161,7 +219,8 @@ async function animatedInstall() {
         // Step 2: Setting up Python CLI
         console.log(`${colors.cyan}🐍 Setting up Python CLI components...${colors.reset}`);
         
-        const scriptsDir = 'scripts/super_prompt';
+        const projectRoot = findProjectRoot();
+        const scriptsDir = path.join(projectRoot, 'scripts/super_prompt');
         ensureDir(scriptsDir);
         
         copyFile(
@@ -182,7 +241,7 @@ async function animatedInstall() {
         // Step 2.5: Setting up .super-prompt directory
         console.log(`${colors.cyan}📁 Installing .super-prompt utilities...${colors.reset}`);
         
-        const superPromptDir = '.super-prompt';
+        const superPromptDir = path.join(projectRoot, '.super-prompt');
         copyDirectory(
             path.join(__dirname, '.super-prompt'),
             superPromptDir,
