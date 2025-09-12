@@ -21,7 +21,8 @@
       "Bash(grep:*)",
       "Bash(sudo chown:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git tag:*)"
     ],
     "deny": [],
     "ask": []

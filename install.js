@@ -139,7 +139,7 @@ async function animatedInstall() {
         ensureDir(scriptsDir);
         
         copyFile(
-            path.join(__dirname, '.super-prompt/utils/cli.py'),
+            path.join(__dirname, 'scripts/super_prompt/cli.py'),
             path.join(scriptsDir, 'cli.py'),
             'Python CLI engine'
         );
