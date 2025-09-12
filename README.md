@@ -78,11 +78,13 @@ npx @cdw0424/super-prompt super:init
 ```
 
 **What happens during initialization:**
+
 - Creates `.cursor/rules/` with SDD workflow rules
 - Sets up slash commands for Cursor IDE
 - Optionally creates `.codex/` for CLI integration
 
 **Non-interactive setup:**
+
 ```bash
 SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init
 ```
@@ -91,9 +93,11 @@ SUPER_PROMPT_INIT_CODEX=1 super-prompt super:init
 
 **In Cursor:**
 
-After running `super-prompt super:init`, Cursor automatically recognizes the slash commands. Here's how to use them:
+After running `super-prompt super:init`, Cursor automatically recognizes the
+slash commands. Here's how to use them:
 
 **Step-by-step usage:**
+
 1. Open Cursor in your project
 2. Start typing `/` in any prompt or chat
 3. Select from available Super Prompt commands
@@ -101,6 +105,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 **Available Commands:**
 
 **Core AI Personas** (for different development tasks):
+
 - `/frontend` — Frontend design advisor (UX-focused)
 - `/frontend-ultra` — Elite UX/UI architect (top-tier design)
 - `/backend` — Backend reliability engineer (99.9% uptime)
@@ -112,6 +117,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 - `/debate` — AI vs AI debate system
 
 **Enhanced Personas** (specialized tools):
+
 - `/security` — Threat modeler & vulnerability specialist
 - `/performance` — Optimization specialist (metrics-driven)
 - `/wave` — Wave system orchestrator (multi-stage execution)
@@ -119,6 +125,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 - `/ultracompressed` — Token efficiency mode (30-50% reduction)
 
 **SDD Workflow** (Spec-Driven Development):
+
 - `/spec` — Create detailed specifications for features
 - `/plan` — Design implementation plans
 - `/tasks` — Break down plans into actionable tasks
@@ -127,6 +134,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 **Example Usage Scenarios:**
 
 **Frontend Development:**
+
 ```
 /frontend "Design a responsive login form with validation"
 /frontend-ultra "Create a complete design system for our app"
@@ -134,6 +142,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 ```
 
 **Backend Development:**
+
 ```
 /backend "Design REST API for user management"
 /architect "Plan database schema for e-commerce platform"
@@ -141,6 +150,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 ```
 
 **Full Development Workflow (SDD):**
+
 ```
 /spec "Design a real-time chat feature with file uploads"
 /plan "Implement chat using WebSocket and AWS S3"
@@ -149,6 +159,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 ```
 
 **Advanced Usage:**
+
 ```
 /seq "Refactor this monolithic component into smaller pieces"
 /debate --rounds 8 "Should we use TypeScript or JavaScript?"
@@ -157,6 +168,7 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 ```
 
 **💡 Pro Tips:**
+
 - Commands work in any Cursor prompt or chat
 - You can combine commands with regular text
 - Use quotes around multi-word queries
@@ -166,24 +178,24 @@ After running `super-prompt super:init`, Cursor automatically recognizes the sla
 
 ```bash
 # Simplified persona flags (--sp-* prefix, optimize command is optional)
-super-prompt --sp-frontend "Design strategy"
-super-prompt --sp-analyzer "Debug intermittent failures"
-super-prompt --sp-backend "API design patterns"
-super-prompt --sp-architect "System architecture review"
+--sp-frontend "Design strategy"
+--sp-analyzer "Debug intermittent failures"
+--sp-backend "API design patterns"
+--sp-architect "System architecture review"
 
 # Original flag syntax (still supported)
-super-prompt --frontend "Design strategy"
-super-prompt --analyzer "Debug intermittent failures"
+--frontend "Design strategy"
+--analyzer "Debug intermittent failures"
 
 # Single‑model debate (internal Positive vs Critical selves)
-super-prompt --sp-debate --rounds 8 "Choose DB schema migration approach"
-super-prompt --sp-debate --rounds 5 "TypeScript vs JavaScript for our project"
+--sp-debate --rounds 8 "Choose DB schema migration approach"
+--sp-debate --rounds 5 "TypeScript vs JavaScript for our project"
 
 # SDD workflow commands - simplified flag syntax
-super-prompt --sp-sdd-spec "user authentication system"
-super-prompt --sp-sdd-plan "API endpoints design"
-super-prompt --sp-sdd-tasks "break down into development tasks"
-super-prompt --sp-sdd-implement "login functionality"
+--sp-sdd-spec "user authentication system"
+--sp-sdd-plan "API endpoints design"
+--sp-sdd-tasks "break down into development tasks"
+--sp-sdd-implement "login functionality"
 ```
 
 ## Commands
@@ -193,7 +205,8 @@ super-prompt --sp-sdd-implement "login functionality"
 Super Prompt now offers streamlined `--sp-*` flags for both personas and SDD
 workflows, making commands cleaner and more intuitive:
 
-**Benefits of --sp-* syntax:**
+__Benefits of --sp-_ syntax:_*
+
 - **Shorter commands**: `--sp-frontend` vs `--frontend`
 - **Consistent naming**: All Super Prompt flags use the same `--sp-` prefix
 - **Future-proof**: New features will follow this pattern
@@ -214,23 +227,26 @@ super-prompt sdd spec "user authentication"
 ### 🔄 Command Format Differences
 
 **Cursor IDE** (uses `/tag` format):
+
 - Type `/` followed by command name in any prompt
 - Example: `/frontend "Design a login form"`
 - Automatically available after `super-prompt super:init`
 - Interactive and visual command selection
 
 **Codex CLI** (uses `--sp-*` flags):
+
 - Command-line interface with flag options
 - Example: `super-prompt --sp-frontend "Design a login form"`
 - `optimize` command is optional since v2.9.19
 - Terminal-based execution
 
 **Both environments provide identical functionality:**
+
 - Same AI personas and SDD workflows
 - Same output quality and features
 - Just different input methods for your preferred interface
 
-**All available --sp-* flags:**
+__All available --sp-_ flags:_*
 
 - **Personas**: `--sp-frontend`, `--sp-backend`, `--sp-analyzer`,
   `--sp-architect`, `--sp-high`, `--sp-seq`, `--sp-seq-ultra`, `--sp-debate`,
@@ -314,7 +330,7 @@ super-prompt --sp-sdd-implement "start authentication development" --validate
 - `/seq-ultra` — Advanced sequential thinking (10 iterations)
 - `/debate` — AI vs AI debate system
 
-**Codex CLI (simplified --sp-* flags, recommended):**
+__Codex CLI (simplified --sp-_ flags, recommended):_*
 
 - `--sp-frontend` — Frontend design advisor
 - `--sp-frontend-ultra` — Elite UX/UI architect
@@ -472,7 +488,8 @@ super-prompt todo:status
 super-prompt todo:validate --session-file custom_todos.json
 ```
 
-**Note:** TODO commands are currently in development and may change in future versions.
+**Note:** TODO commands are currently in development and may change in future
+versions.
 
 ### Validation Criteria
 

@@ -414,6 +414,7 @@ Each wave: goals, tasks, risks, exit criteria."""
         if re.search(r'--sp-analyzer(\s|$)', input_text): return 'analyzer'
         if re.search(r'--debate(\s|$)', input_text): return 'debate'
         if re.search(r'--db-expert(\s|$)', input_text): return 'db-expert'
+        if re.search(r'--db-refector(\s|$)', input_text): return 'db-expert'
         if re.search(r'--docs-refector(\s|$)', input_text): return 'docs-refector'
         if re.search(r'--ultracompressed(\s|$)', input_text): return 'ultracompressed'
         if re.search(r'--performance(\s|$)', input_text): return 'performance'
@@ -1085,6 +1086,7 @@ def main():
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
     p_optimize.add_argument("--db-expert", action="store_true")
+    p_optimize.add_argument("--db-refector", action="store_true")
     p_optimize.add_argument("--docs-refector", action="store_true")
     p_optimize.add_argument("--ultracompressed", action="store_true")
     p_optimize.add_argument("--performance", action="store_true")
@@ -1101,6 +1103,7 @@ def main():
     p_optimize.add_argument("--sp-seq", action="store_true", help="Shortcut for seq persona")
     p_optimize.add_argument("--sp-seq-ultra", action="store_true", help="Shortcut for seq-ultra persona")
     p_optimize.add_argument("--sp-db-expert", action="store_true", help="Shortcut for db-expert persona")
+    p_optimize.add_argument("--sp-db-refector", action="store_true", help="Alias for db-expert persona")
     p_optimize.add_argument("--sp-docs-refector", action="store_true", help="Shortcut for docs-refector persona")
     p_optimize.add_argument("--sp-ultracompressed", action="store_true", help="Shortcut for ultracompressed persona")
     p_optimize.add_argument("--sp-performance", action="store_true", help="Shortcut for performance persona")

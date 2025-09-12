@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "2.9.23",
+  "version": "2.9.24",
   "description": "Dual IDE prompt engineering toolkit supporting Cursor and Codex CLI with SDD assist and personas",
   "main": "index.js",
   "bin": {

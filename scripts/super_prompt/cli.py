@@ -1338,6 +1338,7 @@ def main():
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
     p_optimize.add_argument("--db-expert", action="store_true")
+    p_optimize.add_argument("--db-refector", action="store_true")
     p_optimize.add_argument("--docs-refector", action="store_true")
     p_optimize.add_argument("--ultracompressed", action="store_true")
     p_optimize.add_argument("--performance", action="store_true")
@@ -1374,6 +1375,9 @@ def main():
     )
     p_optimize.add_argument(
         "--sp-db-expert", action="store_true", help="Shortcut for db-expert persona"
+    )
+    p_optimize.add_argument(
+        "--sp-db-refector", action="store_true", help="Alias for db-expert persona"
     )
     p_optimize.add_argument(
         "--sp-ultracompressed",
@@ -1612,6 +1616,7 @@ def main():
                 ("seq", "seq"),
                 ("debate", "debate"),
                 ("db_expert", "db-expert"),
+                ("db_refector", "db-expert"),
                 ("docs_refector", "docs-refector"),
                 ("ultracompressed", "ultracompressed"),
                 ("performance", "performance"),
@@ -1633,6 +1638,7 @@ def main():
                 ("sp_seq", "seq"),
                 ("sp_seq_ultra", "seq-ultra"),
                 ("sp_db_expert", "db-expert"),
+                ("sp_db_refector", "db-expert"),
                 ("sp_docs_refector", "docs-refector"),
                 ("sp_ultracompressed", "ultracompressed"),
                 ("sp_performance", "performance"),
