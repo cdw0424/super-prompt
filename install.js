@@ -188,6 +188,23 @@ async function sleep(ms) {
 
 async function animatedInstall() {
     try {
+        // Step 0: Diagnose npm cache path to avoid repo-local .npm-cache churn
+        try {
+            const cwd = process.cwd();
+            const cachePath = execSync('npm config get cache', { encoding: 'utf8' }).trim();
+            const isRepoLocalCache = cachePath && (cachePath.startsWith(cwd) || cachePath.startsWith('./') || cachePath.startsWith('.\\'));
+            if (isRepoLocalCache) {
+                console.warn(`${colors.yellow}⚠️  Detected npm cache under current repo: ${cachePath}${colors.reset}`);
+                console.warn(`${colors.yellow}   This can create massive .npm-cache/_cacache changes and confuse Git watchers.${colors.reset}`);
+                console.warn(`${colors.dim}   Recommended (non-destructive):${colors.reset}`);
+                console.warn(`   ${colors.cyan}npm config set cache ~/.npm --global${colors.reset}`);
+                if (fs.existsSync('.git')) {
+                    console.warn(`${colors.dim}   Also add to .gitignore if present:${colors.reset}`);
+                    console.warn(`   ${colors.cyan}echo ".npm-cache/" >> .gitignore && git rm -r --cached .npm-cache 2>/dev/null || true${colors.reset}`);
+                }
+            }
+        } catch (_) { /* ignore diagnostics */ }
+
         // Step 1.5: Offer Codex CLI install/upgrade (user choice)
         const wantEnv = process.env.SUPER_PROMPT_CODEX_INSTALL;
         let wantCodex = null;

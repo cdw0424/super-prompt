@@ -640,6 +640,16 @@ Flow
 - Python < 3.7 → install Python ≥ 3.7 and ensure `python3` points to it
 - Slash commands not visible (Cursor) → ensure `.cursor/commands/super-prompt/`
   exists, files executable (`chmod 755`), restart Cursor
+ - Infinite Git churn referencing `.npm-cache/_cacache`
+   - Cause: npm cache is set to a path inside the repository; installs flood `.npm-cache/` and trigger Git watchers.
+   - Fix (global, recommended):
+     ```bash
+     npm config get cache
+     npm config set cache ~/.npm --global
+     echo ".npm-cache/" >> .gitignore
+     git rm -r --cached .npm-cache 2>/dev/null || true
+     ```
+   - Our installer detects this condition and prints a warning with the recommended fix.
 
 ## Codex AMR (medium ↔ high)
 

@@ -3,3 +3,10 @@
 memory/
 memory-bank/
 .DS_Store
+
+# Avoid local npm cache churn being tracked by Git
+.npm-cache/
+.npm/
+.cache/
+node_modules/
+dist/
