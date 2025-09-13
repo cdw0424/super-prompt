@@ -1,24 +1,15 @@
 #!/usr/bin/env python3
 """
-Super Prompt — Project CLI (NPM packaged)
-
-This is the CLI invoked by the Node/NPM distribution via bin/super-prompt.
-It orchestrates project setup (super:init, super:upgrade), Cursor assets,
-legacy cleanup, and JSON→SQLite migration for memory/ltm.db.
-
-Note: The repository also contains a Python core CLI at
-packages/core-py/super_prompt/cli.py (Typer-based) intended for the Python
-package (super-prompt-core). The two CLIs target different distribution
-channels; do not delete either.
+Super Prompt - Simplified CLI Implementation
+All functionality in a single file to avoid import issues
 """
 
 import argparse, glob, os, sys, re, json, datetime, textwrap, subprocess, shutil
 from typing import Dict, List, Optional
 
 VERSION = "1.0.0"
-CURRENT_CMD: Optional[str] = None  # set in main()
 
-def log(msg: str):
+def log(msg: str): 
     print(f"-------- {msg}")
 
 # Utility functions
@@ -31,30 +22,11 @@ def read_text(path: str) -> str:
     except Exception as e:
         log(f"Read failed: {path} ({e})"); return ""
 
-def _allow_write(path: str) -> bool:
-    """Global write protection policy: block .cursor/.codex edits during optimize.
-    Allow .codex/reports; allow writes for init/build commands.
-    """
-    p = path.replace("\\", "/")
-    if p.startswith('.codex/reports') or '/.codex/reports/' in p:
-        return True
-    if CURRENT_CMD in ("super:init", "amr:rules", "codex:init", "install", "personas:init", "personas:build"):
-        return True
-    if CURRENT_CMD in ("optimize", "analyze", "debug"):
-        if p.startswith('.cursor') or '/.cursor/' in p:
-            return False
-        if p.startswith('.codex') or '/.codex/' in p:
-            return False
-    return True
-
 def write_text(path: str, content: str, dry: bool = False):
     if dry:
         log(f"[DRY] write → {path} ({len(content.encode('utf-8'))} bytes)"); return
-    if not _allow_write(path):
-        log(f"write blocked → {path} (policy)")
-        return
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f: 
         f.write(content)
     log(f"write → {path}")
 
@@ -76,12 +48,18 @@ def sanitize_en(txt: str) -> str:
 def maybe_translate_en(txt: str, allow_external=True) -> str:
     if is_english(txt): return txt
     if not allow_external: return sanitize_en(txt)
+    
     if shutil.which("claude"):
         try:
-            p = subprocess.run(["claude","--model","claude-sonnet-4-20250514","-p", f"Translate to clear English. Keep markdown.\n\n{txt}"], capture_output=True, text=True, timeout=30)
+            p = subprocess.run([
+                "claude","--model","claude-sonnet-4-20250514","-p", 
+                f"Translate the following text to clear, professional English. Keep markdown.\n\n{txt}"
+            ], capture_output=True, text=True, timeout=30)
             out = (p.stdout or "").strip()
             if out: return sanitize_en(out)
-        except: pass
+        except:
+            pass
+    
     return sanitize_en(txt)
 
 def slugify(name: str) -> str:
@@ -435,10 +413,6 @@ Each wave: goals, tasks, risks, exit criteria."""
         if re.search(r'--analyzer(\s|$)', input_text): return 'analyzer'
         if re.search(r'--sp-analyzer(\s|$)', input_text): return 'analyzer'
         if re.search(r'--debate(\s|$)', input_text): return 'debate'
-        if re.search(r'--dev(\s|$)', input_text): return 'dev'
-        if re.search(r'--sp-dev(\s|$)', input_text): return 'dev'
-        if re.search(r'--tr(\s|$)', input_text): return 'tr'
-        if re.search(r'--sp-tr(\s|$)', input_text): return 'tr'
         if re.search(r'--db-expert(\s|$)', input_text): return 'db-expert'
         if re.search(r'--db-refector(\s|$)', input_text): return 'db-expert'
         if re.search(r'--docs-refector(\s|$)', input_text): return 'docs-refector'
@@ -514,21 +488,6 @@ Each wave: goals, tasks, risks, exit criteria."""
         
         # Use detailed persona prompt
         persona_prompt = config.get('prompt', f"**[Persona]** {config['desc']}")
-        # Allow dev/tr utils to craft persona prompt if available
-        if persona in ('dev','tr'):
-            try:
-                util_path = os.path.join('.super-prompt','utils', f'{persona}.py')
-                if os.path.isfile(util_path):
-                    spec = _importlib.spec_from_file_location(f'sp_utils_{persona}', util_path)
-                    if spec and spec.loader:
-                        mod = _importlib.module_from_spec(spec)
-                        spec.loader.exec_module(mod)  # type: ignore
-                        if hasattr(mod, 'build_prompt'):
-                            built = mod.build_prompt(context=context, query=query)
-                            if isinstance(built, str) and built.strip():
-                                persona_prompt = built
-            except Exception:
-                pass
         
         try:
             if cli_tool == 'claude':
@@ -1000,19 +959,6 @@ State machine (per turn):
 - Not detected? The run proceeds and prints a setup hint. After installation, export `CONTEXT7_MCP=1`.
 """
     write_text(os.path.join(agent_dir, 'agents.md'), agent_md, dry)
-    # Append YAML personas catalog if present
-    try:
-        _y = load_personas_from_yaml()
-        if _y:
-            lines = ["\n## Personas (from YAML manifests)\n"]
-            for p in _y:
-                slug = p.get('slug') or p.get('name')
-                desc = p.get('desc') or p.get('description') or p.get('title') or slug
-                lines.append(f"- `{slug}` — {desc}\n")
-            with open(os.path.join(agent_dir, 'agents.md'), 'a', encoding='utf-8') as f:
-                f.write(''.join(lines))
-    except Exception:
-        pass
     personas_py = """
 #!/usr/bin/env python3
 # Codex Personas Helper — programmatic prompt builders (English only).
@@ -1123,13 +1069,6 @@ def main():
     p_init = sub.add_parser("super:init", help="Generate SDD-compliant rules and setup")
     p_init.add_argument("--out", default=".cursor/rules", help="Output directory")
     p_init.add_argument("--dry-run", action="store_true", help="Preview only")
-
-    # Upgrade: refresh assets, cleanup legacy, migrate sessions
-    p_upgrade = sub.add_parser("super:upgrade", help="Upgrade project assets; cleanup legacy; migrate JSON sessions to SQLite")
-    p_upgrade.add_argument("--dry-run", action="store_true", help="Preview only")
-
-    # Help: list supported commands and usage
-    p_help = sub.add_parser("super:help", help="Show Super Prompt commands and usage")
     
     p_optimize = sub.add_parser("optimize", help="Execute persona queries with SDD context")
     p_optimize.add_argument("query", nargs="*", help="Query or debate topic")
@@ -1146,8 +1085,6 @@ def main():
     p_optimize.add_argument("--seq", action="store_true")
     p_optimize.add_argument("--seq-ultra", action="store_true")
     p_optimize.add_argument("--debate", action="store_true")
-    p_optimize.add_argument("--dev", action="store_true")
-    p_optimize.add_argument("--tr", action="store_true")
     p_optimize.add_argument("--db-expert", action="store_true")
     p_optimize.add_argument("--db-refector", action="store_true")
     p_optimize.add_argument("--docs-refector", action="store_true")
@@ -1165,8 +1102,6 @@ def main():
     p_optimize.add_argument("--sp-high", action="store_true", help="Shortcut for high persona")
     p_optimize.add_argument("--sp-seq", action="store_true", help="Shortcut for seq persona")
     p_optimize.add_argument("--sp-seq-ultra", action="store_true", help="Shortcut for seq-ultra persona")
-    p_optimize.add_argument("--sp-dev", action="store_true", help="Shortcut for Feature Development Specialist")
-    p_optimize.add_argument("--sp-tr", action="store_true", help="Shortcut for Troubleshooter")
     p_optimize.add_argument("--sp-db-expert", action="store_true", help="Shortcut for db-expert persona")
     p_optimize.add_argument("--sp-db-refector", action="store_true", help="Alias for db-expert persona")
     p_optimize.add_argument("--sp-docs-refector", action="store_true", help="Shortcut for docs-refector persona")
@@ -1215,7 +1150,7 @@ def main():
 
     # Smart routing: 'optimize' is the default action.
     raw_argv = sys.argv[1:]
-    known_cmds = {"super:init", "super:upgrade", "super:help", "optimize", "amr:rules", "amr:print", "amr:qa", "codex:init", "personas:init", "personas:build", "sdd"}
+    known_cmds = {"super:init", "optimize", "amr:rules", "amr:print", "amr:qa", "codex:init", "sdd"}
     if not raw_argv:
         args = parser.parse_args(["optimize", "--list-personas"])
     elif raw_argv and raw_argv[0] in known_cmds:
@@ -1232,168 +1167,17 @@ def main():
         print(f"   \033[2m→ Detected: {sdd_context['frameworks']}\033[0m")
         print(f"   \033[2m→ SDD Status: {'✅ SPEC/PLAN found' if sdd_context['sdd_compliance'] else '⚠️  Missing SPEC/PLAN'}\033[0m\n")
         
-        # Try to delegate core init if available (reduce duplication)
-        delegated = False
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                print("\033[36m🤝 Delegating init to core CLI (packages/core-py)...\033[0m")
-                res = subprocess.run(["python3", core_cli, "init"], check=False)
-                delegated = (res.returncode == 0)
-        except Exception:
-            delegated = False
-
-        if not delegated:
-            # Generate SDD rules (fallback)
-            print("\033[36m📋 Generating Cursor rules...\033[0m")
-            rules_dir = generate_sdd_rules_files(args.out, args.dry_run)
-            print(f"\033[32m✓\033[0m \033[1mStep 2:\033[0m Rule files created")
-            print(f"   \033[2m→ Location: {rules_dir}\033[0m\n")
-            
-            # Install Cursor commands (fallback)
-            print("\033[36m⚡ Setting up Cursor slash commands...\033[0m")
-            install_cursor_commands_in_project(args.dry_run)
-            print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
-            print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /docs-refector /db-expert /spec /plan /review /tasks /implement\033[0m\n")
-        else:
-            print("\033[32m✓\033[0m \033[1mStep 2/3:\033[0m Delegated to core init (rules & commands)")
-
-        # Step 3.5: Install pinned dev deps for LTM helpers (best-effort)
-        try:
-            print("\033[36m🧩 Installing dev dependencies (pinned) for LTM helpers...\033[0m")
-            pinned = [
-                "better-sqlite3@12.2.0",
-                "ajv@8.17.1",
-                "zod@4.1.8",
-                "ioredis@5.7.0",
-            ]
-            override = os.environ.get('SUPER_PROMPT_LTM_PKGS')
-            pkgs = override.split() if override else pinned
-            subprocess.run(["npm", "install", "-D", *pkgs], check=False)
-            print(f"\033[32m✓\033[0m \033[1mStep 3.5:\033[0m Dev dependencies installed (best-effort)\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Skipped dev dependency install: {e}\033[0m\n")
-
-        # Step 3.6: Add /init-sp and /re-init-sp Cursor commands
-        try:
-            cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
-            os.makedirs(cmd_dir, exist_ok=True)
-            init_sp_md = os.path.join(cmd_dir, 'init-sp.md')
-            reinit_sp_md = os.path.join(cmd_dir, 're-init-sp.md')
-            init_sp_content = """---
-description: Initialize Super Prompt memory (project analysis)
-run: "python3"
-args: [".super-prompt/utils/init/init_sp.py", "--mode", "init"]
----
-
-🧭 Initialize Super Prompt memory with project structure snapshot.
-"""
-            reinit_sp_content = """---
-description: Re-Initialize project analysis (refresh memory)
-run: "python3"
-args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
----
-
-🔄 Refresh project analysis and update memory.
-"""
-            write_text(init_sp_md, init_sp_content, dry=args.dry_run)
-            write_text(reinit_sp_md, reinit_sp_content, dry=args.dry_run)
-            print(f"\033[32m✓\033[0m \033[1mStep 3.6:\033[0m Init commands installed (/init-sp, /re-init-sp)\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Could not write init commands: {e}\033[0m\n")
-
-        # Step 3.7: Legacy cleanup and JSON→SQLite migration
-        try:
-            print("\033[36m🧹 Cleaning legacy assets and migrating sessions...\033[0m")
-            # Backup existing SQLite DB (non-destructive)
-            try:
-                db_path = os.path.join(os.getcwd(), 'memory', 'ltm.db')
-                if os.path.exists(db_path):
-                    bdir = os.path.join(os.getcwd(), 'memory', 'backup')
-                    os.makedirs(bdir, exist_ok=True)
-                    ts = int(__import__('time').time())
-                    bpath = os.path.join(bdir, f'ltm-{ts}.db')
-                    shutil.copy2(db_path, bpath)
-                    print(f"   \033[2m→ Backed up DB to {bpath}\033[0m")
-            except Exception:
-                pass
-            legacy_dir = os.path.join(os.getcwd(), 'legacy', f"cleanup-{int(__import__('time').time())}")
-            os.makedirs(legacy_dir, exist_ok=True)
-            # Move old Python command files under Cursor
-            sp_cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
-            moved = 0
-            if os.path.isdir(sp_cmd_dir):
-                for name in os.listdir(sp_cmd_dir):
-                    if name.endswith('.py'):
-                        src = os.path.join(sp_cmd_dir, name)
-                        dst_dir = os.path.join(legacy_dir, 'cursor-commands')
-                        os.makedirs(dst_dir, exist_ok=True)
-                        shutil.move(src, os.path.join(dst_dir, name))
-                        moved += 1
-                # remove deprecated re-init
-                dep = os.path.join(sp_cmd_dir, 're-init.md')
-                if os.path.exists(dep):
-                    dst_dir = os.path.join(legacy_dir, 'deprecated')
-                    os.makedirs(dst_dir, exist_ok=True)
-                    shutil.move(dep, os.path.join(dst_dir, os.path.basename(dep)))
-            if moved:
-                print(f"   \033[2m→ Moved {moved} legacy command scripts to {legacy_dir}\033[0m")
-
-            # Migrate JSON sessions → SQLite
-            sys.path.append(os.path.join(os.getcwd(), '.super-prompt', 'utils'))
-            migrated_files = 0
-            try:
-                from fallback_memory import MemoryController  # type: ignore
-                mem = MemoryController(os.getcwd())
-                sessions_dir = os.path.join(os.getcwd(), 'memory', 'sessions')
-                if os.path.isdir(sessions_dir):
-                    for name in os.listdir(sessions_dir):
-                        if not name.endswith('.json'):
-                            continue
-                        src = os.path.join(sessions_dir, name)
-                        try:
-                            with open(src, 'r', encoding='utf-8') as f:
-                                data = json.load(f)
-                        except Exception:
-                            continue
-                        # import chat history
-                        hist = data.get('full_chat_history') or []
-                        i = 0
-                        while i < len(hist):
-                            role = (hist[i].get('role') or '').lower()
-                            content = hist[i].get('content') or ''
-                            if role == 'user':
-                                if i + 1 < len(hist) and (hist[i+1].get('role') or '').lower() == 'assistant':
-                                    mem.append_interaction(content, hist[i+1].get('content') or '')
-                                    i += 2
-                                else:
-                                    mem.append_interaction(content, None)
-                                    i += 1
-                            elif role == 'assistant':
-                                mem.append_interaction('', content)
-                                i += 1
-                            else:
-                                i += 1
-                        # import key memories and entities
-                        ex = {}
-                        km = ((data.get('core_memory') or {}).get('key_memories')) or []
-                        if isinstance(km, list) and km:
-                            ex['key_memories'] = [ (k.get('content') if isinstance(k, dict) else str(k)) for k in km ]
-                        ents = ((data.get('core_memory') or {}).get('entities')) or {}
-                        if isinstance(ents, dict) and ents:
-                            ex['entities'] = ents
-                        if ex:
-                            mem.update_from_extraction(ex)
-                        # move file
-                        dst_dir = os.path.join(legacy_dir, 'migrated-sessions')
-                        os.makedirs(dst_dir, exist_ok=True)
-                        shutil.move(src, os.path.join(dst_dir, name))
-                        migrated_files += 1
-            except Exception:
-                pass
-            print(f"\033[32m✓\033[0m \033[1mStep 3.7:\033[0m Legacy cleanup done; migrated {migrated_files} session file(s)\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Legacy cleanup/migration skipped: {e}\033[0m\n")
+        # Generate SDD rules
+        print("\033[36m📋 Generating Cursor rules...\033[0m")
+        rules_dir = generate_sdd_rules_files(args.out, args.dry_run)
+        print(f"\033[32m✓\033[0m \033[1mStep 2:\033[0m Rule files created")
+        print(f"   \033[2m→ Location: {rules_dir}\033[0m\n")
+        
+        # Install Cursor commands
+        print("\033[36m⚡ Setting up Cursor slash commands...\033[0m")
+        install_cursor_commands_in_project(args.dry_run)
+        print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
+        print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /docs-refector /db-expert /spec /plan /review /tasks /implement\033[0m\n")
         # Optional Codex integration prompt (.codex/*)
         want_codex = os.environ.get('SUPER_PROMPT_INIT_CODEX')
         yn = None
@@ -1426,225 +1210,6 @@ args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
         print("   \033[2mFrom CLI:\033[0m \033[36msuper-prompt --frontend \"design strategy\"\033[0m")
         print("")
         print("\033[32m✨ Ready for next-level prompt engineering!\033[0m")
-        return 0
-
-    elif args.cmd == "super:upgrade":
-        show_ascii_logo()
-        print("\033[33m\033[1m🔧 Upgrading project setup...\033[0m\n")
-
-        # 1) Refresh rules
-        try:
-            print("\033[36m📋 Refreshing Cursor rules...\033[0m")
-            rules_dir = generate_sdd_rules_files(".cursor/rules", getattr(args, 'dry_run', False))
-            print(f"\033[32m✓\033[0m \033[1mStep 1:\033[0m Rule files refreshed")
-            print(f"   \033[2m→ Location: {rules_dir}\033[0m\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Rules refresh skipped: {e}\033[0m\n")
-
-        # 2) Update Cursor commands
-        try:
-            print("\033[36m⚡ Updating Cursor slash commands...\033[0m")
-            install_cursor_commands_in_project(getattr(args, 'dry_run', False))
-            print(f"\033[32m✓\033[0m \033[1mStep 2:\033[0m Slash commands updated\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Command update skipped: {e}\033[0m\n")
-
-        # 3) Ensure pinned dev deps
-        try:
-            print("\033[36m🧩 Ensuring dev dependencies (pinned) for LTM helpers...\033[0m")
-            pinned = [
-                "better-sqlite3@12.2.0",
-                "ajv@8.17.1",
-                "zod@4.1.8",
-                "ioredis@5.7.0",
-            ]
-            override = os.environ.get('SUPER_PROMPT_LTM_PKGS')
-            pkgs = override.split() if override else pinned
-            subprocess.run(["npm", "install", "-D", *pkgs], check=False)
-            print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Dev dependencies ensured\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Dev dependency install skipped: {e}\033[0m\n")
-
-        # 4) Ensure /init-sp and /re-init-sp
-        try:
-            cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
-            os.makedirs(cmd_dir, exist_ok=True)
-            init_sp_md = os.path.join(cmd_dir, 'init-sp.md')
-            reinit_sp_md = os.path.join(cmd_dir, 're-init-sp.md')
-            if not os.path.exists(init_sp_md):
-                write_text(init_sp_md, """---
-description: Initialize Super Prompt memory (project analysis)
-run: "python3"
-args: [".super-prompt/utils/init/init_sp.py", "--mode", "init"]
----
-
-🧭 Initialize Super Prompt memory with project structure snapshot.
-""", dry=getattr(args, 'dry_run', False))
-            if not os.path.exists(reinit_sp_md):
-                write_text(reinit_sp_md, """---
-description: Re-Initialize project analysis (refresh memory)
-run: "python3"
-args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
----
-
-🔄 Refresh project analysis and update memory.
-""", dry=getattr(args, 'dry_run', False))
-            print(f"\033[32m✓\033[0m \033[1mStep 4:\033[0m Init commands ensured (/init-sp, /re-init-sp)\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Could not ensure init commands: {e}\033[0m\n")
-
-        # 5) Legacy cleanup & JSON→SQLite migration
-        try:
-            print("\033[36m🧹 Cleaning legacy assets and migrating sessions...\033[0m")
-            # Backup existing SQLite DB (non-destructive)
-            try:
-                db_path = os.path.join(os.getcwd(), 'memory', 'ltm.db')
-                if os.path.exists(db_path):
-                    bdir = os.path.join(os.getcwd(), 'memory', 'backup')
-                    os.makedirs(bdir, exist_ok=True)
-                    ts = int(__import__('time').time())
-                    bpath = os.path.join(bdir, f'ltm-{ts}.db')
-                    shutil.copy2(db_path, bpath)
-                    print(f"   \033[2m→ Backed up DB to {bpath}\033[0m")
-            except Exception:
-                pass
-            legacy_dir = os.path.join(os.getcwd(), 'legacy', f"cleanup-{int(__import__('time').time())}")
-            os.makedirs(legacy_dir, exist_ok=True)
-            sp_cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
-            moved = 0
-            if os.path.isdir(sp_cmd_dir):
-                for name in os.listdir(sp_cmd_dir):
-                    if name.endswith('.py'):
-                        src = os.path.join(sp_cmd_dir, name)
-                        dst_dir = os.path.join(legacy_dir, 'cursor-commands')
-                        os.makedirs(dst_dir, exist_ok=True)
-                        shutil.move(src, os.path.join(dst_dir, name))
-                        moved += 1
-                dep = os.path.join(sp_cmd_dir, 're-init.md')
-                if os.path.exists(dep):
-                    dst_dir = os.path.join(legacy_dir, 'deprecated')
-                    os.makedirs(dst_dir, exist_ok=True)
-                    shutil.move(dep, os.path.join(dst_dir, os.path.basename(dep)))
-            if moved:
-                print(f"   \033[2m→ Moved {moved} legacy command scripts to {legacy_dir}\033[0m")
-
-            # Session migration
-            sys.path.append(os.path.join(os.getcwd(), '.super-prompt', 'utils'))
-            migrated_files = 0
-            try:
-                from fallback_memory import MemoryController  # type: ignore
-                mem = MemoryController(os.getcwd())
-                sessions_dir = os.path.join(os.getcwd(), 'memory', 'sessions')
-                if os.path.isdir(sessions_dir):
-                    for name in os.listdir(sessions_dir):
-                        if not name.endswith('.json'):
-                            continue
-                        src = os.path.join(sessions_dir, name)
-                        try:
-                            with open(src, 'r', encoding='utf-8') as f:
-                                data = json.load(f)
-                        except Exception:
-                            continue
-                        hist = data.get('full_chat_history') or []
-                        i = 0
-                        while i < len(hist):
-                            role = (hist[i].get('role') or '').lower()
-                            content = hist[i].get('content') or ''
-                            if role == 'user':
-                                if i + 1 < len(hist) and (hist[i+1].get('role') or '').lower() == 'assistant':
-                                    mem.append_interaction(content, hist[i+1].get('content') or '')
-                                    i += 2
-                                else:
-                                    mem.append_interaction(content, None)
-                                    i += 1
-                            elif role == 'assistant':
-                                mem.append_interaction('', content)
-                                i += 1
-                            else:
-                                i += 1
-                        ex = {}
-                        km = ((data.get('core_memory') or {}).get('key_memories')) or []
-                        if isinstance(km, list) and km:
-                            ex['key_memories'] = [ (k.get('content') if isinstance(k, dict) else str(k)) for k in km ]
-                        ents = ((data.get('core_memory') or {}).get('entities')) or {}
-                        if isinstance(ents, dict) and ents:
-                            ex['entities'] = ents
-                        if ex:
-                            mem.update_from_extraction(ex)
-                        dst_dir = os.path.join(legacy_dir, 'migrated-sessions')
-                        os.makedirs(dst_dir, exist_ok=True)
-                        shutil.move(src, os.path.join(dst_dir, name))
-                        migrated_files += 1
-            except Exception:
-                pass
-            print(f"\033[32m✓\033[0m \033[1mStep 5:\033[0m Legacy cleanup done; migrated {migrated_files} session file(s)\n")
-        except Exception as e:
-            print(f"\033[33m⚠️  Legacy cleanup/migration skipped: {e}\033[0m\n")
-
-        print("\033[32m\033[1m🎉 Upgrade Complete!\033[0m\n")
-        return 0
-
-    elif args.cmd == "super:help":
-        show_ascii_logo()
-        print("\033[33m\033[1m🧭 Super Prompt — Commands & Usage\033[0m\n")
-        # Dynamic environment status
-        def has_cmd(cmd):
-            try:
-                subprocess.run([cmd, "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-                return True
-            except Exception:
-                return False
-        # Python
-        py_ok = sys.version_info >= (3,7)
-        print(f"Python: {'✅' if py_ok else '❌'} {sys.version.split()[0]}")
-        # SQLite3 & FTS5
-        try:
-            import sqlite3
-            con = sqlite3.connect(":memory:")
-            cur = con.cursor()
-            fts5_ok = True
-            try:
-                cur.execute("CREATE VIRTUAL TABLE t_fts USING fts5(content);")
-            except Exception:
-                fts5_ok = False
-            print(f"SQLite3: ✅ module {sqlite3.sqlite_version} | FTS5: {'✅' if fts5_ok else '⚠️  no'}")
-        except Exception as e:
-            print(f"SQLite3: ❌ ({e})")
-        # Codex CLI
-        codex_ok = has_cmd('codex')
-        print(f"Codex CLI: {'✅' if codex_ok else '⚠️  not found'}")
-        print("")
-        print("\033[36mSetup\033[0m")
-        print("  super-prompt super:init         # Initialize rules, commands; cleanup; migrate JSON→SQLite")
-        print("  super-prompt super:upgrade      # Refresh assets; cleanup legacy; migrate JSON→SQLite\n")
-
-        print("\033[36mPersonas (Cursor slash tags)\033[0m")
-        print("  /architect /frontend /backend /analyzer /security /performance /mentor /refactorer /qa /devops /scribe /doc-master /dev /tr")
-        print("  Tips: add /delegate to force deep reasoning via Codex (GPT-5)\n")
-
-        print("\033[36mSDD Workflow\033[0m")
-        print("  /specify     # Create SPEC draft")
-        print("  /plan        # Create PLAN draft")
-        print("  /tasks       # Create TASK breakdown")
-        print("  /implement   # Execute minimal change (with gates)\n")
-
-        print("\033[36mProject Analysis\033[0m")
-        print("  /init-sp     # Analyze current project → store in SQLite (memory/ltm.db)")
-        print("  /re-init-sp  # Refresh analysis → store in SQLite\n")
-
-        print("\033[36mQuality & Safety\033[0m")
-        print("  - Global rules: clarify-or-assume, Plan→Execute→Review, no CoT exposure, log prefix '--------'")
-        print("  - Secrets masked (sk-***), minimal diffs, idempotent migrations\n")
-
-        print("\033[36mEnvironment Notes\033[0m")
-        print("  - Requires Python 3 & SQLite3 (auto-install attempted on install.js)")
-        print("  - Codex CLI auto-updates before deep reasoning delegation\n")
-
-        print("\033[36mExamples\033[0m")
-        print("  super-prompt optimize \"Design the system /architect\"")
-        print("  super-prompt optimize \"Investigate slowness /analyzer /delegate\"")
-        print("  super-prompt super:init   &&  /init-sp")
-        print("  npm i -g @cdw0424/super-prompt@latest && super-prompt super:upgrade\n")
         return 0
         
     elif args.cmd == "optimize":
@@ -1725,96 +1290,68 @@ args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
                 query_text += " /high Implement the smallest viable change based on SPEC/PLAN and tasks; output minimal diffs, tests, and docs"
         if getattr(args, 'debate', False) and getattr(args, 'rounds', None):
             query_text += f" --rounds {int(args.rounds)}"
-        # Try to delegate optimize to core CLI if available
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                res = subprocess.run(["python3", core_cli, "optimize", query_text], check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-
-        print("❌ Core CLI not available. Please install/use the core CLI or run via Cursor.")
-        print("   - Python core: pip install super-prompt-core && python -m super_prompt.cli optimize ...")
-        print("   - Cursor: use slash commands (e.g., /architect, /frontend)")
-        return 1
+        # Safe mode for --sp-analyzer: do not execute external CLI, print or save the composed prompt
+        if getattr(args, 'sp_analyzer', False):
+            out_path = getattr(args, 'out', None)
+            if out_path is None:
+                # Default to .codex/reports
+                ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                os.makedirs(os.path.join('.codex','reports'), exist_ok=True)
+                out_path = os.path.join('.codex','reports', f'analysis_{ts}.md')
+            # Build context and compose without executing external tool
+            persona = 'analyzer'
+            clean_query = optimizer.clean_input(query_text)
+            # Reuse execute in safe mode to persist the composed prompt
+            ok = optimizer.execute(persona, clean_query, safe=True, out_path=out_path)
+            if ok:
+                print(f"Saved analyzer prompt (safe mode) → {out_path}")
+            return 0 if ok else 1
+        success = optimizer.process_query(query_text)
+        return 0 if success else 1
     elif args.cmd == "amr:rules":
-        # Delegate to core if available
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                res = subprocess.run(["python3", core_cli, "amr-rules", "--out", args.out], check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available to generate AMR rules.")
-        return 1
+        path = generate_amr_rules_file(args.out, getattr(args, 'dry_run', False))
+        print(f"AMR rules written: {path}")
+        return 0
     elif args.cmd == "amr:print":
-        # Delegate to core if available
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                p = getattr(args, 'path', 'prompts/codex_amr_bootstrap_prompt_en.txt')
-                res = subprocess.run(["python3", core_cli, "amr-print", "--path", p], check=False)
-                if res.returncode == 0:
+        p = getattr(args, 'path', 'prompts/codex_amr_bootstrap_prompt_en.txt')
+        data = read_text(p)
+        if not data:
+            # Fallback: use JS generator if available
+            try:
+                res = subprocess.run(["codex-amr","print-bootstrap"], capture_output=True, text=True, timeout=10)
+                if res.returncode == 0 and (res.stdout or '').strip():
+                    print(res.stdout)
                     return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available to print AMR bootstrap.")
-        return 1
+            except Exception:
+                pass
+            print("No bootstrap prompt found. Try: codex-amr print-bootstrap")
+            return 1
+        print(data)
+        return 0
     elif args.cmd == "amr:qa":
-        # Delegate to core if available
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                res = subprocess.run(["python3", core_cli, "amr-qa", args.file], check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available to run AMR QA.")
-        return 1
+        fp = args.file
+        if not os.path.isfile(fp):
+            print(f"❌ File not found: {fp}")
+            return 2
+        txt = read_text(fp)
+        ok = True
+        # Check sections
+        if not re.search(r"^\[INTENT\]", txt, re.M):
+            log("Missing [INTENT] section"); ok = False
+        if not (re.search(r"^\[PLAN\]", txt, re.M) or re.search(r"^\[EXECUTE\]", txt, re.M)):
+            log("Missing [PLAN] or [EXECUTE] section"); ok = False
+        # Check log prefix
+        if re.search(r"^(router:|run:)", txt, re.M):
+            log("Found log lines without '--------' prefix"); ok = False
+        # Router switch consistency (if present)
+        if "/model gpt-5 high" in txt and "/model gpt-5 medium" not in txt:
+            log("High switch found without returning to medium"); ok = False
+        print("--------qa: OK" if ok else "--------qa: FAIL")
+        return 0 if ok else 1
     elif args.cmd == "codex:init":
-        # Delegate to core
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                res = subprocess.run(["python3", core_cli, "codex-init"], check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available to init Codex assets.")
-        return 1
-    elif args.cmd == "personas:init":
-        # Delegate to core
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                argv = ["python3", core_cli, "personas-init"]
-                if '--overwrite' in sys.argv:
-                    argv.append("--overwrite")
-                res = subprocess.run(argv, check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available to init personas manifest.")
-        return 1
-    elif args.cmd == "personas:build":
-        # Delegate to core
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                res = subprocess.run(["python3", core_cli, "personas-build"], check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available to build personas.")
-        return 1
+        write_codex_agent_assets(getattr(args, 'dry_run', False))
+        print("--------codex:init: .codex assets created")
+        return 0
     elif args.cmd == 'sdd':
         print_mcp_banner()
         if not getattr(args, 'sdd_cmd', None):
@@ -1824,17 +1361,18 @@ args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
         if not topic:
             print("❌ Provide a topic/context. Example: super-prompt sdd spec \"user authentication\"")
             return 2
-        # Try to delegate SDD to core CLI
-        try:
-            core_cli = os.path.join(os.getcwd(), 'packages', 'core-py', 'super_prompt', 'cli.py')
-            if os.path.exists(core_cli):
-                res = subprocess.run(["python3", core_cli, "sdd", args.sdd_cmd, topic], check=False)
-                if res.returncode == 0:
-                    return 0
-        except Exception:
-            pass
-        print("❌ Core CLI not available for SDD commands. Use Cursor or install super-prompt-core.")
-        return 1
+        mapping = {
+            'spec': ('architect', 'Create a SPEC file for this feature following SDD guidelines: goals, success criteria, scope boundaries, and user value'),
+            'plan': ('architect', 'Create a PLAN file for this feature following SDD guidelines: architecture, constraints, NFRs, risks, and security considerations'),
+            'review': ('high', 'Review this implementation against SDD SPEC/PLAN files and provide compliance assessment'),
+            'tasks': ('architect', 'Break work into small, testable tasks with IDs, acceptance criteria, estimates, and dependencies, referencing SPEC/PLAN'),
+            'implement': ('high', 'Implement the smallest viable change based on SPEC/PLAN and tasks; output minimal diffs, tests, and docs'),
+        }
+        persona, instr = mapping[args.sdd_cmd]
+        query_text = f"{topic} /{persona} {instr}"
+        optimizer = PromptOptimizer()
+        ok = optimizer.process_query(query_text)
+        return 0 if ok else 1
     
     log(f"Unknown command: {args.cmd}")
     return 2

@@ -1,9 +1,17 @@
 """
-Super Prompt CLI - Modern modular command-line interface
+Super Prompt Core CLI (Typer) — Python package entrypoint
+
+This CLI is for the Python package (super-prompt-core). The NPM distribution
+uses .super-prompt/cli.py as its entrypoint. Keep both CLIs; they serve
+different packaging targets.
 """
 
 import typer
 from typing import Optional
+import os
+import sys
+import subprocess
+import json
 from pathlib import Path
 
 from .engine.execution_pipeline import ExecutionPipeline
@@ -59,6 +67,168 @@ def optimize(
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
         raise typer.Exit(1)
+
+
+@app.command("amr-rules")
+def amr_rules(
+    out: Path = typer.Option(Path(".cursor/rules"), "--out", help="Output directory")
+):
+    """Generate AMR rule file (05-amr.mdc) for Cursor."""
+    try:
+        out.mkdir(parents=True, exist_ok=True)
+        amr_path = out / "05-amr.mdc"
+        content = """---
+description: "Auto Model Router (AMR) policy and state machine"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Auto Model Router (medium ↔ high)
+- Default: gpt-5, reasoning=medium.
+- Task classes: L0 (light), L1 (moderate), H (heavy reasoning).
+- H: switch to high for PLAN/REVIEW, then back to medium for EXECUTION.
+- Router switch lines (copy-run if needed):
+  - `/model gpt-5 high` → `--------router: switch to high (reason=deep_planning)`
+  - `/model gpt-5 medium` → `--------router: back to medium (reason=execution)`
+
+# Output Discipline
+- Language: English. Logs start with `--------`.
+- Keep diffs minimal; provide exact macOS zsh commands.
+
+# Fixed State Machine
+[INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
+
+# Templates (use as needed)
+T1 Switch High:
+```
+/model gpt-5 high
+--------router: switch to high (reason=deep_planning)
+```
+T1 Back Medium:
+```
+/model gpt-5 medium
+--------router: back to medium (reason=execution)
+```
+T2 PLAN:
+```
+[Goal]
+- …
+[Plan]
+- …
+[Risk/Trade‑offs]
+- …
+[Test/Verify]
+- …
+[Rollback]
+- …
+```
+T3 EXECUTE:
+```
+[Diffs]
+```diff
+--- a/file
++++ b/file
+@@
+- old
++ new
+```
+[Commands]
+```bash
+--------run: npm test -- --watchAll=false
+```
+```
+"""
+        amr_path.write_text(content)
+        typer.echo(f"AMR rules written: {amr_path}")
+    except Exception as e:
+        typer.echo(f"❌ Error writing AMR rules: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command("amr-print")
+def amr_print(
+    path: Path = typer.Option(Path("prompts/codex_amr_bootstrap_prompt_en.txt"), "--path", help="Prompt file path"),
+):
+    """Print AMR bootstrap prompt to stdout."""
+    try:
+        if path.exists():
+            typer.echo(path.read_text())
+        else:
+            typer.echo("No bootstrap prompt found. Provide --path or add prompts/codex_amr_bootstrap_prompt_en.txt")
+            raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+
+
+@app.command("amr-qa")
+def amr_qa(
+    file: Path = typer.Argument(..., help="Transcript/text file to check"),
+):
+    """Validate a transcript for AMR/state-machine conformance."""
+    if not file.exists():
+        typer.echo(f"❌ File not found: {file}"); raise typer.Exit(2)
+    txt = file.read_text()
+    ok = True
+    import re
+    if not re.search(r"^\[INTENT\]", txt, re.M):
+        typer.echo("-------- Missing [INTENT] section"); ok = False
+    if not (re.search(r"^\[PLAN\]", txt, re.M) or re.search(r"^\[EXECUTE\]", txt, re.M)):
+        typer.echo("-------- Missing [PLAN] or [EXECUTE] section"); ok = False
+    if re.search(r"^(router:|run:)", txt, re.M):
+        typer.echo("-------- Found log lines without '--------' prefix"); ok = False
+    if "/model gpt-5 high" in txt and "/model gpt-5 medium" not in txt:
+        typer.echo("-------- High switch found without returning to medium"); ok = False
+    typer.echo("--------qa: OK" if ok else "--------qa: FAIL")
+    raise typer.Exit(0 if ok else 1)
+
+
+@app.command("codex-init")
+def codex_init(
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Create Codex CLI assets in .codex/"""
+    try:
+        root = Path(project_root or ".")
+        adapter = CodexAdapter()
+        adapter.generate_assets(root)
+        typer.echo("--------codex:init: .codex assets created")
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+
+
+@app.command("personas-init")
+def personas_init(
+    overwrite: bool = typer.Option(False, "--overwrite", help="Overwrite if exists"),
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Copy package personas manifest into project personas/manifest.yaml"""
+    try:
+        root = Path(project_root or ".")
+        src = Path(__file__).parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
+        dst_dir = root / "personas"
+        dst = dst_dir / "manifest.yaml"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        if dst.exists() and not overwrite:
+            typer.echo(f"➡️  personas manifest exists: {dst} (use --overwrite to replace)")
+            return
+        dst.write_text(src.read_text())
+        typer.echo(f"--------personas:init: wrote manifest → {dst}")
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+
+
+@app.command("personas-build")
+def personas_build(
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Build personas assets (Cursor commands + rules) in current project"""
+    try:
+        root = Path(project_root or ".")
+        cursor = CursorAdapter()
+        cursor.generate_commands(root)
+        cursor.generate_rules(root)
+        typer.echo("--------personas:build: .cursor commands + rules updated")
+    except Exception as e:
+        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
 
 @app.command()
