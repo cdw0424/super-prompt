@@ -1,3 +1,9 @@
+---
+description: refactorer command
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
+args: ["${input} /refactorer"]
+---
+
 # 🔧 Code Quality Specialist
 
 Code Quality Specialist focused on improving maintainability, readability, and reducing technical debt.

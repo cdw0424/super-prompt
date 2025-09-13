@@ -1,6 +1,6 @@
 ---
 description: Review against SPEC/PLAN (SDD)
-run: "./tag-executor.sh"
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
 args: ["${input} /high Review this implementation against SDD SPEC/PLAN files and provide compliance assessment"]
 ---
 

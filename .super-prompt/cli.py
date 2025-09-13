@@ -18,8 +18,26 @@ from typing import Dict, List, Optional
 VERSION = "1.0.0"
 CURRENT_CMD: Optional[str] = None  # set in main()
 
+# Scaffold module (loaded at runtime)
+scaffold = None
+
 def log(msg: str):
     print(f"-------- {msg}")
+
+def print_core_guidance(context: str = ""):
+    print("\n\033[33mℹ️  Core CLI not found in this project.\033[0m")
+    if context:
+        print(f"   Context: {context}")
+    print("   Install Python core (choose one):")
+    print("   - pip:   \033[36mpip install super-prompt-core\033[0m")
+    print("   - pipx:  \033[36mpipx install super-prompt-core\033[0m")
+    print("   Run (examples):")
+    print("   - \033[36mpython -m super_prompt.cli optimize \"Design system /architect\"\033[0m")
+    print("   - \033[36mpython -m super_prompt.cli sdd spec \"user auth\"\033[0m")
+    print("   Windows PowerShell:")
+    print("   - \033[36mpython -m pip install super-prompt-core\033[0m")
+    print("   - \033[36mpython -m super_prompt.cli optimize \"...\"\033[0m")
+    print("   Cursor users: use slash commands (e.g., /architect, /frontend)\n")
 
 # Utility functions
 def read_text(path: str) -> str:
@@ -837,14 +855,110 @@ def install_cursor_commands_in_project(dry=False):
     base = os.path.join('.cursor', 'commands', 'super-prompt')
     os.makedirs(base, exist_ok=True)
 
-    # tag-executor.sh wrapper
+    # tag-executor.sh wrapper (strict Python-first routing)
     tag_sh = """#!/usr/bin/env bash
 set -euo pipefail
-if command -v super-prompt >/dev/null 2>&1; then
-  exec super-prompt optimize "$@"
-else
-  exec npx @cdw0424/super-prompt optimize "$@"
+
+# Join all args as a single input string
+INPUT="$*"
+
+# Known persona keys (must match enhanced_personas.yaml)
+PERSONAS=(architect security performance backend frontend analyzer qa mentor refactorer devops scribe dev tr doc-master high debate frontend-ultra seq-ultra docs-refector ultracompressed wave task implement plan review spec specify init-sp re-init-sp)
+
+# Try to detect a persona tag like /architect
+DETECTED=""
+SPECIAL_COMMANDS=("init-sp" "re-init-sp")
+
+# Check for special initialization commands first
+for CMD in "${SPECIAL_COMMANDS[@]}"; do
+  if [[ "$INPUT" == *"/$CMD"* ]]; then
+    DETECTED="$CMD"
+    IS_SPECIAL_CMD=true
+    break
+  fi
+done
+
+# If not special command, check regular personas
+if [[ -z "$DETECTED" ]]; then
+  for P in "${PERSONAS[@]}"; do
+    if [[ "$INPUT" == *"/$P"* ]]; then
+      DETECTED="$P"
+      IS_SPECIAL_CMD=false
+      break
+    fi
+  done
 fi
+
+DELEGATE_FLAG=""
+if [[ "$INPUT" == *"/delegate"* ]]; then
+  INPUT="${INPUT//\/delegate/}"
+  DELEGATE_FLAG="--delegate-reasoning"
+fi
+
+if [[ -n "$DETECTED" ]]; then
+  # Resolve paths
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  PROJECT_ROOT="${SCRIPT_DIR%/.cursor/commands/super-prompt}"
+
+  if [[ "$IS_SPECIAL_CMD" == true ]]; then
+    # Handle special initialization commands
+    case "$DETECTED" in
+      "init-sp")
+        MODE="init"
+        ;;
+      "re-init-sp")
+        MODE="reinit"
+        ;;
+    esac
+
+    INIT_SCRIPT="$PROJECT_ROOT/.super-prompt/utils/init/init_sp.py"
+    if command -v python3 >/dev/null 2>&1 && [[ -f "$INIT_SCRIPT" ]]; then
+      echo "-------- Special command /$DETECTED detected — executing initialization script"
+      exec python3 "$INIT_SCRIPT" --mode "$MODE"
+    else
+      echo "❌ Python3 not found or init script missing: $INIT_SCRIPT"
+      exit 1
+    fi
+  else
+    # Handle regular personas
+    CLEANED_INPUT="${INPUT//\/$DETECTED/}"
+    PROCESSOR_PATH="$PROJECT_ROOT/.super-prompt/utils/cursor-processors/enhanced_persona_processor.py"
+
+    if command -v python3 >/dev/null 2>&1 && [[ -f "$PROCESSOR_PATH" ]]; then
+      echo "-------- Persona detected: /$DETECTED — executing Python processor"
+      exec python3 "$PROCESSOR_PATH" --persona "$DETECTED" --user-input "$CLEANED_INPUT" $DELEGATE_FLAG
+    fi
+  fi
+fi
+
+# Fallback: enforce Python core CLI directly (no Node fallback)
+# Resolve project root (prefer git toplevel; fallback to CWD)
+resolve_project_root() {
+  if command -v git >/dev/null 2>&1; then
+    if GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
+      printf "%s" "$GIT_ROOT"
+      return 0
+    fi
+  fi
+  printf "%s" "$(pwd)"
+}
+
+PROJECT_ROOT="$(resolve_project_root)"
+PROJECT_CLI="$PROJECT_ROOT/.super-prompt/cli.py"
+
+if [[ -f "$PROJECT_CLI" ]]; then
+  echo "-------- No persona or processor unavailable — using project Python CLI"
+  exec python3 "$PROJECT_CLI" optimize "$@"
+fi
+
+# Last resort: use installed wrapper if available (still executes Python)
+if command -v super-prompt >/dev/null 2>&1; then
+  echo "-------- Using installed super-prompt wrapper as fallback"
+  exec super-prompt optimize "$@"
+fi
+
+echo "❌ Unable to locate Python CLI (.super-prompt/cli.py) or installed 'super-prompt'"
+exit 1
 """
     write_text(os.path.join(base, 'tag-executor.sh'), tag_sh, dry)
     try:
@@ -854,21 +968,39 @@ fi
         pass
 
     personas = [
+        # Core and reasoning
         ('high', '🧠 Deep Reasoning Specialist\\nStrategic problem solving and system design expert.'),
-        ('frontend-ultra', '🎨 Elite UX/UI Architect\\nTop-tier user experience architecture.'),
-        ('frontend', '🎨 Frontend Design Advisor\\nUser-centered frontend design and implementation.'),
-        ('backend', '🔧 Backend Reliability Engineer\\nScalable, reliable backend systems.'),
-        ('analyzer', '🔍 Root Cause Analyst\\nSystematic analysis and diagnostics.'),
         ('architect', '👷‍♂️ Architect\\nProject-Conformity-First delivery.'),
+        ('analyzer', '🔍 Root Cause Analyst\\nSystematic analysis and diagnostics.'),
+        ('debate', '⚖️ Internal Debate (Positive vs Critical)\\nStructured alternating reasoning with synthesis.'),
         ('seq', '🔄 Sequential Thinking (5)\\nStructured step-by-step problem solving.'),
         ('seq-ultra', '🔄 Advanced Sequential (10)\\nIn-depth step-by-step problem solving.'),
-        ('debate', '⚖️ Internal Debate (Positive vs Critical)\\nStructured alternating reasoning with synthesis.'),
         ('ultracompressed', '🗜️ Ultra‑Compressed Output\\nToken‑efficient answers with preserved fidelity.'),
+
+        # Implementation teams
+        ('frontend', '🎨 Frontend Design Advisor\\nUser-centered frontend design and implementation.'),
+        ('frontend-ultra', '🎨 Elite UX/UI Architect\\nTop-tier user experience architecture.'),
+        ('backend', '🔧 Backend Reliability Engineer\\nScalable, reliable backend systems.'),
+        ('dev', '🚀 Feature Development Specialist\\nNew feature implementation and delivery specialist.'),
+        ('refactorer', '🔧 Code Quality Specialist\\nMaintainability, readability, and tech debt reduction.'),
+
+        # Ops and quality
+        ('devops', '🛠️ DevOps Engineer\\nCI/CD, automation, observability, reliability.'),
+        ('qa', '✅ Quality Engineer\\nTest automation and quality-driven development.'),
         ('performance', '🚀 Performance Advisor\\nHotspots, quick wins, roll‑out checks.'),
         ('security', '🔐 Security Advisor\\nThreats, mitigations, safe defaults.'),
+
+        # Knowledge and docs
+        ('mentor', '🎓 Senior Mentor\\nKnowledge transfer and skill development.'),
+        ('scribe', '📝 Technical Writer\\nDeveloper docs, API docs, and communication.'),
+        ('doc-master', '📚 Documentation Master\\nDocumentation architecture and verification.'),
+        ('docs-refector', '📚 Documentation Consolidation\\nAudit and unify docs with MCP-grounded sources.'),
+
+        # Utilities
         ('task', '🧩 Task Breakdown\\nSmall tasks with IDs, ACs, deps.'),
         ('wave', '🌊 Wave Planning\\nPhased delivery (MVP → hardening).'),
-        ('docs-refector', '📚 Documentation Consolidation\\nAudit and unify docs with MCP-grounded sources.'),
+        ('tr', '🔧 Troubleshooter\\nExpert diagnostician for complex issues.'),
+        ('specify', '🗂️ Create Feature Specification\\nSpecification First Development.'),
     ]
     for name, desc in personas:
         content = f"---\ndescription: {name} command\nrun: \"./tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
@@ -1093,7 +1225,19 @@ echo "--------router-check: OK"""
 
 def show_ascii_logo():
     """Display ASCII logo with version info"""
-    logo = """
+    # Resolve installed package version dynamically (fallback to VERSION)
+    ver = VERSION
+    try:
+        from pathlib import Path
+        pj = Path(__file__).resolve().parents[1] / 'package.json'
+        if pj.exists():
+            data = json.loads(pj.read_text(encoding='utf-8'))
+            v = (data.get('version') or '').strip()
+            if v:
+                ver = v
+    except Exception:
+        pass
+    logo = f"""
 \033[36m\033[1m
    ███████╗██╗   ██╗██████╗ ███████╗██████╗ 
    ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗
@@ -1110,7 +1254,7 @@ def show_ascii_logo():
    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝   
 \033[0m
 \033[2m              Dual IDE Prompt Engineering Toolkit\033[0m
-\033[2m                     v1.0.4 | @cdw0424/super-prompt\033[0m
+\033[2m                     v{ver} | @cdw0424/super-prompt\033[0m
 \033[2m                          Made by \033[0m\033[35mDaniel Choi\033[0m
 """
     print(logo)
@@ -1223,6 +1367,18 @@ def main():
     else:
         args = parser.parse_args(["optimize", *raw_argv])
 
+    # Set global CURRENT_CMD
+    global CURRENT_CMD
+    CURRENT_CMD = args.cmd
+
+    # Load scaffold module (runtime import with fallback)
+    global scaffold
+    try:
+        from utils import project_scaffold as scaffold_module
+        scaffold = scaffold_module
+    except Exception:
+        scaffold = None
+
     if args.cmd == "super:init":
         show_ascii_logo()
         print("\033[33m\033[1m🚀 Initializing project setup...\033[0m\n")
@@ -1246,13 +1402,13 @@ def main():
         if not delegated:
             # Generate SDD rules (fallback)
             print("\033[36m📋 Generating Cursor rules...\033[0m")
-            rules_dir = generate_sdd_rules_files(args.out, args.dry_run)
+            rules_dir = (scaffold.generate_sdd_rules_files(args.out, args.dry_run) if scaffold else generate_sdd_rules_files(args.out, args.dry_run))
             print(f"\033[32m✓\033[0m \033[1mStep 2:\033[0m Rule files created")
             print(f"   \033[2m→ Location: {rules_dir}\033[0m\n")
             
             # Install Cursor commands (fallback)
             print("\033[36m⚡ Setting up Cursor slash commands...\033[0m")
-            install_cursor_commands_in_project(args.dry_run)
+            (scaffold.install_cursor_commands_in_project(args.dry_run) if scaffold else install_cursor_commands_in_project(args.dry_run))
             print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
             print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /docs-refector /db-expert /spec /plan /review /tasks /implement\033[0m\n")
         else:

@@ -10,7 +10,46 @@
 
 ---
 
-## 🆕 What's New in v3.0.0
+## 🆕 What's New in v3.1.6
+
+### ✨ **New Features**
+- **Memory Initialization**: Added `/init-sp` command to initialize Super Prompt memory with a project structure snapshot.
+
+## 🆕 What's New in v3.1.5
+
+### ⚡ **Performance & Reliability**
+- **Optimized Command Execution**: Improved `tag-executor.sh` with special command handling for init-sp and re-init-sp
+- **Better Error Handling**: Enhanced fallback mechanisms and clearer error messages for command execution
+- **Streamlined Initialization**: Direct execution path for project memory initialization commands
+
+### 🔧 **Technical Improvements**
+- **Special Command Routing**: Dedicated handling for initialization commands separate from regular personas
+- **Path Resolution**: Robust project root detection for consistent command execution across environments
+- **Execution Reliability**: Improved Python script discovery and execution for all commands
+
+## 🆕 What's New in v3.1.4
+
+### ✨ **New Features**
+- **Expanded Persona Library**: Added 14 new specialized personas including debate, frontend-ultra, seq-ultra, docs-refector, ultracompressed, wave, task, implement, plan, review, spec, specify, init-sp, and re-init-sp
+- **Complete Command Coverage**: All cursor command files now have corresponding persona definitions and proper execution routing
+- **Enhanced Persona Support**: All personas now support Context7 MCP integration and SDD workflow guidance
+
+### 🐛 **Bug Fixes**
+- **Fixed command execution**: Resolved missing persona definitions causing commands like `/debate`, `/dev`, etc. to fail
+- **Updated persona routing**: Fixed `tag-executor.sh` to include all supported personas in the PERSONAS array
+- **Complete persona coverage**: Ensured all `.md` command files have matching entries in `enhanced_personas.yaml`
+
+## 🆕 What's New in v3.1.3
+
+### 🐛 **Bug Fixes**
+- **Fixed scaffold import error**: Resolved `NameError: name 'scaffold' is not defined` in `super:init` command
+- **Improved module loading**: Added proper scaffold module initialization in main function
+- **Enhanced error handling**: Better fallback handling when scaffold module is unavailable
+
+<details>
+<summary>📋 <strong>Full Changelog (v3.0.x - v3.1.x)</strong></summary>
+
+### 🆕 What's New in v3.0.0
 
 ### 🏗️ **Complete Architecture Overhaul**
 - **Modular Python Core**: Clean separation with dedicated modules (engine, context, SDD, personas, adapters, validation)
@@ -51,6 +90,30 @@ npx @cdw0424/super-prompt --help
 
 ---
 
+## 🧾 Changelog (highlights)
+
+### v3.1.2
+- Fix: Installation banner now shows the actual package version dynamically (reads package.json) instead of a hardcoded string.
+- Fix: `super:init` scaffold NameError resolved by bundling a fallback scaffold module and importing it correctly.
+- Refactor: Project CLI is a thin wrapper — delegates optimize/SDD/AMR/Codex/Personas to the Python core when present; otherwise prints clear install guidance (pip/pipx) and Cursor alternatives.
+- DX: `super:help` prints environment status (Python/SQLite/FTS5/Codex) and richer usage examples.
+### v3.0.x
+- Project CLI refactor: delegates core logic to Python core (super-prompt-core) where available; thin wrapper structure
+- Added `super:upgrade`: refresh rules/commands, cleanup legacy, migrate JSON sessions → SQLite (memory/ltm.db) with automatic DB backup
+- Added `/init-sp` and `/re-init-sp` commands (Cursor) for project analysis → memory
+- Enhanced personas: research-based directives and structured response formats; added `doc-master`
+- Reasoning delegate: deep-planning via Codex CLI with automatic `@openai/codex@latest` update
+- LTM: SQLite-backed memory; graceful FTS5 fallback; dev-only vector index scaffold (excluded from npm)
+- OS setup: install.js best-effort checks for Python 3 and SQLite3 on macOS/Linux/Windows
+- Help command: `super:help` with dynamic environment status (Python/SQLite/FTS/Codex)
+
+### v3.0.0
+- Modular architecture: Python core, data-driven assets, SDD pipeline, AMR router, and unified CLI
+
+</details>
+
+---
+
 ## ✨ Key Features
 
 🎯 **Dual IDE Support**: Seamless integration with both Cursor (slash commands) and Codex CLI (flag-based personas)
@@ -81,6 +144,9 @@ npm install -g @cdw0424/super-prompt
 
 # Initialize in your project (creates Cursor rules and commands)
 super-prompt super:init
+
+# Initialize Super Prompt's memory with a project snapshot
+/init-sp
 
 # Optional: Install Codex CLI for text UI
 npm install -g @openai/codex
@@ -378,7 +444,7 @@ npm install -g @openai/codex
 
 ### Environment Variables
 
-```bash
+     ```bash
 # Debug and logging
 SP_DEBUG=1           # Expand debug logs
 SP_VERBOSE=1         # Detailed progress logs

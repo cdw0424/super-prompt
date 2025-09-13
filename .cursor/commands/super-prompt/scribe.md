@@ -1,3 +1,9 @@
+---
+description: scribe command
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
+args: ["${input} /scribe"]
+---
+
 # 📝 Technical Writer
 
 Senior Technical Writer specializing in developer documentation, API documentation, and technical communication.

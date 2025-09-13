@@ -1,6 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Resolve project root (prefer git toplevel; fallback to CWD)
+resolve_project_root() {
+  if command -v git >/dev/null 2>&1; then
+    if GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
+      printf "%s" "$GIT_ROOT"
+      return 0
+    fi
+  fi
+  printf "%s" "$(pwd)"
+}
+
+PROJECT_ROOT="$(resolve_project_root)"
+
+# Activate virtual environment if it exists
+VENV_PATH="$PROJECT_ROOT/.venv"
+if [ -d "$VENV_PATH" ]; then
+  # Use source to ensure environment variables are set for the current shell
+  # shellcheck source=/dev/null
+  source "$VENV_PATH/bin/activate"
+  echo "-------- Python virtual environment activated."
+fi
+
 # Join all args as a single input string
 INPUT="$*"
 
@@ -74,18 +96,6 @@ if [[ -n "$DETECTED" ]]; then
 fi
 
 # Fallback: enforce Python core CLI directly (no Node fallback)
-# Resolve project root (prefer git toplevel; fallback to CWD)
-resolve_project_root() {
-  if command -v git >/dev/null 2>&1; then
-    if GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
-      printf "%s" "$GIT_ROOT"
-      return 0
-    fi
-  fi
-  printf "%s" "$(pwd)"
-}
-
-PROJECT_ROOT="$(resolve_project_root)"
 PROJECT_CLI="$PROJECT_ROOT/.super-prompt/cli.py"
 
 if [[ -f "$PROJECT_CLI" ]]; then

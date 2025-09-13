@@ -1,6 +1,6 @@
 ---
 description: doc-master command
-run: "./tag-executor.sh"
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
 args: ["${input} /doc-master"]
 ---
 

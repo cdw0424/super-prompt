@@ -32,7 +32,42 @@ resolve_app_home() {
 }
 
 APP_HOME="$(resolve_app_home)"
-CLI_SCRIPT="${APP_HOME}/.super-prompt/cli.py"
+
+# Resolve project root (prefer git toplevel; fallback to CWD)
+resolve_project_root() {
+  if command -v git >/dev/null 2>&1; then
+    if GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then
+      printf "%s" "$GIT_ROOT"
+      return 0
+    fi
+  fi
+  printf "%s" "$(pwd)"
+}
+
+PROJECT_ROOT="$(resolve_project_root)"
+
+# Determine which Python CLI to run (project-local preferred)
+resolve_cli_script() {
+  local project_cli="$PROJECT_ROOT/.super-prompt/cli.py"
+  local packaged_cli="$APP_HOME/.super-prompt/cli.py"
+
+  if [ -f "$project_cli" ]; then
+    echo "-------- Using project Python core: $project_cli"
+    printf "%s" "$project_cli"
+    return 0
+  fi
+
+  if [ -f "$packaged_cli" ]; then
+    echo "-------- Using packaged Python core: $packaged_cli"
+    printf "%s" "$packaged_cli"
+    return 0
+  fi
+
+  printf "%s" ""
+  return 1
+}
+
+CLI_SCRIPT="$(resolve_cli_script || true)"
 
 # Opportunistic project bootstrap: ensure .super-prompt exists on init
 maybe_bootstrap_super_prompt() {
@@ -68,22 +103,28 @@ ensure_self_latest() {
 }
 
 ensure_cli() {
-  if [ -f "$CLI_SCRIPT" ]; then return 0; fi
+  if [ -n "${CLI_SCRIPT:-}" ] && [ -f "$CLI_SCRIPT" ]; then return 0; fi
   if [ -f "${APP_HOME}/install.js" ] && command -v node >/dev/null 2>&1; then
     echo "-------- Finalizing installation (running postinstall)"
     (cd "$APP_HOME" && node install.js) || true
   fi
-  [ -f "$CLI_SCRIPT" ]
+  # Re-resolve after potential install
+  CLI_SCRIPT="$(resolve_cli_script || true)"
+  [ -n "${CLI_SCRIPT:-}" ] && [ -f "$CLI_SCRIPT" ]
 }
 
 ensure_self_latest
 ensure_codex_latest
 
 if ! ensure_cli; then
-  echo "❌ Python CLI not found. Try:"
+  echo "❌ Python CLI not found. Expected at one of:"
+  echo "   - $PROJECT_ROOT/.super-prompt/cli.py"
+  echo "   - $APP_HOME/.super-prompt/cli.py"
+  echo "-------- Remediation:"
   echo "   - npm config set ignore-scripts false"
   echo "   - npm rebuild -g @cdw0424/super-prompt"
   echo "   - or run: node '${APP_HOME}/install.js'"
+  echo "   - or ensure your repo includes '.super-prompt/cli.py'"
   exit 1
 fi
 

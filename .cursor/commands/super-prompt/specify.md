@@ -1,3 +1,9 @@
+---
+description: specify command
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
+args: ["${input} /specify"]
+---
+
 # /specify - Create Feature Specification
 
 Generate a structured specification document following Spec Kit principles.
