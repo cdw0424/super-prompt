@@ -341,14 +341,40 @@ async function animatedInstall() {
             console.warn(`${colors.yellow}⚠️  System dependency check skipped: ${e && e.message}${colors.reset}`);
         }
 
-        // Step 4: Ready for project initialization (run in your project)
+        // Step 4: Optional auto-init into current project on global install (opt-in)
+        try {
+            const autoInit = process.env.SUPER_PROMPT_AUTO_INIT;
+            const shouldAuto = autoInit && /^(1|true|yes|y)$/i.test(autoInit);
+            if (shouldAuto) {
+                // Determine a safe project root (prefer INIT_CWD with package.json that is not ours)
+                const initCwd = process.env.INIT_CWD || process.cwd();
+                const pj = path.join(initCwd, 'package.json');
+                if (fs.existsSync(pj)) {
+                    const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
+                    if (p && p.name !== '@cdw0424/super-prompt') {
+                        console.log(`${colors.cyan}⚡ Auto-initializing Super Prompt in ${initCwd} (SUPER_PROMPT_AUTO_INIT=1)${colors.reset}`);
+                        try {
+                            execSync('super-prompt super:init', { cwd: initCwd, stdio: 'inherit' });
+                            completedStep('4', `Project initialized at ${initCwd}`);
+                        } catch (e) {
+                            console.warn(`${colors.yellow}⚠️  Auto-init failed; run manually in your project:${colors.reset}`);
+                            console.warn(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn(`${colors.yellow}⚠️  Auto-init skipped: ${e && e.message}${colors.reset}`);
+        }
+
+        // Step 5: Ready for project initialization (run in your project)
         console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
         console.log(`${colors.dim}   Run this inside your project to install rules & commands:${colors.reset}`);
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
         console.log(`   ${colors.cyan}# or if not globally installed:${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
         await sleep(300);
-        completedStep(4, 'Project integration ready')
+        completedStep(5, 'Project integration ready')
 
         // Installation complete
         console.log(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);

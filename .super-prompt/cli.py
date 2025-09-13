@@ -1115,6 +1115,10 @@ def main():
     p_init = sub.add_parser("super:init", help="Generate SDD-compliant rules and setup")
     p_init.add_argument("--out", default=".cursor/rules", help="Output directory")
     p_init.add_argument("--dry-run", action="store_true", help="Preview only")
+
+    # Upgrade: refresh assets, cleanup legacy, migrate sessions
+    p_upgrade = sub.add_parser("super:upgrade", help="Upgrade project assets; cleanup legacy; migrate JSON sessions to SQLite")
+    p_upgrade.add_argument("--dry-run", action="store_true", help="Preview only")
     
     p_optimize = sub.add_parser("optimize", help="Execute persona queries with SDD context")
     p_optimize.add_argument("query", nargs="*", help="Query or debate topic")
@@ -1200,7 +1204,7 @@ def main():
 
     # Smart routing: 'optimize' is the default action.
     raw_argv = sys.argv[1:]
-    known_cmds = {"super:init", "optimize", "amr:rules", "amr:print", "amr:qa", "codex:init", "personas:init", "personas:build", "sdd"}
+    known_cmds = {"super:init", "super:upgrade", "optimize", "amr:rules", "amr:print", "amr:qa", "codex:init", "personas:init", "personas:build", "sdd"}
     if not raw_argv:
         args = parser.parse_args(["optimize", "--list-personas"])
     elif raw_argv and raw_argv[0] in known_cmds:
@@ -1228,6 +1232,143 @@ def main():
         install_cursor_commands_in_project(args.dry_run)
         print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
         print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra /debate /ultracompressed /performance /security /task /wave /docs-refector /db-expert /spec /plan /review /tasks /implement\033[0m\n")
+
+        # Step 3.5: Install pinned dev deps for LTM helpers (best-effort)
+        try:
+            print("\033[36m🧩 Installing dev dependencies (pinned) for LTM helpers...\033[0m")
+            pinned = [
+                "better-sqlite3@12.2.0",
+                "ajv@8.17.1",
+                "zod@4.1.8",
+                "ioredis@5.7.0",
+            ]
+            override = os.environ.get('SUPER_PROMPT_LTM_PKGS')
+            pkgs = override.split() if override else pinned
+            subprocess.run(["npm", "install", "-D", *pkgs], check=False)
+            print(f"\033[32m✓\033[0m \033[1mStep 3.5:\033[0m Dev dependencies installed (best-effort)\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Skipped dev dependency install: {e}\033[0m\n")
+
+        # Step 3.6: Add /init-sp and /re-init-sp Cursor commands
+        try:
+            cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
+            os.makedirs(cmd_dir, exist_ok=True)
+            init_sp_md = os.path.join(cmd_dir, 'init-sp.md')
+            reinit_sp_md = os.path.join(cmd_dir, 're-init-sp.md')
+            init_sp_content = """---
+description: Initialize Super Prompt memory (project analysis)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "init"]
+---
+
+🧭 Initialize Super Prompt memory with project structure snapshot.
+"""
+            reinit_sp_content = """---
+description: Re-Initialize project analysis (refresh memory)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
+---
+
+🔄 Refresh project analysis and update memory.
+"""
+            write_text(init_sp_md, init_sp_content, dry=args.dry_run)
+            write_text(reinit_sp_md, reinit_sp_content, dry=args.dry_run)
+            print(f"\033[32m✓\033[0m \033[1mStep 3.6:\033[0m Init commands installed (/init-sp, /re-init-sp)\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Could not write init commands: {e}\033[0m\n")
+
+        # Step 3.7: Legacy cleanup and JSON→SQLite migration
+        try:
+            print("\033[36m🧹 Cleaning legacy assets and migrating sessions...\033[0m")
+            # Backup existing SQLite DB (non-destructive)
+            try:
+                db_path = os.path.join(os.getcwd(), 'memory', 'ltm.db')
+                if os.path.exists(db_path):
+                    bdir = os.path.join(os.getcwd(), 'memory', 'backup')
+                    os.makedirs(bdir, exist_ok=True)
+                    ts = int(__import__('time').time())
+                    bpath = os.path.join(bdir, f'ltm-{ts}.db')
+                    shutil.copy2(db_path, bpath)
+                    print(f"   \033[2m→ Backed up DB to {bpath}\033[0m")
+            except Exception:
+                pass
+            legacy_dir = os.path.join(os.getcwd(), 'legacy', f"cleanup-{int(__import__('time').time())}")
+            os.makedirs(legacy_dir, exist_ok=True)
+            # Move old Python command files under Cursor
+            sp_cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
+            moved = 0
+            if os.path.isdir(sp_cmd_dir):
+                for name in os.listdir(sp_cmd_dir):
+                    if name.endswith('.py'):
+                        src = os.path.join(sp_cmd_dir, name)
+                        dst_dir = os.path.join(legacy_dir, 'cursor-commands')
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.move(src, os.path.join(dst_dir, name))
+                        moved += 1
+                # remove deprecated re-init
+                dep = os.path.join(sp_cmd_dir, 're-init.md')
+                if os.path.exists(dep):
+                    dst_dir = os.path.join(legacy_dir, 'deprecated')
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.move(dep, os.path.join(dst_dir, os.path.basename(dep)))
+            if moved:
+                print(f"   \033[2m→ Moved {moved} legacy command scripts to {legacy_dir}\033[0m")
+
+            # Migrate JSON sessions → SQLite
+            sys.path.append(os.path.join(os.getcwd(), '.super-prompt', 'utils'))
+            migrated_files = 0
+            try:
+                from fallback_memory import MemoryController  # type: ignore
+                mem = MemoryController(os.getcwd())
+                sessions_dir = os.path.join(os.getcwd(), 'memory', 'sessions')
+                if os.path.isdir(sessions_dir):
+                    for name in os.listdir(sessions_dir):
+                        if not name.endswith('.json'):
+                            continue
+                        src = os.path.join(sessions_dir, name)
+                        try:
+                            with open(src, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                        except Exception:
+                            continue
+                        # import chat history
+                        hist = data.get('full_chat_history') or []
+                        i = 0
+                        while i < len(hist):
+                            role = (hist[i].get('role') or '').lower()
+                            content = hist[i].get('content') or ''
+                            if role == 'user':
+                                if i + 1 < len(hist) and (hist[i+1].get('role') or '').lower() == 'assistant':
+                                    mem.append_interaction(content, hist[i+1].get('content') or '')
+                                    i += 2
+                                else:
+                                    mem.append_interaction(content, None)
+                                    i += 1
+                            elif role == 'assistant':
+                                mem.append_interaction('', content)
+                                i += 1
+                            else:
+                                i += 1
+                        # import key memories and entities
+                        ex = {}
+                        km = ((data.get('core_memory') or {}).get('key_memories')) or []
+                        if isinstance(km, list) and km:
+                            ex['key_memories'] = [ (k.get('content') if isinstance(k, dict) else str(k)) for k in km ]
+                        ents = ((data.get('core_memory') or {}).get('entities')) or {}
+                        if isinstance(ents, dict) and ents:
+                            ex['entities'] = ents
+                        if ex:
+                            mem.update_from_extraction(ex)
+                        # move file
+                        dst_dir = os.path.join(legacy_dir, 'migrated-sessions')
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.move(src, os.path.join(dst_dir, name))
+                        migrated_files += 1
+            except Exception:
+                pass
+            print(f"\033[32m✓\033[0m \033[1mStep 3.7:\033[0m Legacy cleanup done; migrated {migrated_files} session file(s)\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Legacy cleanup/migration skipped: {e}\033[0m\n")
         # Optional Codex integration prompt (.codex/*)
         want_codex = os.environ.get('SUPER_PROMPT_INIT_CODEX')
         yn = None
@@ -1260,6 +1401,162 @@ def main():
         print("   \033[2mFrom CLI:\033[0m \033[36msuper-prompt --frontend \"design strategy\"\033[0m")
         print("")
         print("\033[32m✨ Ready for next-level prompt engineering!\033[0m")
+        return 0
+
+    elif args.cmd == "super:upgrade":
+        show_ascii_logo()
+        print("\033[33m\033[1m🔧 Upgrading project setup...\033[0m\n")
+
+        # 1) Refresh rules
+        try:
+            print("\033[36m📋 Refreshing Cursor rules...\033[0m")
+            rules_dir = generate_sdd_rules_files(".cursor/rules", getattr(args, 'dry_run', False))
+            print(f"\033[32m✓\033[0m \033[1mStep 1:\033[0m Rule files refreshed")
+            print(f"   \033[2m→ Location: {rules_dir}\033[0m\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Rules refresh skipped: {e}\033[0m\n")
+
+        # 2) Update Cursor commands
+        try:
+            print("\033[36m⚡ Updating Cursor slash commands...\033[0m")
+            install_cursor_commands_in_project(getattr(args, 'dry_run', False))
+            print(f"\033[32m✓\033[0m \033[1mStep 2:\033[0m Slash commands updated\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Command update skipped: {e}\033[0m\n")
+
+        # 3) Ensure pinned dev deps
+        try:
+            print("\033[36m🧩 Ensuring dev dependencies (pinned) for LTM helpers...\033[0m")
+            pinned = [
+                "better-sqlite3@12.2.0",
+                "ajv@8.17.1",
+                "zod@4.1.8",
+                "ioredis@5.7.0",
+            ]
+            override = os.environ.get('SUPER_PROMPT_LTM_PKGS')
+            pkgs = override.split() if override else pinned
+            subprocess.run(["npm", "install", "-D", ...pkgs], check=False)
+            print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Dev dependencies ensured\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Dev dependency install skipped: {e}\033[0m\n")
+
+        # 4) Ensure /init-sp and /re-init-sp
+        try:
+            cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
+            os.makedirs(cmd_dir, exist_ok=True)
+            init_sp_md = os.path.join(cmd_dir, 'init-sp.md')
+            reinit_sp_md = os.path.join(cmd_dir, 're-init-sp.md')
+            if not os.path.exists(init_sp_md):
+                write_text(init_sp_md, """---
+description: Initialize Super Prompt memory (project analysis)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "init"]
+---
+
+🧭 Initialize Super Prompt memory with project structure snapshot.
+""", dry=getattr(args, 'dry_run', False))
+            if not os.path.exists(reinit_sp_md):
+                write_text(reinit_sp_md, """---
+description: Re-Initialize project analysis (refresh memory)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
+---
+
+🔄 Refresh project analysis and update memory.
+""", dry=getattr(args, 'dry_run', False))
+            print(f"\033[32m✓\033[0m \033[1mStep 4:\033[0m Init commands ensured (/init-sp, /re-init-sp)\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Could not ensure init commands: {e}\033[0m\n")
+
+        # 5) Legacy cleanup & JSON→SQLite migration
+        try:
+            print("\033[36m🧹 Cleaning legacy assets and migrating sessions...\033[0m")
+            # Backup existing SQLite DB (non-destructive)
+            try:
+                db_path = os.path.join(os.getcwd(), 'memory', 'ltm.db')
+                if os.path.exists(db_path):
+                    bdir = os.path.join(os.getcwd(), 'memory', 'backup')
+                    os.makedirs(bdir, exist_ok=True)
+                    ts = int(__import__('time').time())
+                    bpath = os.path.join(bdir, f'ltm-{ts}.db')
+                    shutil.copy2(db_path, bpath)
+                    print(f"   \033[2m→ Backed up DB to {bpath}\033[0m")
+            except Exception:
+                pass
+            legacy_dir = os.path.join(os.getcwd(), 'legacy', f"cleanup-{int(__import__('time').time())}")
+            os.makedirs(legacy_dir, exist_ok=True)
+            sp_cmd_dir = os.path.join(os.getcwd(), '.cursor', 'commands', 'super-prompt')
+            moved = 0
+            if os.path.isdir(sp_cmd_dir):
+                for name in os.listdir(sp_cmd_dir):
+                    if name.endswith('.py'):
+                        src = os.path.join(sp_cmd_dir, name)
+                        dst_dir = os.path.join(legacy_dir, 'cursor-commands')
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.move(src, os.path.join(dst_dir, name))
+                        moved += 1
+                dep = os.path.join(sp_cmd_dir, 're-init.md')
+                if os.path.exists(dep):
+                    dst_dir = os.path.join(legacy_dir, 'deprecated')
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.move(dep, os.path.join(dst_dir, os.path.basename(dep)))
+            if moved:
+                print(f"   \033[2m→ Moved {moved} legacy command scripts to {legacy_dir}\033[0m")
+
+            # Session migration
+            sys.path.append(os.path.join(os.getcwd(), '.super-prompt', 'utils'))
+            migrated_files = 0
+            try:
+                from fallback_memory import MemoryController  # type: ignore
+                mem = MemoryController(os.getcwd())
+                sessions_dir = os.path.join(os.getcwd(), 'memory', 'sessions')
+                if os.path.isdir(sessions_dir):
+                    for name in os.listdir(sessions_dir):
+                        if not name.endswith('.json'):
+                            continue
+                        src = os.path.join(sessions_dir, name)
+                        try:
+                            with open(src, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                        except Exception:
+                            continue
+                        hist = data.get('full_chat_history') or []
+                        i = 0
+                        while i < len(hist):
+                            role = (hist[i].get('role') or '').lower()
+                            content = hist[i].get('content') or ''
+                            if role == 'user':
+                                if i + 1 < len(hist) and (hist[i+1].get('role') or '').lower() == 'assistant':
+                                    mem.append_interaction(content, hist[i+1].get('content') or '')
+                                    i += 2
+                                else:
+                                    mem.append_interaction(content, None)
+                                    i += 1
+                            elif role == 'assistant':
+                                mem.append_interaction('', content)
+                                i += 1
+                            else:
+                                i += 1
+                        ex = {}
+                        km = ((data.get('core_memory') or {}).get('key_memories')) or []
+                        if isinstance(km, list) and km:
+                            ex['key_memories'] = [ (k.get('content') if isinstance(k, dict) else str(k)) for k in km ]
+                        ents = ((data.get('core_memory') or {}).get('entities')) or {}
+                        if isinstance(ents, dict) and ents:
+                            ex['entities'] = ents
+                        if ex:
+                            mem.update_from_extraction(ex)
+                        dst_dir = os.path.join(legacy_dir, 'migrated-sessions')
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.move(src, os.path.join(dst_dir, name))
+                        migrated_files += 1
+            except Exception:
+                pass
+            print(f"\033[32m✓\033[0m \033[1mStep 5:\033[0m Legacy cleanup done; migrated {migrated_files} session file(s)\n")
+        except Exception as e:
+            print(f"\033[33m⚠️  Legacy cleanup/migration skipped: {e}\033[0m\n")
+
+        print("\033[32m\033[1m🎉 Upgrade Complete!\033[0m\n")
         return 0
         
     elif args.cmd == "optimize":

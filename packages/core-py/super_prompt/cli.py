@@ -361,6 +361,30 @@ args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
         except Exception as e:
             typer.echo(f"⚠️  Could not write Cursor commands: {e}")
 
+        # Cleanup legacy assets (safe, idempotent)
+        try:
+            legacy_dir = target_dir / "legacy" / f"cleanup-{int(__import__('time').time())}"
+            # 1) Move old Cursor command Python scripts out of .cursor/commands/super-prompt
+            sp_cmd_dir = target_dir / ".cursor" / "commands" / "super-prompt"
+            py_legacy = []
+            if sp_cmd_dir.exists():
+                for p in sp_cmd_dir.glob("*.py"):
+                    py_legacy.append(p)
+            if py_legacy:
+                (legacy_dir / "cursor-commands").mkdir(parents=True, exist_ok=True)
+                for p in py_legacy:
+                    p.rename(legacy_dir / "cursor-commands" / p.name)
+                typer.echo(f"🧹 Moved legacy Cursor command scripts → {legacy_dir / 'cursor-commands'}")
+
+            # 2) Remove deprecated command names (re-init → re-init-sp)
+            deprecated = target_dir / ".cursor" / "commands" / "super-prompt" / "re-init.md"
+            if deprecated.exists():
+                (legacy_dir / "deprecated").mkdir(parents=True, exist_ok=True)
+                deprecated.rename(legacy_dir / "deprecated" / deprecated.name)
+                typer.echo("🧹 Deprecated /re-init removed (use /re-init-sp)")
+        except Exception as e:
+            typer.echo(f"⚠️  Legacy cleanup skipped: {e}")
+
         typer.echo("✅ Super Prompt initialized!")
         typer.echo(f"   Project root: {target_dir.absolute()}")
         typer.echo("   Next steps:")

@@ -132,6 +132,17 @@ personas:
       - "Stability and preventive measures"
     flags: ["--think", "--seq", "--c7", "--validate"]
 
+  high:
+    name: "High Reasoning"
+    icon: "🧠"
+    description: "Deep reasoning and strategic problem solving with GPT-5 high model"
+    best_for:
+      - "Complex strategic decisions requiring deep analysis"
+      - "Advanced technical problem solving"
+      - "Critical system design and architecture decisions"
+      - "High-stakes technical decisions with broad impact"
+    flags: ["--high", "--ultrathink", "--seq", "--c7", "--validate"]
+
   doc-master:
     name: "Doc Master"
     icon: "📚"

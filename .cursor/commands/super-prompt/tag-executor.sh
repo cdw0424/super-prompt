@@ -5,7 +5,7 @@ set -euo pipefail
 INPUT="$*"
 
 # Known persona keys (must match enhanced_personas.yaml)
-PERSONAS=(architect security performance backend frontend analyzer qa mentor refactorer devops scribe dev tr doc-master)
+PERSONAS=(architect security performance backend frontend analyzer qa mentor refactorer devops scribe dev tr doc-master high)
 
 # Try to detect a persona tag like /architect
 DETECTED=""

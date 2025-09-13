@@ -32,18 +32,22 @@ except Exception:
 try:
     from super_prompt.memory.controller import MemoryController  # Dev/runtime within repo
 except Exception:
-    # Safe fallback: no-op memory controller for packaged installs
-    class MemoryController:  # type: ignore
-        def __init__(self, *_args, **_kwargs):
-            pass
-        def build_context_block(self, *args, **kwargs) -> str:
-            return "{}"
-        def append_interaction(self, *args, **kwargs):
-            return None
-        def update_from_extraction(self, *args, **kwargs):
-            return None
+    try:
+        # Packaged fallback: SQLite-backed minimal controller within .super-prompt
+        from fallback_memory import MemoryController  # type: ignore
+    except Exception:
+        # Safe final fallback: no-op
+        class MemoryController:  # type: ignore
+            def __init__(self, *_args, **_kwargs):
+                pass
+            def build_context_block(self, *args, **kwargs) -> str:
+                return "{}"
+            def append_interaction(self, *args, **kwargs):
+                return None
+            def update_from_extraction(self, *args, **_kwargs):
+                return None
 
-from reasoning_delegate import ReasoningDelegate
+# from reasoning_delegate import ReasoningDelegate  # Not implemented yet
 
 
 @dataclass
@@ -86,7 +90,7 @@ class EnhancedPersonaProcessor:
         self.quality_enhancer = QualityEnhancer()  # Quality enhancer for final polish
         # Memory controller (spec/instance/controller architecture)
         self.memory = MemoryController(self.project_root)
-        self.reasoning_delegate = ReasoningDelegate()  # Deep reasoning planner
+        # self.reasoning_delegate = ReasoningDelegate()  # Deep reasoning planner - not implemented yet
 
     def load_personas(self) -> Dict[str, PersonaConfig]:
         """Load personas from YAML manifest"""
@@ -487,27 +491,111 @@ and follow your defined interaction style throughout the entire response."""
 
         return context
 
+    def _execute_high_persona(self, user_input: str) -> None:
+        """Execute high persona with GPT-5 high model directly"""
+        print("-------- High Reasoning Persona: Using GPT-5 high model for deep analysis")
+
+        # Build comprehensive prompt for high reasoning
+        persona_name = "High Reasoning Specialist"
+        system_prompt = f"""You are a {persona_name}, an expert in deep strategic analysis and complex problem-solving.
+
+Your capabilities include:
+- Advanced strategic thinking and long-term planning
+- Complex system analysis and pattern recognition
+- Innovative solution design for challenging problems
+- Critical evaluation of multiple approaches and trade-offs
+- Synthesis of diverse perspectives into coherent strategies
+
+Always provide:
+1. Deep analysis of the problem context
+2. Multiple strategic options with detailed evaluation
+3. Clear recommendations with rationale
+4. Implementation considerations and potential challenges
+5. Risk assessment and mitigation strategies
+
+Be thorough, insightful, and provide actionable intelligence."""
+
+        # Combine system prompt with user input
+        full_prompt = f"{system_prompt}\n\nUser Request: {user_input}\n\nPlease provide your deep reasoning analysis:"
+
+        try:
+            # Execute with super-prompt --high flag to ensure GPT-5 high model usage
+            print("-------- Executing with GPT-5 high reasoning model...")
+            cmd = ["super-prompt", "--high", "optimize", full_prompt]
+            result = subprocess.run(cmd, check=False, capture_output=True, text=True, timeout=300)
+
+            if result.returncode == 0:
+                print("-------- High reasoning analysis completed")
+                print(result.stdout)
+            else:
+                print(f"-------- High reasoning execution failed (exit code: {result.returncode})")
+                print(f"Error: {result.stderr}")
+                # Fallback to regular processing
+                print("-------- Falling back to standard processing...")
+                fallback_cmd = ["super-prompt", "optimize", user_input]
+                subprocess.run(fallback_cmd, check=False)
+
+        except subprocess.TimeoutExpired:
+            print("-------- High reasoning analysis timed out after 5 minutes")
+            print("-------- Falling back to standard processing...")
+            fallback_cmd = ["super-prompt", "optimize", user_input]
+            subprocess.run(fallback_cmd, check=False)
+        except Exception as e:
+            print(f"-------- Error in high reasoning execution: {e}")
+            print("-------- Falling back to standard processing...")
+            fallback_cmd = ["super-prompt", "optimize", user_input]
+            subprocess.run(fallback_cmd, check=False)
+
+        # Apply quality enhancement after successful execution
+        try:
+            print("\n" + "="*60)
+            print("🎯 QUALITY ENHANCEMENT - 고해성사 & 더블체크")
+            print("="*60)
+
+            quality_prompt = self._generate_quality_enhancement_prompt("high", user_input)
+            quality_cmd = ["super-prompt", "--high", quality_prompt]
+
+            print("-------- Applying quality enhancement...")
+            quality_result = subprocess.run(quality_cmd, check=False, capture_output=True, text=True, timeout=180)
+
+            if quality_result.returncode == 0:
+                print("-------- Quality enhancement completed successfully")
+            else:
+                print(f"-------- Quality enhancement warning: return code {quality_result.returncode}")
+        except Exception as e:
+            print(f"-------- Quality enhancement error: {e}")
+
     def execute_persona(self, persona_key: str, user_input: str) -> None:
         """Execute the persona with enhanced prompting"""
         if persona_key not in self.personas:
             print(f"-------- Unknown persona: {persona_key}")
             return
 
+        # Special handling for 'high' persona: always use GPT-5 high model directly
+        if persona_key == "high":
+            self._execute_high_persona(user_input)
+            return
+
         persona = self.personas[persona_key]
         self.current_persona = persona_key
 
+        # Special handling for 'high' persona: always use GPT-5 high model
+        force_gpt5_high = (persona_key == "high")
+
         # Optionally delegate deep reasoning to Codex (GPT-5) for a plan
         external_plan = None
-        if getattr(self, "_force_delegate", False) or self._needs_deep_reasoning(persona_key, user_input):
+        if force_gpt5_high or getattr(self, "_force_delegate", False) or self._needs_deep_reasoning(persona_key, user_input):
             try:
                 print("-------- Delegating deep reasoning to codex exec (high)")
-                del_prompt = self.reasoning_delegate.build_plan_prompt(self.personas[persona_key].name, user_input, self._get_global_prompt_engineering_rules())
-                result = self.reasoning_delegate.request_plan(del_prompt)
-                if result.get("ok"):
-                    external_plan = result.get("plan")
-                    print("-------- Received external plan")
-                else:
-                    print(f"-------- Delegation failed: {result.get('error')}")
+                # Note: ReasoningDelegate not implemented yet, using fallback
+                print("-------- ReasoningDelegate not available, skipping deep reasoning delegation")
+                # del_prompt = self.reasoning_delegate.build_plan_prompt(self.personas[persona_key].name, user_input, self._get_global_prompt_engineering_rules())
+                # result = self.reasoning_delegate.request_plan(del_prompt)
+                # if result.get("ok"):
+                #     external_plan = result.get("plan")
+                #     print("-------- Received external plan")
+                # else:
+                #     print(f"-------- Delegation failed: {result.get('error')}")
             except Exception as e:
                 print(f"-------- Delegation error: {e}")
 
@@ -563,10 +651,12 @@ and follow your defined interaction style throughout the entire response."""
                 if full_output and self._should_extract_rich_memory(persona_key, user_input, full_output):
                     try:
                         extraction_prompt = self._build_extraction_prompt(user_input, full_output)
-                        res = self.reasoning_delegate.request_plan(extraction_prompt, timeout=120)
-                        if res.get('ok') and res.get('plan'):
-                            self.memory.update_from_extraction(res['plan'])
-                            print("-------- Memory enriched from extraction plan")
+                        # Note: ReasoningDelegate not implemented yet, skipping memory extraction
+                        print("-------- ReasoningDelegate not available, skipping memory extraction")
+                        # res = self.reasoning_delegate.request_plan(extraction_prompt, timeout=120)
+                        # if res.get('ok') and res.get('plan'):
+                        #     self.memory.update_from_extraction(res['plan'])
+                        #     print("-------- Memory enriched from extraction plan")
                     except Exception as ex:
                         print(f"-------- Memory extraction warning: {ex}")
             except Exception:
