@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.10
+
+### 🐛 **Bug Fixes**
+
+- **Package Publishing**: Resolved npm publishing issues and updated version for deployment
+- **Version Synchronization**: Synchronized version numbers across package.json and pyproject.toml
+
 ## v3.1.9
 
 ### 🚀 Major Features
