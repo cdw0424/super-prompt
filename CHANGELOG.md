@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.1.11 - 2025-09-13
+## v3.1.12 - 2025-09-13
 
 ### 🐛 Fixes
 - fix(cli): Add project-local Python launcher shim to resolve relative import errors in `super:init` and persona flags.
