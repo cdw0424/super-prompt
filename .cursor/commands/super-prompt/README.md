@@ -24,6 +24,7 @@ Based on LLM coding assistant research (2022-2025), implementing multi-agent rol
 ### 🚀 Specialized Roles
 - `/devops` - Infrastructure automation and reliability engineering
 - `/scribe` - Technical writing and documentation
+- `/doc-master` - Documentation architecture, writing, and verification
 
 ## Usage
 ```

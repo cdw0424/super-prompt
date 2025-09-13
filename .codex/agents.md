@@ -150,26 +150,39 @@ super-prompt optimize --sp-sdd-spec "user authentication"
   - `super-prompt optimize --sp-seq-ultra "Advanced sequential (10 iterations)"`
   - `super-prompt optimize --sp-performance "Bottleneck elimination & optimization"`
   - `super-prompt optimize --sp-security    "Threat modeling & vulnerability assessment"`
+  - `super-prompt optimize --sp-mentor      "Educational guidance & knowledge transfer"`
+  - `super-prompt optimize --sp-qa          "Quality assurance & testing"`
+  - `super-prompt optimize --sp-refactorer  "Code quality improvement & technical debt"`
+  - `super-prompt optimize --sp-devops      "Infrastructure automation & reliability"`
+  - `super-prompt optimize --sp-scribe      "Technical writing & documentation"`
   - `super-prompt optimize --sp-task        "Task management & workflow execution"`
   - `super-prompt optimize --sp-wave        "Multi-stage execution orchestration"`
   - `super-prompt optimize --sp-ultracompressed "Token efficiency (30-50% reduction)"`
   - `super-prompt optimize --sp-debate --rounds 8 "Should we adopt feature flags?"`
 
 ### Original Syntax (still supported)
-  - `super-prompt optimize --frontend`, `--backend`, `--analyzer`, `--architect`
+  - `super-prompt optimize --frontend`, `--frontend-ultra`, `--backend`, `--analyzer`, `--architect`
   - `super-prompt optimize --high`, `--seq`, `--seq-ultra`, `--debate`
-  - `super-prompt optimize --performance`, `--security`, `--task`, `--wave`, `--ultracompressed`
+  - `super-prompt optimize --performance`, `--security`, `--mentor`, `--qa`, `--refactorer`
+  - `super-prompt optimize --devops`, `--scribe`, `--task`, `--wave`, `--ultracompressed`
 
 ### Available Personas Summary
-**All Personas**: frontend, frontend-ultra, backend, analyzer, architect, high, seq, seq-ultra, debate, performance, security, task, wave, ultracompressed
+**All Personas**: frontend, frontend-ultra, backend, analyzer, architect, high, seq, seq-ultra, debate, performance, security, mentor, qa, refactorer, devops, scribe, task, wave, ultracompressed
+**Total Count**: 19 specialized personas
 **Simplified Syntax**: Add `--sp-` prefix to any persona flag (recommended for cleaner commands)
 
 ## Python Utils Structure
 - All Python utilities are organized in `.super-prompt/utils/`:
-  - `.super-prompt/utils/cli.py` - Main CLI implementation
-  - `.super-prompt/utils/personas.py` - Persona helpers for Codex
-  - `.super-prompt/utils/cursor-processors/` - Cursor-specific processors
+  - `.super-prompt/utils/cursor-processors/` - Enhanced persona processors and utilities
+    - `enhanced_persona_processor.py` - Core persona processing engine
+    - `enhanced_auto_setup.py` - Project analysis and setup
+    - `simple_persona_generator.py` - Persona command generator
+    - `[persona].py` - Individual persona processors (19 total)
   - `.super-prompt/utils/templates/` - Template files
+  - `.super-prompt/utils/migration/` - Migration utilities
+- Cursor Command Integration:
+  - `.cursor/commands/super-prompt/` - Wrapper files for direct Cursor access
+  - Each persona has both processor (logic) and wrapper (interface) files
 
 ## SDD Workflow (Simplified Flag Syntax for Codex CLI)
 - `super-prompt optimize --sp-sdd-spec "feature description"` - Create SPEC documents

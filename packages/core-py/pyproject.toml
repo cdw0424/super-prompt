@@ -5,50 +5,62 @@ build-backend = "hatchling.build"
 [project]
 name = "super-prompt-core"
 version = "3.0.0"
-description = "Core engine for Super Prompt - prompt engineering toolkit"
+description = "Core library for Super Prompt - Modular prompt engineering and development workflow management"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
 authors = [
     {name = "Daniel Choi", email = "cdw0424@gmail.com"},
 ]
-license = {text = "MIT"}
-readme = "README.md"
-requires-python = ">=3.8"
+maintainers = [
+    {name = "Daniel Choi", email = "cdw0424@gmail.com"},
+]
+keywords = ["prompt-engineering", "ai", "development-workflow", "sd", "amr"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
 ]
-keywords = ["ai", "development", "prompt-engineering", "cursor", "codex"]
-
 dependencies = [
-    "pathspec>=0.11.0",      # .gitignore parsing
-    "jinja2>=3.1.0",         # Template engine
-    "pyyaml>=6.0",           # YAML parsing
-    "tiktoken>=0.5.0",       # Token counting (optional)
-    "click>=8.0.0",          # CLI framework
-    "rich>=13.0.0",          # Rich console output
+    "pathspec>=0.11.0",     # .gitignore pattern matching
+    "pyyaml>=6.0",          # YAML configuration files
+    "rich>=13.0.0",         # Enhanced terminal output
+    "typer>=0.9.0",         # CLI framework
+    "pydantic>=2.0.0",      # Data validation
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "pytest-mock>=3.10.0",
     "black>=23.0.0",
     "isort>=5.12.0",
     "mypy>=1.0.0",
-    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+]
+performance = [
+    "ripgrep",              # Fast text search (external)
+    "cachecontrol>=0.13.0", # HTTP caching
+    "tiktoken>=0.5.0",      # Token counting
 ]
 
 [project.urls]
-Homepage = "https://github.com/cdw0424/super-promt"
-Repository = "https://github.com/cdw0424/super-promt.git"
-Issues = "https://github.com/cdw0424/super-promt/issues"
+Homepage = "https://github.com/cdw0424/super-prompt"
+Documentation = "https://super-prompt.readthedocs.io/"
+Repository = "https://github.com/cdw0424/super-prompt"
+Issues = "https://github.com/cdw0424/super-prompt/issues"
+Changelog = "https://github.com/cdw0424/super-prompt/blob/main/CHANGELOG.md"
 
 [project.scripts]
 super-prompt-core = "super_prompt.cli:main"
@@ -56,30 +68,86 @@ super-prompt-core = "super_prompt.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["super_prompt"]
 
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "isort",
+    "mypy",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=super_prompt {args:tests}"
+lint = [
+    "black {args:.}",
+    "isort {args:.}",
+    "mypy {args:super_prompt}",
+]
+
 [tool.black]
 line-length = 100
-target-version = ['py38']
+target-version = ['py310']
 
 [tool.isort]
 profile = "black"
 line_length = 100
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pathspec.*",
+]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-addopts = ["--cov=super_prompt", "--cov-report=term-missing"]
-
-[tool.ruff]
-target-version = "py38"
-line-length = 100
-select = ["E", "W", "F", "I", "B", "C4", "UP"]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = [
+    "tests",
+]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
 
 [tool.coverage.run]
 source = ["super_prompt"]
-omit = ["tests/*"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "setup.py",
+]
 
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\bProtocol\):",
+    "@(abc\.)?abstractmethod",
+]

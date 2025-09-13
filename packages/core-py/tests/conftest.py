@@ -1,117 +1,130 @@
 """
-Pytest configuration and shared fixtures for Super Prompt tests
+Pytest configuration and shared fixtures for Super Prompt tests.
 """
 
 import pytest
 import tempfile
-import shutil
 from pathlib import Path
-from typing import Generator, Dict, Any
-
-from super_prompt.engine.state_machine import StateMachine
-from super_prompt.engine.amr_router import AMRRouter
-from super_prompt.context.collector import ContextCollector
+from typing import Generator
 
 
 @pytest.fixture
-def temp_dir() -> Generator[Path, None, None]:
-    """Create a temporary directory for tests"""
-    temp_path = Path(tempfile.mkdtemp())
-    try:
-        yield temp_path
-    finally:
-        shutil.rmtree(temp_path, ignore_errors=True)
+def temp_project_root() -> Generator[Path, None, None]:
+    """Create a temporary project directory for testing."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        yield Path(temp_dir)
 
 
 @pytest.fixture
-def sample_project(temp_dir: Path) -> Path:
-    """Create a sample project structure for testing"""
-    # Create basic project structure
-    (temp_dir / "src").mkdir()
-    (temp_dir / "tests").mkdir()
-    (temp_dir / "docs").mkdir()
+def sample_gitignore(temp_project_root: Path) -> Path:
+    """Create a sample .gitignore file."""
+    gitignore = temp_project_root / ".gitignore"
+    gitignore.write_text("""
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-    # Create some sample files
-    (temp_dir / "README.md").write_text("# Sample Project\n\nThis is a test project.")
-    (temp_dir / "package.json").write_text('{"name": "test-project", "version": "1.0.0"}')
-    (temp_dir / ".gitignore").write_text("node_modules/\n*.pyc\n__pycache__/\n")
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-    # Source files
-    (temp_dir / "src" / "main.py").write_text("""
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+""")
+    return gitignore
+
+
+@pytest.fixture
+def sample_readme(temp_project_root: Path) -> Path:
+    """Create a sample README.md file."""
+    readme = temp_project_root / "README.md"
+    readme.write_text("""# Sample Project
+
+This is a sample project for testing Super Prompt context collection.
+
+## Features
+
+- Feature 1
+- Feature 2
+- Feature 3
+
+## Usage
+
+```bash
+python main.py
+```
+""")
+    return readme
+
+
+@pytest.fixture
+def sample_python_file(temp_project_root: Path) -> Path:
+    """Create a sample Python file."""
+    py_file = temp_project_root / "main.py"
+    py_file.write_text("""
+#!/usr/bin/env python3
+"""
+Sample Python application for testing.
+"""
+
 def main():
-    print("Hello, world!")
+    print("Hello, World!")
+    return "success"
 
 if __name__ == "__main__":
     main()
 """)
-
-    (temp_dir / "src" / "utils.js").write_text("""
-function hello() {
-    console.log("Hello from JS!");
-}
-
-module.exports = { hello };
-""")
-
-    # Test files
-    (temp_dir / "tests" / "test_main.py").write_text("""
-import pytest
-from src.main import main
-
-def test_main():
-    # Test would go here
-    pass
-""")
-
-    # Binary file (should be excluded)
-    (temp_dir / "binary.bin").write_bytes(b"\x00\x01\x02\x03")
-
-    return temp_dir
+    return py_file
 
 
 @pytest.fixture
-def state_machine() -> StateMachine:
-    """Create a fresh state machine instance"""
-    return StateMachine()
+def sample_package_json(temp_project_root: Path) -> Path:
+    """Create a sample package.json file."""
+    package_json = temp_project_root / "package.json"
+    package_json.write_text("""{
+  "name": "sample-project",
+  "version": "1.0.0",
+  "description": "Sample project for testing",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "build": "webpack",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "webpack": "^5.0.0"
+  }
+}""")
+    return package_json
 
 
 @pytest.fixture
-def amr_router() -> AMRRouter:
-    """Create an AMR router instance"""
-    return AMRRouter()
+def mock_context_collector(temp_project_root: Path):
+    """Create a mock context collector for testing."""
+    from super_prompt.context.collector import ContextCollector
 
-
-@pytest.fixture
-def context_collector(temp_dir: Path) -> ContextCollector:
-    """Create a context collector for the temp directory"""
-    return ContextCollector(str(temp_dir))
-
-
-@pytest.fixture
-def sample_context() -> Dict[str, Any]:
-    """Sample context data for testing"""
-    return {
-        "user_input": "Create a new React component",
-        "file_count": 25,
-        "project_size": "medium",
-        "domains": ["frontend", "javascript"],
-        "recent_failures": 0
-    }
-
-
-@pytest.fixture
-def high_complexity_input() -> str:
-    """Sample high complexity input"""
-    return "Analyze the security architecture and identify potential vulnerabilities in the authentication system"
-
-
-@pytest.fixture
-def medium_complexity_input() -> str:
-    """Sample medium complexity input"""
-    return "Implement a new API endpoint for user registration"
-
-
-@pytest.fixture
-def low_complexity_input() -> str:
-    """Sample low complexity input"""
-    return "Show me the current directory listing"
+    # Initialize with temp directory
+    collector = ContextCollector(str(temp_project_root))
+    return collector

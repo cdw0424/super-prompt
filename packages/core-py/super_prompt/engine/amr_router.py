@@ -1,192 +1,162 @@
 """
-Auto Model Router (AMR) Implementation
-
-Handles complexity classification and model routing decisions:
-- L0/L1: Medium complexity tasks
-- H: High complexity requiring advanced reasoning
+AMR Router - Auto Model Router (medium ↔ high reasoning)
+Automatically routes tasks based on complexity analysis.
 """
 
 from enum import Enum
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Pattern
+from typing import Dict, Any, Optional
 import re
-import logging
-
-logger = logging.getLogger(__name__)
 
 
-class ComplexityLevel(Enum):
-    """Complexity levels for AMR routing"""
-    L0 = "l0"      # Low complexity
-    L1 = "l1"      # Medium complexity
-    H = "h"        # High complexity
-
-
-@dataclass
-class RouteDecision:
-    """Result of AMR routing decision"""
-    complexity: ComplexityLevel
-    confidence: float
-    reasoning: str
-    suggested_flags: List[str]
+class ReasoningLevel(Enum):
+    LIGHT = "light"      # L0 - Simple tasks
+    MODERATE = "moderate"  # L1 - Standard tasks
+    HEAVY = "heavy"      # H - Complex reasoning tasks
 
 
 class AMRRouter:
     """
-    Auto Model Router for complexity-based routing
-
-    Analyzes user input and determines appropriate complexity level
-    and routing recommendations.
+    Auto Model Router that analyzes task complexity and recommends reasoning levels.
+    Provides switching templates and maintains routing history.
     """
 
     def __init__(self):
-        self.high_complexity_patterns = [
-            # Architecture and system design
-            r'\b(architect|architecture|system\s+design|scalability)\b',
-            r'\b(refactor|refactoring|redesign|modernize)\b',
-            r'\b(optimize|optimization|performance|bottleneck)\b',
+        self.routing_history = []
+        self.complexity_patterns = self._build_patterns()
 
-            # Security and compliance
-            r'\b(security|audit|vulnerability|threat|compliance)\b',
-            r'\b(encrypt|authentication|authorization)\b',
-
-            # Complex analysis
-            r'\b(analyze|analysis|investigate|troubleshoot)\b',
-            r'\b(debug|debugging|root\s+cause)\b',
-
-            # Meta-cognitive requests
-            r'\b(think|thinking|reason|reasoning|complex)\b',
-            r'\b(comprehensive|thorough|detailed|deep)\b',
-
-            # Multi-step operations
-            r'\b(plan|planning|strategy|roadmap)\b',
-            r'\b(workflow|pipeline|process|methodology)\b',
-        ]
-
-        self.medium_complexity_patterns = [
-            # Implementation tasks
-            r'\b(implement|create|build|develop)\b',
-            r'\b(feature|component|module|service)\b',
-            r'\b(api|endpoint|database|query)\b',
-
-            # Frontend/UI tasks
-            r'\b(ui|ux|component|responsive|design)\b',
-            r'\b(css|styling|layout|animation)\b',
-
-            # Documentation and explanation
-            r'\b(document|documentation|explain|guide)\b',
-            r'\b(example|tutorial|how\s+to)\b',
-        ]
-
-        self.low_complexity_patterns = [
-            # Simple queries
-            r'\b(what|how|why|when|where)\b',
-            r'\b(show|list|display|print)\b',
-            r'\b(help|usage|syntax)\b',
-
-            # Basic operations
-            r'\b(copy|move|rename|delete)\b',
-            r'\b(install|setup|configure)\b',
-        ]
-
-    def analyze_complexity(self, user_input: str, context: Optional[Dict] = None) -> RouteDecision:
+    def classify_task(self, user_input: str, context: Optional[Dict[str, Any]] = None) -> ReasoningLevel:
         """
-        Analyze user input and determine complexity level
-
-        Args:
-            user_input: User's request or command
-            context: Additional context (file count, project size, etc.)
-
-        Returns:
-            RouteDecision with complexity level and reasoning
+        Classify task complexity based on input analysis.
+        Returns the recommended reasoning level.
         """
-        user_input_lower = user_input.lower()
+        score = 0
+        reasons = []
 
-        # Count pattern matches
-        high_matches = self._count_pattern_matches(user_input_lower, self.high_complexity_patterns)
-        medium_matches = self._count_pattern_matches(user_input_lower, self.medium_complexity_patterns)
-        low_matches = self._count_pattern_matches(user_input_lower, self.low_complexity_patterns)
+        # Analyze input characteristics
+        input_length = len(user_input)
+        has_keywords = self._check_keywords(user_input)
+        has_complexity_indicators = self._check_complexity_indicators(user_input)
+        has_architectural_elements = self._check_architectural_elements(user_input)
+
+        # Scoring logic
+        if input_length > 500:
+            score += 2
+            reasons.append("long_input")
+
+        if has_keywords:
+            score += 3
+            reasons.append("complex_keywords")
+
+        if has_complexity_indicators:
+            score += 2
+            reasons.append("complexity_indicators")
+
+        if has_architectural_elements:
+            score += 3
+            reasons.append("architectural_elements")
 
         # Context-based adjustments
-        context_score = self._analyze_context(context or {})
+        if context:
+            if context.get("has_failures", False):
+                score += 2
+                reasons.append("previous_failures")
 
-        # Calculate scores
-        high_score = high_matches * 2 + context_score
-        medium_score = medium_matches * 1.5
-        low_score = low_matches
+            if context.get("token_limit_exceeded", False):
+                score += 1
+                reasons.append("token_pressure")
 
-        # Determine complexity
-        if high_score >= 2 or (high_score >= 1 and context_score >= 1):
-            return RouteDecision(
-                complexity=ComplexityLevel.H,
-                confidence=min(0.9, 0.6 + high_score * 0.1),
-                reasoning=f"High complexity detected: {high_matches} high patterns, context score {context_score}",
-                suggested_flags=["--ultrathink", "--seq", "--validate"]
-            )
-        elif medium_score >= 1 or (low_score == 0 and high_score == 0):
-            return RouteDecision(
-                complexity=ComplexityLevel.L1,
-                confidence=min(0.8, 0.5 + medium_score * 0.1),
-                reasoning=f"Medium complexity: {medium_matches} medium patterns",
-                suggested_flags=["--think", "--c7"]
-            )
+        # Determine reasoning level
+        if score >= 7:
+            level = ReasoningLevel.HEAVY
+        elif score >= 4:
+            level = ReasoningLevel.MODERATE
         else:
-            return RouteDecision(
-                complexity=ComplexityLevel.L0,
-                confidence=min(0.7, 0.4 + low_score * 0.1),
-                reasoning=f"Low complexity: {low_matches} simple patterns",
-                suggested_flags=[]
-            )
+            level = ReasoningLevel.LIGHT
 
-    def _count_pattern_matches(self, text: str, patterns: List[str]) -> int:
-        """Count how many patterns match in the text"""
-        matches = 0
-        for pattern in patterns:
+        # Record routing decision
+        self.routing_history.append({
+            "input": user_input[:100] + "..." if len(user_input) > 100 else user_input,
+            "score": score,
+            "level": level.value,
+            "reasons": reasons
+        })
+
+        return level
+
+    def get_switch_template(self, current_level: ReasoningLevel, target_level: ReasoningLevel) -> str:
+        """Generate model switching template"""
+        if current_level == target_level:
+            return ""
+
+        if target_level == ReasoningLevel.HEAVY:
+            return """/model gpt-5 high
+--------router: switch to high (reason=deep_planning)"""
+        else:
+            return """/model gpt-5 medium
+--------router: back to medium (reason=execution)"""
+
+    def should_switch_to_high(self, user_input: str, context: Optional[Dict[str, Any]] = None) -> bool:
+        """Convenience method to check if high reasoning is needed"""
+        return self.classify_task(user_input, context) == ReasoningLevel.HEAVY
+
+    def _build_patterns(self) -> Dict[str, list]:
+        """Build pattern dictionaries for complexity analysis"""
+        return {
+            "complex_keywords": [
+                r"\b(architect|design|system|infrastructure|scalability)\b",
+                r"\b(security|threat|vulnerability|compliance)\b",
+                r"\b(performance|optimization|bottleneck|latency)\b",
+                r"\b(migration|refactor|restructure|modernize)\b",
+                r"\b(distributed|microservice|orchestration)\b"
+            ],
+            "complexity_indicators": [
+                r"\b(multiple|several|various|complex)\b",
+                r"\b(consider|analyze|evaluate|assess)\b",
+                r"\b(trade.?off|constraint|limitation)\b",
+                r"\b(stakeholder|requirement|specification)\b"
+            ],
+            "architectural_elements": [
+                r"\b(database|schema|migration|model)\b",
+                r"\b(api|endpoint|interface|contract)\b",
+                r"\b(component|module|service|layer)\b",
+                r"\b(integration|deployment|pipeline)\b"
+            ]
+        }
+
+    def _check_keywords(self, text: str) -> bool:
+        """Check for complex keywords"""
+        for pattern in self.complexity_patterns["complex_keywords"]:
             if re.search(pattern, text, re.IGNORECASE):
-                matches += 1
-        return matches
+                return True
+        return False
 
-    def _analyze_context(self, context: Dict) -> float:
-        """Analyze context for complexity indicators"""
-        score = 0.0
+    def _check_complexity_indicators(self, text: str) -> bool:
+        """Check for complexity indicators"""
+        for pattern in self.complexity_patterns["complexity_indicators"]:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        return False
 
-        # File count indicator
-        file_count = context.get('file_count', 0)
-        if file_count > 100:
-            score += 1.0
-        elif file_count > 20:
-            score += 0.5
+    def _check_architectural_elements(self, text: str) -> bool:
+        """Check for architectural elements"""
+        for pattern in self.complexity_patterns["architectural_elements"]:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        return False
 
-        # Project size indicator
-        project_size = context.get('project_size', 'small')
-        if project_size == 'large':
-            score += 1.0
-        elif project_size == 'medium':
-            score += 0.5
+    def get_routing_stats(self) -> Dict[str, Any]:
+        """Get routing statistics"""
+        if not self.routing_history:
+            return {"total_decisions": 0}
 
-        # Error/failure history
-        if context.get('recent_failures', 0) > 2:
-            score += 0.5
+        total = len(self.routing_history)
+        levels = {}
+        for decision in self.routing_history:
+            level = decision["level"]
+            levels[level] = levels.get(level, 0) + 1
 
-        # Multi-domain operations
-        domains = context.get('domains', [])
-        if len(domains) > 2:
-            score += 0.5
-
-        return score
-
-    def should_route_high(self, user_input: str, context: Optional[Dict] = None) -> bool:
-        """Quick check if input should route to high complexity"""
-        decision = self.analyze_complexity(user_input, context)
-        return decision.complexity == ComplexityLevel.H and decision.confidence > 0.6
-
-    def get_routing_suggestion(self, user_input: str, context: Optional[Dict] = None) -> str:
-        """Get human-readable routing suggestion"""
-        decision = self.analyze_complexity(user_input, context)
-
-        if decision.complexity == ComplexityLevel.H:
-            return f"🧠 High complexity detected (confidence: {decision.confidence:.1%}). Consider using advanced reasoning flags: {', '.join(decision.suggested_flags)}"
-        elif decision.complexity == ComplexityLevel.L1:
-            return f"⚙️ Medium complexity (confidence: {decision.confidence:.1%}). Standard processing recommended."
-        else:
-            return f"💡 Low complexity (confidence: {decision.confidence:.1%}). Quick response mode."
+        return {
+            "total_decisions": total,
+            "level_distribution": levels,
+            "high_reasoning_ratio": levels.get("heavy", 0) / total if total > 0 else 0
+        }

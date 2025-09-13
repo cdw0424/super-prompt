@@ -28,7 +28,10 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(for module in engine context sdd personas adapters validation)",
       "Bash(do touch packages/core-py/super_prompt/$module/__init__.py)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(for file in .super-prompt/utils/cursor-processors/{analyzer,backend,devops,frontend,mentor,performance,qa,refactorer,scribe,security}.py)",
+      "Bash(do)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []

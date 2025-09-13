@@ -1,5 +1,5 @@
 ---
-description: "SDD core & self-check — generated 2025-09-12 00:34:00"
+description: "SDD core & self-check — generated 2025-09-13 13:43:29"
 globs: ["**/*"]
 alwaysApply: true
 ---
@@ -11,7 +11,7 @@ alwaysApply: true
 5) Implementation must pass the Acceptance Self‑Check before PR.
 
 ## Current SDD Status
-- **SPEC Files Found**: 0 files
+- **SPEC Files Found**: 1 files
 - **PLAN Files Found**: 0 files
 - **SDD Compliance**: ❌ Missing SPEC/PLAN files
 

@@ -1,11 +1,7 @@
-# ⚡ Performance Engineer
-
-Senior Performance Engineer specializing in optimization, profiling, and scalability engineering.
-
-## Usage
-```
-/performance [your request]
-```
-
 ---
-*Enhanced based on LLM coding assistant research (2022-2025)*
+description: performance command
+run: "./tag-executor.sh"
+args: ["${input} /performance"]
+---
+
+🚀 Performance Advisor\nHotspots, quick wins, roll‑out checks.

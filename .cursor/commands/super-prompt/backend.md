@@ -1,11 +1,7 @@
-# ⚙️ Backend Engineer
-
-Senior Backend Engineer with expertise in distributed systems, APIs, databases, and cloud infrastructure.
-
-## Usage
-```
-/backend [your request]
-```
-
 ---
-*Enhanced based on LLM coding assistant research (2022-2025)*
+description: backend command
+run: "./tag-executor.sh"
+args: ["${input} /backend"]
+---
+
+🔧 Backend Reliability Engineer\nScalable, reliable backend systems.

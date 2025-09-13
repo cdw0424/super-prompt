@@ -92,6 +92,56 @@ personas:
       - "Edge case identification"
     flags: ["--play", "--validate"]
 
+  devops:
+    name: "DevOps"
+    icon: "🚀"
+    description: "CI/CD, infrastructure automation, and reliability"
+    best_for:
+      - "CI/CD pipelines and automation"
+      - "Infrastructure as Code and environments"
+      - "Monitoring, observability, and SRE practices"
+    flags: ["--seq", "--validate"]
+
+  scribe:
+    name: "Scribe"
+    icon: "📝"
+    description: "Technical writing and developer documentation"
+    best_for:
+      - "API/SDK documentation"
+      - "Developer guides and tutorials"
+      - "Architecture and ADR documents"
+    flags: ["--c7"]
+
+  dev:
+    name: "Dev"
+    icon: "🚀"
+    description: "Feature development with quality and delivery focus"
+    best_for:
+      - "Feature implementation and delivery"
+      - "Incremental development and validation"
+      - "Integration and acceptance readiness"
+    flags: ["--seq", "--validate", "--c7"]
+
+  tr:
+    name: "Troubleshooter"
+    icon: "🔧"
+    description: "Rapid issue diagnosis and resolution"
+    best_for:
+      - "Bug reproduction and isolation"
+      - "Root-cause analysis and fixes"
+      - "Stability and preventive measures"
+    flags: ["--think", "--seq", "--c7", "--validate"]
+
+  doc-master:
+    name: "Doc Master"
+    icon: "📚"
+    description: "Documentation architecture, writing, and verification"
+    best_for:
+      - "Information architecture and style guides"
+      - "API/SDK reference and runnable examples"
+      - "Guides, tutorials, and troubleshooting"
+    flags: ["--c7", "--validate"]
+
 # Template configuration
 template:
   command_template: |

@@ -16,6 +16,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+# Import quality enhancer
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from quality_enhancer import QualityEnhancer
+from reasoning_delegate import ReasoningDelegate
+
 
 @dataclass
 class PersonaConfig:
@@ -51,13 +56,20 @@ class EnhancedPersonaProcessor:
             self.manifest_path = self.project_root / "packages" / "cursor-assets" / "manifests" / "enhanced_personas.yaml"
 
         self.personas = self.load_personas()
+        # Global prompt standards from manifest (optional)
+        self.global_settings: Dict[str, Any] = getattr(self, 'global_settings', {})
         self.current_persona = None
+        self.quality_enhancer = QualityEnhancer()  # Quality enhancer for final polish
+        self.reasoning_delegate = ReasoningDelegate()  # Deep reasoning planner
 
     def load_personas(self) -> Dict[str, PersonaConfig]:
         """Load personas from YAML manifest"""
         try:
             with open(self.manifest_path, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
+
+            # Capture optional global settings
+            self.global_settings = data.get('global_settings', {})
 
             personas = {}
             for persona_key, persona_data in data['personas'].items():
@@ -107,7 +119,7 @@ class EnhancedPersonaProcessor:
 
         return None
 
-    def generate_system_prompt(self, persona_key: str, user_input: str) -> str:
+    def generate_system_prompt(self, persona_key: str, user_input: str, external_plan: Optional[dict] = None) -> str:
         """Generate comprehensive system prompt for the persona"""
         if persona_key not in self.personas:
             return f"You are a helpful coding assistant. Please help with: {user_input}"
@@ -125,6 +137,7 @@ class EnhancedPersonaProcessor:
 - **Goal Orientation**: {persona.goal_orientation}
 - **Interaction Style**: {persona.interaction_style}
 - **Communication Tone**: {persona.tone}
+- **Language**: English (concise, professional)
 
 ## SPECIALIZED EXPERTISE
 You have deep expertise in:
@@ -145,10 +158,20 @@ Based on your persona type:
 ## QUALITY STANDARDS
 {chr(10).join(f"- {gate}" for gate in (persona.quality_gates or []))}
 
+## GLOBAL PROMPT ENGINEERING RULES
+{self._get_global_prompt_engineering_rules()}
+
+## PROJECT-WIDE CONSISTENCY & QUALITY
+{self._format_global_standards()}
+
 ## COLLABORATION CONTEXT
 {self._get_collaboration_context(persona)}
 
+## EXTERNAL PLAN (if present)
+{json.dumps(external_plan, indent=2) if external_plan else 'None'}
+
 ## USER REQUEST
+Use the external plan above as baseline when present; otherwise, create a concise plan first, then execute.
 Please address the following request while maintaining your persona:
 {user_input}
 
@@ -371,14 +394,65 @@ and follow your defined interaction style throughout the entire response."""
 
         return orientations.get(goal_orientation, "- Provide helpful and effective assistance")
 
+    def _get_global_prompt_engineering_rules(self) -> str:
+        """Global rules distilled from persona_make_rules.md, applied to every persona"""
+        return (
+            "- Ask 1–3 clarifying questions when requirements are ambiguous; otherwise state explicit assumptions before proceeding.\n"
+            "- Follow PLAN → EXECUTE → REVIEW. Keep planning concise; do not stall delivery.\n"
+            "- Do not reveal internal chain-of-thought. Provide succinct rationale and final outputs only.\n"
+            "- Output structure (when applicable):\n"
+            "  1) Summary (one paragraph)\n"
+            "  2) Plan (bulleted)\n"
+            "  3) Implementation (code blocks with filenames/commands)\n"
+            "  4) Tests/Validation (how to verify)\n"
+            "  5) Next steps or trade-offs\n"
+            "- Safety: never include secrets/tokens; mask like sk-***. Avoid unverifiable claims; say what is unknown and propose how to find out.\n"
+            "- Keep diffs minimal and scoped. Prefer incremental, reversible changes.\n"
+            "- Console logs should start with '--------'.\n"
+        )
+
+    def _format_global_standards(self) -> str:
+        """Render global consistency and quality standards from manifest if present"""
+        if not getattr(self, 'global_settings', None):
+            return "- Maintain persona voice and provide actionable, evidence-based results."
+
+        parts: List[str] = []
+        consistency = self.global_settings.get('consistency_rules') or []
+        quality = self.global_settings.get('quality_standards') or []
+        if consistency:
+            parts.append("### Consistency Rules\n" + "\n".join(f"- {r}" for r in consistency))
+        if quality:
+            parts.append("\n### Quality Standards\n" + "\n".join(f"- {q}" for q in quality))
+        return "\n\n".join(parts)
+
     def _get_collaboration_context(self, persona: PersonaConfig) -> str:
         """Get collaboration context for multi-persona workflows"""
         if not persona.collaboration_with:
             return "Work independently with focus on your specialized expertise."
 
         context = "Collaborate effectively with other personas:\n"
-        for other_persona, collaboration_type in persona.collaboration_with.items():
-            context += f"- {other_persona}: {collaboration_type}\n"
+        cw = persona.collaboration_with
+        try:
+            if isinstance(cw, dict):
+                items = cw.items()
+            elif isinstance(cw, list):
+                # Support list form like ["security: review", "qa: test plan"]
+                parsed = []
+                for entry in cw:
+                    if isinstance(entry, str) and ":" in entry:
+                        role, desc = entry.split(":", 1)
+                        parsed.append((role.strip(), desc.strip()))
+                    else:
+                        parsed.append((str(entry), "collaboration"))
+                items = parsed
+            else:
+                items = []
+
+            for other_persona, collaboration_type in items:
+                context += f"- {other_persona}: {collaboration_type}\n"
+        except Exception:
+            # Fallback to generic guidance
+            context += "- Coordinate with relevant specialist personas as needed\n"
 
         return context
 
@@ -391,8 +465,23 @@ and follow your defined interaction style throughout the entire response."""
         persona = self.personas[persona_key]
         self.current_persona = persona_key
 
-        # Generate comprehensive system prompt
-        system_prompt = self.generate_system_prompt(persona_key, user_input)
+        # Optionally delegate deep reasoning to Codex (GPT-5) for a plan
+        external_plan = None
+        if getattr(self, "_force_delegate", False) or self._needs_deep_reasoning(persona_key, user_input):
+            try:
+                print("-------- Delegating deep reasoning to codex exec (high)")
+                del_prompt = self.reasoning_delegate.build_plan_prompt(self.personas[persona_key].name, user_input, self._get_global_prompt_engineering_rules())
+                result = self.reasoning_delegate.request_plan(del_prompt)
+                if result.get("ok"):
+                    external_plan = result.get("plan")
+                    print("-------- Received external plan")
+                else:
+                    print(f"-------- Delegation failed: {result.get('error')}")
+            except Exception as e:
+                print(f"-------- Delegation error: {e}")
+
+        # Generate comprehensive system prompt (include external plan if any)
+        system_prompt = self.generate_system_prompt(persona_key, user_input, external_plan=external_plan)
 
         # Prepare super-prompt command with persona-specific flags
         cmd_args = ["super-prompt"] + persona.flags + [system_prompt]
@@ -406,9 +495,63 @@ and follow your defined interaction style throughout the entire response."""
 
             if result.returncode != 0:
                 print(f"-------- Warning: Persona execution completed with return code {result.returncode}")
+            else:
+                # Apply quality enhancement after successful execution
+                print("\n" + "="*60)
+                print("🎯 QUALITY ENHANCEMENT - 고해성사 & 더블체크")
+                print("="*60)
+
+                # Generate quality enhancement prompt
+                quality_prompt = self._generate_quality_enhancement_prompt(persona_key, user_input)
+                quality_cmd = ["super-prompt", "--high"] + [quality_prompt]
+
+                print("-------- Applying quality enhancement...")
+                quality_result = subprocess.run(quality_cmd, check=False)
+
+                if quality_result.returncode == 0:
+                    print("-------- Quality enhancement completed successfully")
+                else:
+                    print(f"-------- Quality enhancement warning: return code {quality_result.returncode}")
 
         except Exception as e:
             print(f"-------- Error executing persona: {e}")
+
+    def _generate_quality_enhancement_prompt(self, persona_key: str, original_input: str) -> str:
+        """
+        Generate quality enhancement prompt using the quality enhancer
+        """
+        persona = self.personas.get(persona_key)
+        if not persona:
+            return "Please review and enhance the previous result for quality."
+
+        enhancement_prompt = f"""
+**[품질 향상 - 고해성사 & 더블체크]**
+
+방금 {persona.name} 페르소나로 생성한 결과물을 검토하고 개선해주세요.
+
+**원본 요청:** {original_input}
+
+**품질 향상 작업:**
+
+1️⃣ **고해성사 - 작업 과정 검토:**
+{self.quality_enhancer._get_confession_prompt()}
+
+2️⃣ **더블체크 - 최종 검증:**
+{self.quality_enhancer._get_double_check_prompt()}
+
+3️⃣ **오버엔지니어링 방지:**
+{self.quality_enhancer._get_anti_overengineering_prompt()}
+
+**지시사항:**
+- 위의 검토 과정을 따라 개선된 최종 결과물을 제시하세요
+- 불필요한 복잡성을 제거하고 핵심에 집중하세요
+- 사용자 요구사항을 100% 만족시키는 최적의 결과물을 만드세요
+- 각 단계에서 개선된 점을 명시하세요
+
+최종 결과물을 제시해주세요:
+"""
+
+        return enhancement_prompt
 
     def list_personas(self) -> None:
         """List all available personas with their descriptions"""
@@ -421,7 +564,7 @@ and follow your defined interaction style throughout the entire response."""
             "Implementation Team": ["backend", "frontend"],
             "Analysis & Quality": ["analyzer", "qa"],
             "Knowledge & Guidance": ["mentor", "refactorer"],
-            "Specialized Roles": ["devops", "scribe"]
+            "Specialized Roles": ["devops", "scribe", "doc-master"]
         }
 
         for category, persona_keys in categories.items():
@@ -436,6 +579,18 @@ and follow your defined interaction style throughout the entire response."""
                     print(f"   Usage: /{persona_key} [your request]")
                     print()
 
+    def _needs_deep_reasoning(self, persona_key: str, user_input: str) -> bool:
+        """Heuristic to decide when to delegate planning to GPT-5 Codex."""
+        s = (user_input or "").lower()
+        keywords = [
+            "plan", "architecture", "design", "strategy", "spec", "threat model",
+            "root cause", "investigate", "optimize", "performance", "modernize",
+            "migration", "refactor", "debug", "bottleneck", "adr", "rfc"
+        ]
+        if any(k in s for k in keywords):
+            return True
+        return persona_key in {"architect", "security", "performance", "analyzer", "qa", "doc-master"}
+
 
 def main():
     """Main entry point for enhanced persona processor"""
@@ -448,6 +603,7 @@ def main():
     parser.add_argument("--auto-detect", "-a", action="store_true",
                        help="Auto-detect persona from user input")
     parser.add_argument("--manifest", "-m", help="Path to persona manifest file")
+    parser.add_argument("--delegate-reasoning", action="store_true", help="Force delegate deep reasoning to Codex (GPT-5)")
 
     args = parser.parse_args()
 
@@ -477,6 +633,10 @@ def main():
             # Execute without specific persona
             subprocess.run(["super-prompt", args.user_input], check=False)
             return
+
+    # Set delegation flag
+    if args.delegate_reasoning:
+        processor._force_delegate = True
 
     # Execute the persona
     processor.execute_persona(persona_key, args.user_input)

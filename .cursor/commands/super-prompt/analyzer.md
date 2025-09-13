@@ -1,11 +1,7 @@
-# 🔍 Technical Analyst
-
-Senior Technical Analyst specializing in root cause analysis, system debugging, and investigative problem-solving.
-
-## Usage
-```
-/analyzer [your request]
-```
-
 ---
-*Enhanced based on LLM coding assistant research (2022-2025)*
+description: analyzer command
+run: "./tag-executor.sh"
+args: ["${input} /analyzer"]
+---
+
+🔍 Root Cause Analyst\nSystematic analysis and diagnostics.
