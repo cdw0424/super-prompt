@@ -12,9 +12,9 @@ npm i -g @cdw0424/super-prompt
 npx @cdw0424/super-prompt --help
 ```
 
-**🚀 New in v2.9.29:** Performance Optimization - Fixed infinite git output in analyzer
-command by optimizing `_get_project_files()` function. Added .gitignore pattern filtering,
-excluded large directories (.git, node_modules, .npm-cache), and reduced file scanning limits.
+**🚀 New in v2.9.30:** Global Write Protection Policy - All commands now protect
+`./` directory files from modification. Only safe outputs (.codex/reports) and initialization
+commands can write to project directory. Prevents accidental file modifications.
 
 **🚀 New in v2.9.28:** NPM Cache Git Loop Fix - Automated diagnostic and repair
 system for npm cache misconfiguration that causes infinite git analysis loops.
@@ -662,6 +662,35 @@ Flow
      git rm -r --cached .npm-cache 2>/dev/null || true
      ```
    - Our installer detects this condition and prints a warning with the recommended fix.
+
+## Global Write Protection Policy
+
+**All commands protect `./` directory files from accidental modification.**
+
+### What is Protected
+- ✅ **BLOCKED**: All relative paths under current directory (`./src/`, `./package.json`, etc.)
+- ✅ **ALLOWED**: Safe output locations (`.codex/reports/`)
+- ✅ **ALLOWED**: Initialization commands (`super:init`, `amr:rules`, `codex:init`)
+
+### Why This Protection Exists
+- **Safety First**: Prevents AI from accidentally modifying your project files
+- **Command Consistency**: All commands follow the same protection rules
+- **Predictable Behavior**: You can trust that commands won't touch your source code
+
+### Protection Examples
+```bash
+# ❌ BLOCKED - Cannot modify project files
+super-prompt optimize "fix bug" /analyzer  # Cannot write to ./src/
+
+# ✅ ALLOWED - Safe output location
+super-prompt --sp-double-check "audit code" --out .codex/reports/audit.md
+
+# ✅ ALLOWED - Initialization commands
+super-prompt super:init  # Can create .cursor/rules/ etc.
+```
+
+### Override (Advanced)
+Set `SUPER_PROMPT_ALLOW_WRITES=1` environment variable to disable protection (not recommended).
 
 ## Codex AMR (medium ↔ high)
 

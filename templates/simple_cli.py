@@ -8,6 +8,7 @@ import argparse, glob, os, sys, re, json, datetime, textwrap, subprocess, shutil
 from typing import Dict, List, Optional
 
 VERSION = "1.0.0"
+CURRENT_CMD: Optional[str] = None  # set in main()
 
 def log(msg: str): 
     print(f"-------- {msg}")
@@ -37,11 +38,45 @@ def read_text(path: str) -> str:
     except Exception as e:
         log(f"Read failed: {path} ({e})"); return ""
 
+def _allow_write(path: str) -> bool:
+    """Global write protection policy: NEVER modify files under ./ directory.
+    Only allow writes to specific safe locations and during initialization commands."""
+    p = path.replace("\\", "/")
+
+    # Always allow writes to .codex/reports (safe output location)
+    if p.startswith('.codex/reports') or '/.codex/reports/' in p:
+        return True
+
+    # Allow writes during initialization/setup commands
+    if CURRENT_CMD in ("super:init", "amr:rules", "codex:init", "install"):
+        return True
+
+    # BLOCK ALL writes to ./ directory and subdirectories for ALL commands
+    # This is the GLOBAL PROTECTION RULE - no command can modify project files
+    if not p.startswith('/') and not p.startswith('\\'):
+        # This is a relative path under current directory
+        if not p.startswith('.codex/reports') and not p.startswith('.cursor/commands'):
+            log(f"🚫 GLOBAL WRITE BLOCK: {path} (all commands protect ./ directory)")
+            return False
+
+    # Additional command-specific restrictions
+    if CURRENT_CMD in ("optimize", "analyze", "debug"):
+        if p.startswith('.cursor') or '/.cursor/' in p:
+            return False
+        if p.startswith('.codex') or '/.codex/' in p:
+            return False
+
+    return True
+
+
 def write_text(path: str, content: str, dry: bool = False):
     if dry:
         log(f"[DRY] write → {path} ({len(content.encode('utf-8'))} bytes)"); return
+    if not _allow_write(path):
+        log(f"write blocked → {path} (policy)")
+        return
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f: 
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     log(f"write → {path}")
 
@@ -1978,8 +2013,11 @@ def main():
     p_implement.add_argument("query", nargs="*", help="Description of what to implement")
 
     args = parser.parse_args()
-    if not args.cmd: 
+    if not args.cmd:
         args.cmd = "super:init"
+
+    global CURRENT_CMD
+    CURRENT_CMD = args.cmd
 
     if args.cmd == "super:init":
         show_ascii_logo()

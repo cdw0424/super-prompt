@@ -28,17 +28,33 @@ def read_text(path: str) -> str:
 
 
 def _allow_write(path: str) -> bool:
-    """Protect .cursor and .codex during optimize. Allow .codex/reports outputs."""
+    """Global write protection policy: NEVER modify files under ./ directory.
+    Only allow writes to specific safe locations and during initialization commands."""
     p = path.replace("\\", "/")
+
+    # Always allow writes to .codex/reports (safe output location)
     if p.startswith('.codex/reports') or '/.codex/reports/' in p:
         return True
-    if CURRENT_CMD in ("super:init", "amr:rules", "codex:init"):
+
+    # Allow writes during initialization/setup commands
+    if CURRENT_CMD in ("super:init", "amr:rules", "codex:init", "install"):
         return True
-    if CURRENT_CMD in ("optimize",):
+
+    # BLOCK ALL writes to ./ directory and subdirectories for ALL commands
+    # This is the GLOBAL PROTECTION RULE - no command can modify project files
+    if not p.startswith('/') and not p.startswith('\\'):
+        # This is a relative path under current directory
+        if not p.startswith('.codex/reports') and not p.startswith('.cursor/commands'):
+            log(f"🚫 GLOBAL WRITE BLOCK: {path} (all commands protect ./ directory)")
+            return False
+
+    # Additional command-specific restrictions
+    if CURRENT_CMD in ("optimize", "analyze", "debug"):
         if p.startswith('.cursor') or '/.cursor/' in p:
             return False
         if p.startswith('.codex') or '/.codex/' in p:
             return False
+
     return True
 
 
