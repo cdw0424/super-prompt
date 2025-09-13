@@ -60,9 +60,16 @@
     "install.js",
     "README.md",
     "LICENSE",
-    "index.js"
+    "index.js",
+    "packages/core-py/"
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "better-sqlite3": "^12.2.0",
+    "ioredis": "^5.7.0",
+    "zod": "^4.1.8"
   }
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.1.11 - 2025-09-13
+
+### 🐛 Fixes
+- fix(cli): Add project-local Python launcher shim to resolve relative import errors in `super:init` and persona flags.
+- chore(pkg): Include `packages/core-py/` in npm package files to support Python CLI.
+
+### 🧰 Maintenance
+- chore(release): Prepare packaging and ensure minimal Python deps auto-install.
+
+# Changelog
+
 ## v3.1.10
 
 ### 🐛 **Bug Fixes**
