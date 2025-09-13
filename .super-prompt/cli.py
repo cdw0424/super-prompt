@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Super Prompt - Simplified CLI Implementation
-All functionality in a single file to avoid import issues
+Super Prompt — Unified Python CLI (gathered under .super-prompt)
+All functionality in a single file; supports Cursor + Codex workflows.
 """
 
 import argparse, glob, os, sys, re, json, datetime, textwrap, subprocess, shutil
 from typing import Dict, List, Optional
 
 VERSION = "1.0.0"
+CURRENT_CMD: Optional[str] = None  # set in main()
 
-def log(msg: str): 
+def log(msg: str):
     print(f"-------- {msg}")
 
 # Utility functions
@@ -22,11 +23,30 @@ def read_text(path: str) -> str:
     except Exception as e:
         log(f"Read failed: {path} ({e})"); return ""
 
+def _allow_write(path: str) -> bool:
+    """Global write protection policy: block .cursor/.codex edits during optimize.
+    Allow .codex/reports; allow writes for init/build commands.
+    """
+    p = path.replace("\\", "/")
+    if p.startswith('.codex/reports') or '/.codex/reports/' in p:
+        return True
+    if CURRENT_CMD in ("super:init", "amr:rules", "codex:init", "install", "personas:init", "personas:build"):
+        return True
+    if CURRENT_CMD in ("optimize", "analyze", "debug"):
+        if p.startswith('.cursor') or '/.cursor/' in p:
+            return False
+        if p.startswith('.codex') or '/.codex/' in p:
+            return False
+    return True
+
 def write_text(path: str, content: str, dry: bool = False):
     if dry:
         log(f"[DRY] write → {path} ({len(content.encode('utf-8'))} bytes)"); return
+    if not _allow_write(path):
+        log(f"write blocked → {path} (policy)")
+        return
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f: 
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     log(f"write → {path}")
 
@@ -48,18 +68,12 @@ def sanitize_en(txt: str) -> str:
 def maybe_translate_en(txt: str, allow_external=True) -> str:
     if is_english(txt): return txt
     if not allow_external: return sanitize_en(txt)
-    
     if shutil.which("claude"):
         try:
-            p = subprocess.run([
-                "claude","--model","claude-sonnet-4-20250514","-p", 
-                f"Translate the following text to clear, professional English. Keep markdown.\n\n{txt}"
-            ], capture_output=True, text=True, timeout=30)
+            p = subprocess.run(["claude","--model","claude-sonnet-4-20250514","-p", f"Translate to clear English. Keep markdown.\n\n{txt}"], capture_output=True, text=True, timeout=30)
             out = (p.stdout or "").strip()
             if out: return sanitize_en(out)
-        except:
-            pass
-    
+        except: pass
     return sanitize_en(txt)
 
 def slugify(name: str) -> str:

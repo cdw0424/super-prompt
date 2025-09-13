@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Core CLI: `scripts/super_prompt/cli.py` (Python, single‑file CLI).
+- Core CLI: `.super-prompt/cli.py` (Python, gathered under .super-prompt).
 - Node package wrapper: `bin/super-prompt`, metadata in `package.json`.
 - AMR assets: `prompts/`, `docs/`, `bin/codex-*`, `scripts/codex/*`, `.cursor/rules/*`.
 - Keep new personas/rules under `.cursor/commands/super-prompt/` and `.cursor/rules/`.

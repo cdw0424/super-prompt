@@ -252,31 +252,13 @@ async function animatedInstall() {
             console.log(`${colors.dim}Skipping Codex CLI install/upgrade (set SUPER_PROMPT_CODEX_INSTALL=1 to enable)${colors.reset}`);
         }
 
-        // Step 2: Setting up Python CLI
-        console.log(`${colors.cyan}🐍 Setting up Python CLI components...${colors.reset}`);
-
+        // Step 2: Ensure Python CLI lives under .super-prompt (unified location)
+        console.log(`${colors.cyan}🐍 Ensuring .super-prompt Python CLI...${colors.reset}`);
         const projectRoot = findProjectRoot();
         const globalInstall = isGlobalInstall();
         if (globalInstall) {
             console.log(`${colors.dim}Detected global install — will not modify your current directory${colors.reset}`);
         }
-        const scriptsDir = path.join(projectRoot, 'scripts/super_prompt');
-        ensureDir(scriptsDir);
-        
-        copyFile(
-            path.join(__dirname, 'scripts/super_prompt/cli.py'),
-            path.join(scriptsDir, 'cli.py'),
-            'Python CLI engine'
-        );
-        
-        writeFile(
-            path.join(scriptsDir, '__init__.py'), 
-            '# super_prompt package\n',
-            'Python package initialization'
-        );
-        
-        await sleep(300);
-        completedStep(2, 'Python CLI components ready');
 
         // Step 2.5: Setting up .super-prompt directory
         console.log(`${colors.cyan}📁 Installing .super-prompt utilities...${colors.reset}`);
@@ -293,7 +275,7 @@ async function animatedInstall() {
         }
         
         await sleep(300);
-        completedStep('2.5', '.super-prompt utilities installed');
+        completedStep('2', '.super-prompt utilities installed');
 
         // Step 3: Ready for project initialization (run in your project)
         console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);

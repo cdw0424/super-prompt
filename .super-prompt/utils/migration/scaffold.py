@@ -21,4 +21,3 @@ def scaffold_v3(root: str = ".") -> None:
 
 if __name__ == "__main__":
     scaffold_v3(".")
-

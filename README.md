@@ -821,7 +821,7 @@ super-prompt optimize --double-check "Audit last changes for correctness, honest
 - Bootstrap Prompt: `src/prompts/codexAmrBootstrap.en.js` — AMR‑aware TUI
   starter
 - Scaffold: `src/scaffold/codexAmr.js` — one‑shot bootstrap into a repo
-- Python CLI: `.super-prompt/utils/cli.py` — flag personas, single‑model debate,
+- Python CLI: `.super-prompt/cli.py` — flag personas, single‑model debate,
   project SDD helpers
 - Cursor Processors: `.super-prompt/utils/cursor-processors/` — specialized
   Cursor command processors

@@ -18,7 +18,7 @@ super-prompt/
 │        ├─ personas/      # loader.py (YAML)
 │        ├─ adapters/      # cursor.py, codex.py (thin)
 │        └─ validation/    # todo.py (validators)
-└─ scripts/migration/v3/scaffold.py
+└─ .super-prompt/utils/migration/scaffold.py
 ```
 
 ## State Machine & AMR
@@ -36,4 +36,3 @@ super-prompt/
 - Move personas to YAML manifests.
 - Replace collector with RG + cache + token budget.
 - Add CI (Python/Node matrix) and E2E sample repo tests.
-
