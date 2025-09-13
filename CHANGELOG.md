@@ -1,5 +1,34 @@
 # Changelog
 
+## v3.1.39 - 2025-09-14
+
+### 🐛 **CRITICAL FIX**: Complete Command Installation
+
+- **Problem**: A critical packaging bug was discovered where `npm install -g @cdw0424/super-prompt` only installed a small subset of the available commands (approx. 8 instead of 35+). The issue was caused by an incomplete `"files"` array in `package.json` that excluded the `.cursor` directory, which contains all command definitions and supporting scripts.
+- **Solution**:
+  - **`package.json`**: Modified the `"files"` array to explicitly include the `.cursor` directory, ensuring all necessary files are bundled in the published npm package.
+  - **`bin/super-prompt`**: Reworked the initialization logic to bypass the older, limited Python CLI and directly execute the full-featured initialization script located at `.cursor/commands/super-prompt/.super-prompt/utils/cli.py`. This ensures the installer has access to and correctly creates all 35+ commands.
+- **Impact**: All users installing v3.1.39 and later will now have the complete suite of `super-prompt` commands installed correctly. This resolves the core issue of missing commands in new environments.
+
+## v3.1.38 - 2025-09-14
+
+### 🐛 Critical Display Bug Fix - Command Visibility
+
+- **🔧 Fixed Command Display**: Resolved critical user experience issue where `super-prompt super:init` only displayed 8 commands in the "Available:" message instead of all 35+ commands
+- **📋 Complete Command Listing**: Updated initialization output to show all available commands:
+  - **Core Personas (8)**: `/high`, `/frontend-ultra`, `/frontend`, `/backend`, `/analyzer`, `/architect`, `/seq`, `/seq-ultra`
+  - **Additional Personas (17)**: `/debate`, `/performance`, `/security`, `/task`, `/wave`, `/ultracompressed`, `/docs-refector`, `/refactorer`, `/implement`, `/review`, `/dev`, `/devops`, `/doc-master`, `/mentor`, `/qa`, `/scribe`
+  - **SDD Workflow (6)**: `/spec`, `/plan`, `/tasks`, `/specify`, `/optimize`, `/tr`
+  - **Special Commands (2)**: `/init-sp`, `/re-init-sp`
+  - **Grok Integration (3)**: `/grok`, `/grok-on`, `/grok-off`
+
+### 📊 Impact Assessment
+
+- **Before**: Users saw only 8/35+ commands (23% visibility)
+- **After**: Users see all 35+ commands (100% visibility)
+- **User Experience**: Complete transparency in available commands
+- **Discovery**: Improved command discoverability and usage
+
 ## v3.1.37 - 2025-09-14
 
 ### 🧠 Memory System Enhancement - Real-time Context Loading

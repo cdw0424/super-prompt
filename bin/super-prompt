@@ -2,23 +2,6 @@
 # Super Prompt CLI Wrapper — robust, self-healing
 set -euo pipefail
 
-# Route 'codex-amr' subcommand to Node CLI without affecting legacy behavior
-if [ "${1-}" = "codex-amr" ]; then
-  shift
-  if command -v node >/dev/null 2>&1; then
-    exec node "$(dirname "$0")/codex-amr.js" "$@"
-  else
-    echo "-------- Node.js is required for codex-amr commands" >&2
-    exit 1
-  fi
-fi
-
-# Map legacy alias 'super:init' → core CLI 'init'
-if [ "${1-}" = "super:init" ]; then
-  shift
-  set -- init "$@"
-fi
-
 resolve_app_home() {
   local PRG="$0"
   while [ -h "$PRG" ]; do
@@ -39,7 +22,46 @@ resolve_app_home() {
 
 APP_HOME="$(resolve_app_home)"
 
-# Resolve project root (prefer git toplevel; fallback to CWD)
+# Initialization command must be handled specially to ensure the correct script is run.
+# This block intercepts the init command and routes it to the full-featured Python
+# script that contains the logic to install all 35+ commands.
+if [ "${1-}" = "super:init" ] || [ "${1-}" = "init" ]; then
+  echo "-------- Running initialization..." >&2
+  
+  # The REAL init script with all the logic is deeply nested within the package.
+  INIT_SCRIPT_PY="$APP_HOME/.cursor/commands/super-prompt/.super-prompt/utils/cli.py"
+  
+  if [ -f "$INIT_SCRIPT_PY" ]; then
+    echo "-------- Found main init script: $INIT_SCRIPT_PY" >&2
+    # The python script's command is named "super:init". We shift off the shell
+    # command ('init' or 'super:init') and pass the rest of the args to the script.
+    shift
+    exec python3 "$INIT_SCRIPT_PY" "super:init" "$@"
+  else
+    echo "❌ FATAL: Main initialization script not found." >&2
+    echo "   Looked for: $INIT_SCRIPT_PY" >&2
+    echo "   This might indicate a broken installation." >&2
+    exit 1
+  fi
+fi
+
+# Route 'codex-amr' subcommand to Node CLI without affecting legacy behavior
+if [ "${1-}" = "codex-amr" ]; then
+  shift
+  if command -v node >/dev/null 2>&1; then
+    exec node "$(dirname "$0")/codex-amr.js" "$@"
+  else
+    echo "-------- Node.js is required for codex-amr commands" >&2
+    exit 1
+  fi
+fi
+
+# The old `super:init` mapping is now superseded by the logic block above.
+# if [ "${1-}" = "super:init" ]; then
+#  shift
+#  set -- init "$@"
+# fi
+
 resolve_project_root() {
   if command -v git >/dev/null 2>&1; then
     if GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null); then

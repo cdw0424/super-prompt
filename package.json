@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "3.1.37",
+  "version": "3.1.39",
   "description": "Production-ready prompt engineering toolkit with modular architecture, AMR, SDD workflow, and dual IDE support",
   "main": "index.js",
   "bin": {
@@ -39,7 +39,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cdw0424/super-promt.git"
+    "url": "git+https://github.com/cdw0424/super-prompt.git"
   },
   "bugs": {
     "url": "https://github.com/cdw0424/super-promt/issues"
@@ -54,17 +54,13 @@
     "win32"
   ],
   "files": [
-    "bin/",
-    "src/",
-    "scripts/",
-    ".super-prompt/",
-    ".cursor/",
-    "docs/",
+    "bin",
+    "src",
+    ".super-prompt",
     "install.js",
     "README.md",
-    "LICENSE",
-    "index.js",
-    "packages/core-py/"
+    "CHANGELOG.md",
+    ".cursor"
   ],
   "publishConfig": {
     "access": "public"

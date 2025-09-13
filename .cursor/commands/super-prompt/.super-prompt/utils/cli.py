@@ -1542,7 +1542,7 @@ def main():
         print("\033[36m⚡ Setting up Cursor slash commands...\033[0m")
         install_cursor_commands_in_project(args.dry_run)
         print(f"\033[32m✓\033[0m \033[1mStep 3:\033[0m Slash commands installed")
-        print("   \033[2m→ Available: /frontend /backend /architect /analyzer /seq /seq-ultra /high /frontend-ultra\033[0m\n")
+        print("   \033[2m→ Available: /high /frontend-ultra /frontend /backend /analyzer /architect /seq /seq-ultra /debate /performance /security /task /wave /ultracompressed /docs-refector /refactorer /implement /review /dev /devops /doc-master /mentor /qa /scribe /spec /plan /tasks /specify /optimize /tr /init-sp /re-init-sp /grok /grok-on /grok-off\033[0m\n")
         # Optional Codex integration prompt (.codex/*)
         want_codex = os.environ.get('SUPER_PROMPT_INIT_CODEX')
         yn = None

@@ -6,7 +6,16 @@
 
 **Production-ready prompt engineering toolkit** supporting both **Cursor IDE** and **Codex CLI** with **Spec-Driven Development (SDD)** workflow and **Auto Model Router (AMR)** for intelligent reasoning optimization.
 
-🚀 **Latest**: v3.1.37 - Enhanced memory system with real-time DB context loading, conversation history persistence, and project state tracking for continuous workflow.
+- [x] **Latest**: v3.1.38 - Fixed initialization display to show all 35+ available commands instead of only 8 commands.
+- [ ] **Next**: v3.1.39 - Critical fix for packaging, ensuring all 35+ commands are correctly installed.
+
+<br>
+
+## 🚀 **Latest Release: v3.1.39**
+- **CRITICAL FIX**: Resolved a major packaging bug where `npm install` would not install the complete set of 35+ commands. The `package.json` "files" entry was corrected to include the `.cursor` directory, and the main `bin/super-prompt` script was updated to correctly execute the full initialization process. All commands should now be installed correctly.
+- **Robust Initialization**: The `super-prompt super:init` command is now more reliable and directly calls the correct Python script responsible for scaffolding the complete command suite.
+---
+## 📜 Overview
 
 ## ⚡ Quick Start
 
