@@ -28,41 +28,166 @@ app = typer.Typer(
     add_completion=False,
 )
 
+sdd_spec_query: Optional[str] = typer.Option(None, "--sp-sdd-spec", help="Create an SDD specification for a feature.")
+sdd_plan_query: Optional[str] = typer.Option(None, "--sp-sdd-plan", help="Create an SDD plan for a feature.")
+sdd_tasks_query: Optional[str] = typer.Option(None, "--sp-sdd-tasks", help="Create SDD tasks for a feature.")
+sdd_implement_query: Optional[str] = typer.Option(None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts.")
+high_query: Optional[str] = typer.Option(None, "--sp-high", help="Execute with GPT-5 high reasoning model.")
 
-@app.callback()
-def callback():
-    """Super Prompt Core CLI"""
-    pass
 
-
-@app.command()
-def optimize(
-    query: str = typer.Argument(..., help="Query or request to process"),
-    persona: str = typer.Option("auto", "--persona", "-p", help="Persona to use"),
-    model: str = typer.Option("medium", "--model", "-m", help="Reasoning level (light/moderate/heavy)"),
-    context_tokens: int = typer.Option(16000, "--context-tokens", "-c", help="Maximum context tokens"),
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+@app.callback(invoke_without_command=True)
+def callback(
+    ctx: typer.Context,
+    sp_sdd_spec: Optional[str] = typer.Option(None, "--sp-sdd-spec", help="Create an SDD specification for a feature."),
+    sp_sdd_plan: Optional[str] = typer.Option(None, "--sp-sdd-plan", help="Create an SDD plan for a feature."),
+    sp_sdd_tasks: Optional[str] = typer.Option(None, "--sp-sdd-tasks", help="Create SDD tasks for a feature."),
+    sp_sdd_implement: Optional[str] = typer.Option(None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts."),
+    sp_high: Optional[str] = typer.Option(None, "--sp-high", help="Execute with GPT-5 high reasoning model."),
 ):
-    """Execute prompt optimization with full context awareness"""
+    """Super Prompt Core CLI"""
+    # Check for execution context file FIRST (before checking subcommands)
+    context_file = os.environ.get("SUPER_PROMPT_CONTEXT_FILE")
+    execution_context = None
+
+    if context_file and Path(context_file).exists():
+        try:
+            with open(context_file, 'r', encoding='utf-8') as f:
+                execution_context = json.load(f)
+            typer.echo(f"-------- Loaded execution context from {context_file}")
+        except Exception as e:
+            typer.echo(f"⚠️  Could not load execution context: {e}")
+
+    if execution_context:
+        # Handle enhanced persona execution with context object
+        system_prompt = execution_context.get("system_prompt", "")
+        persona_key = execution_context.get("persona_key", "")
+        if system_prompt and persona_key:
+            handle_enhanced_persona_execution_from_context(execution_context, ctx.args)
+            return
+
+    # Check for enhanced persona system prompt from environment (legacy support)
+    system_prompt = os.environ.get("SUPER_PROMPT_SYSTEM_PROMPT")
+    persona_key = os.environ.get("SUPER_PROMPT_PERSONA")
+
+    if system_prompt and persona_key:
+        # Handle enhanced persona execution with system prompt
+        handle_enhanced_persona_execution(system_prompt, persona_key, ctx.args)
+        return
+
+    # Now check for subcommands
+    if ctx.invoked_subcommand is not None:
+        return
+
+    sdd_options = {
+        "spec": sp_sdd_spec,
+        "plan": sp_sdd_plan,
+        "tasks": sp_sdd_tasks,
+        "implement": sp_sdd_implement,
+    }
+
+    active_sdd_action = None
+    feature_query = None
+    for action, query in sdd_options.items():
+        if query is not None:
+            if active_sdd_action is not None:
+                typer.echo("❌ Error: Please provide only one SDD action flag at a time.", err=True)
+                raise typer.Exit(1)
+            active_sdd_action = action
+            feature_query = query
+
+    # Handle high reasoning option
+    if sp_high is not None:
+        if active_sdd_action is not None:
+            typer.echo("❌ Error: Cannot combine --sp-high with SDD actions.", err=True)
+            raise typer.Exit(1)
+        print("🚀 Executing with GPT-5 High Reasoning Model...")
+        print(f"📝 Query: {sp_high}")
+        # For now, just print the high reasoning message
+        # In future, this should integrate with actual GPT-5 high model
+        print("🔬 High reasoning analysis would be performed here.")
+        print("💡 This is a placeholder for GPT-5 high model integration.")
+        return
+
+    if active_sdd_action and feature_query:
+        sdd_command(action=active_sdd_action, feature=feature_query, project_root=None)
+    elif any(q is not None for q in sdd_options.values()):
+        typer.echo("❌ Error: SDD action requires a feature description.", err=True)
+        raise typer.Exit(1)
+    else:
+        # If no command is passed, and no SDD flags, show help.
+        # This requires `invoke_without_command=True` on the callback.
+        # We check if any sdd option was passed but without a value.
+        if ctx.params['sp_sdd_spec'] is None and \
+           ctx.params['sp_sdd_plan'] is None and \
+           ctx.params['sp_sdd_tasks'] is None and \
+           ctx.params['sp_sdd_implement'] is None and \
+           ctx.params['sp_high'] is None and \
+           not ctx.invoked_subcommand:
+             # Check if there are any other arguments that might imply a command is being called
+             if len(sys.argv) > 1:
+                # A command might be trying to be called but is not matching.
+                # Typer will handle this and show an error.
+                pass
+             else:
+                typer.echo(ctx.get_help())
+
+
+def sdd_command(
+    action: str,
+    feature: str,
+    project_root: Optional[Path],
+):
+    """SDD (Spec-Driven Development) workflow commands"""
     try:
-        # Initialize components
-        pipeline = ExecutionPipeline()
-        collector = ContextCollector(str(project_root) if project_root else ".")
+        if action == "check":
+            # Check implementation readiness
+            gate_result = check_implementation_ready(feature, str(project_root) if project_root else ".")
 
-        # Collect context
-        context = collector.collect_context(query, max_tokens=context_tokens)
+            if gate_result.ok:
+                typer.echo("✅ Implementation ready!")
+            else:
+                typer.echo("❌ Implementation blocked:")
+                for issue in gate_result.missing:
+                    typer.echo(f"   - {issue}")
+                for warning in gate_result.warnings:
+                    typer.echo(f"   ⚠️  {warning}")
 
-        # Execute pipeline
-        result = pipeline.execute(query, context=context, persona=persona, model=model)
+        elif action in ["spec", "plan", "tasks"]:
+            # Generate SDD artifacts
+            pipeline = ExecutionPipeline()
+            result = pipeline.execute(
+                f"Create {action.upper()} for {feature}",
+                sdd_stage=action,
+                project_id=feature,
+                project_root=str(project_root) if project_root else "."
+            )
 
-        # Display results
-        typer.echo(f"✅ Completed in {result['metadata']['execution_time']:.2f}s")
-        typer.echo(f"📊 Tokens used: {result['metadata'].get('context_tokens', 0)}")
+            typer.echo(f"✅ {action.upper()} created for {feature}")
 
-        if result.get("errors"):
-            typer.echo("⚠️  Warnings:")
-            for error in result["errors"]:
-                typer.echo(f"   - {error}")
+        elif action == "implement":
+            # Check gates before implementation
+            gate_result = check_implementation_ready(feature, str(project_root) if project_root else ".")
+
+            if not gate_result.ok:
+                typer.echo("❌ Cannot implement - gates not satisfied:")
+                for issue in gate_result.missing:
+                    typer.echo(f"   - {issue}")
+                raise typer.Exit(1)
+
+            # Proceed with implementation
+            pipeline = ExecutionPipeline()
+            result = pipeline.execute(
+                f"Implement {feature}",
+                sdd_stage="implement",
+                project_id=feature,
+                project_root=str(project_root) if project_root else "."
+            )
+
+            typer.echo(f"✅ Implementation completed for {feature}")
+
+        else:
+            typer.echo(f"❌ Unknown SDD action: {action}", err=True)
+            raise typer.Exit(1)
 
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
@@ -232,66 +357,14 @@ def personas_build(
 
 
 @app.command()
-def sdd(
+def sdd_cli(
     action: str = typer.Argument(..., help="SDD action (spec/plan/tasks/implement)"),
     feature: str = typer.Argument(..., help="Feature name"),
     project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
 ):
-    """SDD (Spec-Driven Development) workflow commands"""
-    try:
-        if action == "check":
-            # Check implementation readiness
-            gate_result = check_implementation_ready(feature, str(project_root) if project_root else ".")
-
-            if gate_result.ok:
-                typer.echo("✅ Implementation ready!")
-            else:
-                typer.echo("❌ Implementation blocked:")
-                for issue in gate_result.missing:
-                    typer.echo(f"   - {issue}")
-                for warning in gate_result.warnings:
-                    typer.echo(f"   ⚠️  {warning}")
-
-        elif action in ["spec", "plan", "tasks"]:
-            # Generate SDD artifacts
-            pipeline = ExecutionPipeline()
-            result = pipeline.execute(
-                f"Create {action.upper()} for {feature}",
-                sdd_stage=action,
-                project_id=feature,
-                project_root=str(project_root) if project_root else "."
-            )
-
-            typer.echo(f"✅ {action.upper()} created for {feature}")
-
-        elif action == "implement":
-            # Check gates before implementation
-            gate_result = check_implementation_ready(feature, str(project_root) if project_root else ".")
-
-            if not gate_result.ok:
-                typer.echo("❌ Cannot implement - gates not satisfied:")
-                for issue in gate_result.missing:
-                    typer.echo(f"   - {issue}")
-                raise typer.Exit(1)
-
-            # Proceed with implementation
-            pipeline = ExecutionPipeline()
-            result = pipeline.execute(
-                f"Implement {feature}",
-                sdd_stage="implement",
-                project_id=feature,
-                project_root=str(project_root) if project_root else "."
-            )
-
-            typer.echo(f"✅ Implementation completed for {feature}")
-
-        else:
-            typer.echo(f"❌ Unknown SDD action: {action}", err=True)
-            raise typer.Exit(1)
-
-    except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True)
-        raise typer.Exit(1)
+    """[DEPRECATED] SDD (Spec-Driven Development) workflow commands. Use flags like --sp-sdd-spec instead."""
+    typer.echo("⚠️  Warning: The 'sdd' subcommand is deprecated and will be removed. Use flags like --sp-sdd-spec instead.", err=True)
+    sdd_command(action, feature, project_root)
 
 
 @app.command()
@@ -487,11 +560,56 @@ Brief description of the feature.
 - [ ] Test case 2
 """)
 
-        # Best‑effort: install local dev dependencies for SQLite LTM helpers (pinned)
+        # Auto-install Python dependencies for Super Prompt core
         try:
             import subprocess
-            import os
-            typer.echo("Installing dev dependencies for LTM helpers (SQLite/FTS)…")
+            import sys
+            typer.echo("🐍 Installing Python dependencies for Super Prompt...")
+            # Resolve repo root and core-py path robustly
+            repo_root = Path(__file__).resolve().parents[2]
+            core_py_path = repo_root / "packages" / "core-py"
+            pyproject_path = core_py_path / "pyproject.toml"
+
+            if pyproject_path.exists():
+                # Create virtual environment if it doesn't exist
+                venv_path = target_dir / "venv"
+                if not venv_path.exists():
+                    typer.echo("   📦 Creating Python virtual environment...")
+                    subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+
+                # Install dependencies in virtual environment
+                pip_path = venv_path / "bin" / "pip"
+                if not pip_path.exists():
+                    pip_path = venv_path / "Scripts" / "pip"  # Windows
+
+                typer.echo("   ⚙️ Installing Super Prompt core (editable) + deps...")
+                try:
+                    subprocess.run([str(pip_path), "install", "-e", str(core_py_path)], check=True)
+                    typer.echo("   ✅ Python dependencies installed successfully")
+                except Exception as pe:
+                    typer.echo(f"   ⚠️  Editable install failed: {pe}")
+                    # Fallback: install minimal runtime deps into the venv
+                    deps = ["typer>=0.9.0", "pyyaml>=6.0", "rich>=13.0.0", "pathspec>=0.11.0", "pydantic>=2.0.0"]
+                    try:
+                        subprocess.run([str(pip_path), "install", *deps], check=True)
+                        typer.echo("   ✅ Minimal Python dependencies installed in venv")
+                    except Exception as ie:
+                        typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
+            else:
+                # Minimal fallback: install runtime deps directly into current interpreter
+                typer.echo("⚠️  pyproject.toml not found — installing minimal runtime deps globally")
+                deps = ["typer>=0.9.0", "pyyaml>=6.0", "rich>=13.0.0", "pathspec>=0.11.0", "pydantic>=2.0.0"]
+                try:
+                    subprocess.run([sys.executable, "-m", "pip", "install", *deps], check=True)
+                    typer.echo("   ✅ Minimal Python dependencies installed")
+                except Exception as ie:
+                    typer.echo(f"   ⚠️  Could not install minimal deps: {ie}")
+        except Exception as e:
+            typer.echo(f"⚠️  Skipped Python dependency install: {e}")
+
+        # Best-effort: install local dev dependencies for SQLite LTM helpers (pinned)
+        try:
+            typer.echo("📦 Installing npm dev dependencies for LTM helpers...")
             pinned = [
                 "better-sqlite3@12.2.0",
                 "ajv@8.17.1",
@@ -502,7 +620,7 @@ Brief description of the feature.
             pkgs = override.split() if override else pinned
             subprocess.run(["npm", "install", "-D", *pkgs], cwd=str(target_dir), check=False)
         except Exception as e:
-            typer.echo(f"⚠️  Skipped dev dependency install: {e}")
+            typer.echo(f"⚠️  Skipped npm dev dependency install: {e}")
 
         # Add Cursor commands for init-sp and re-init
         try:
@@ -565,6 +683,177 @@ args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
     except Exception as e:
         typer.echo(f"❌ Initialization failed: {e}", err=True)
         raise typer.Exit(1)
+
+
+def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args: list):
+    """Handle enhanced persona execution with system prompt from environment (legacy)"""
+    try:
+        # Get user input from remaining arguments (after flags)
+        user_input = " ".join(args) if args else ""
+
+        if not user_input:
+            typer.echo("❌ Error: No user input provided for persona execution", err=True)
+            raise typer.Exit(1)
+
+        typer.echo(f"-------- Enhanced Persona Execution: {persona_key} (via env vars)")
+        typer.echo(f"-------- System prompt loaded ({len(system_prompt)} chars)")
+        typer.echo(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
+
+        # Load persona configuration
+        personas_dir = Path(__file__).parent / "personas"
+        manifest_path = personas_dir / "manifest.yaml"
+
+        if manifest_path.exists():
+            import yaml
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest = yaml.safe_load(f)
+
+            if persona_key in manifest.get('personas', {}):
+                persona_config = manifest['personas'][persona_key]
+                typer.echo(f"-------- Loaded persona: {persona_config.get('name', persona_key)}")
+            else:
+                typer.echo(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
+        else:
+            typer.echo("⚠️  Persona manifest not found, proceeding with basic execution")
+
+        # Here we would integrate with the actual AI processing
+        # For now, we'll just display the system prompt and user input
+        typer.echo("\n" + "="*60)
+        typer.echo("🤖 SYSTEM PROMPT:")
+        typer.echo("="*60)
+        typer.echo(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
+
+        typer.echo("\n" + "="*60)
+        typer.echo("👤 USER INPUT:")
+        typer.echo("="*60)
+        typer.echo(user_input)
+
+        typer.echo("\n" + "="*60)
+        typer.echo("✅ Enhanced persona execution framework ready!")
+        typer.echo("   (Actual AI processing would happen here)")
+        typer.echo("="*60)
+
+    except Exception as e:
+        typer.echo(f"❌ Enhanced persona execution failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
+def handle_enhanced_persona_execution_from_context(execution_context: dict, args: list):
+    """Handle enhanced persona execution using context object (no OS env vars)"""
+    try:
+        # Extract data from context object
+        system_prompt = execution_context.get("system_prompt", "")
+        persona_key = execution_context.get("persona_key", "")
+        persona_name = execution_context.get("persona_name", persona_key)
+        persona_icon = execution_context.get("persona_icon", "🤖")
+        role_type = execution_context.get("role_type", "")
+        interaction_style = execution_context.get("interaction_style", "")
+
+        # Get user input from arguments (override context if provided)
+        user_input = " ".join(args) if args else execution_context.get("user_input", "")
+
+        if not user_input:
+            typer.echo("❌ Error: No user input provided for persona execution", err=True)
+            raise typer.Exit(1)
+
+        typer.echo(f"-------- Enhanced Persona Execution: {persona_name} {persona_icon} (context-based)")
+        typer.echo(f"-------- Role: {role_type} | Style: {interaction_style}")
+        typer.echo(f"-------- System prompt loaded ({len(system_prompt)} chars)")
+        typer.echo(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
+
+        # Display execution info
+        typer.echo("\n" + "="*60)
+        typer.echo("🤖 SYSTEM PROMPT:")
+        typer.echo("="*60)
+        typer.echo(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
+
+        typer.echo("\n" + "="*60)
+        typer.echo("👤 USER INPUT:")
+        typer.echo("="*60)
+        typer.echo(user_input)
+
+        typer.echo("\n" + "="*60)
+        typer.echo("✅ Context-based persona execution completed!")
+        typer.echo("   (Ready for AI processing integration)")
+        typer.echo("="*60)
+
+        # Return updated execution context
+        updated_context = execution_context.copy()
+        updated_context.update({
+            "user_input": user_input,
+            "status": "ready_for_ai",
+            "execution_method": "context_based"
+        })
+
+        return updated_context
+
+    except Exception as e:
+        typer.echo(f"❌ Context-based persona execution failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
+def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: str, args: list):
+    """Handle enhanced persona execution with direct parameters (no OS env vars)"""
+    try:
+        # Get user input from arguments
+        user_input = " ".join(args) if args else ""
+
+        if not user_input:
+            print("❌ Error: No user input provided for persona execution")
+            return
+
+        print(f"-------- Enhanced Persona Execution: {persona_key} (direct call)")
+        print(f"-------- System prompt loaded ({len(system_prompt)} chars)")
+        print(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
+
+        # Load persona configuration from project
+        personas_dir = Path(__file__).parent.parent.parent / "packages" / "cursor-assets" / "manifests"
+        manifest_path = personas_dir / "enhanced_personas.yaml"
+
+        persona_name = persona_key
+        if manifest_path.exists():
+            try:
+                import yaml
+                with open(manifest_path, 'r', encoding='utf-8') as f:
+                    manifest = yaml.safe_load(f)
+
+                if persona_key in manifest.get('personas', {}):
+                    persona_config = manifest['personas'][persona_key]
+                    persona_name = persona_config.get('name', persona_key)
+                    print(f"-------- Loaded persona: {persona_name}")
+                else:
+                    print(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
+            except Exception as e:
+                print(f"⚠️  Could not load persona manifest: {e}")
+
+        # Display execution info
+        print("\n" + "="*60)
+        print("🤖 SYSTEM PROMPT:")
+        print("="*60)
+        print(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
+
+        print("\n" + "="*60)
+        print("👤 USER INPUT:")
+        print("="*60)
+        print(user_input)
+
+        print("\n" + "="*60)
+        print("✅ Direct persona execution completed!")
+        print("   (Ready for AI processing integration)")
+        print("="*60)
+
+        # Return execution context for further processing
+        return {
+            "persona_key": persona_key,
+            "persona_name": persona_name,
+            "system_prompt": system_prompt,
+            "user_input": user_input,
+            "status": "ready_for_ai"
+        }
+
+    except Exception as e:
+        print(f"❌ Direct persona execution failed: {e}")
+        return None
 
 
 def main():

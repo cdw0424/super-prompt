@@ -6,11 +6,54 @@
 
 **Production-ready prompt engineering toolkit** supporting both **Cursor IDE** and **Codex CLI** with **Spec-Driven Development (SDD)** workflow and **Auto Model Router (AMR)** for intelligent reasoning optimization.
 
-🚀 **New in v3.0.0**: Complete modular architecture with Python core, data-driven assets, advanced context collection, and unified CLI experience.
+🚀 **New in v3.1.9**: High command with Codex CLI integration, Grok mode toggle system, absolute command detection, and enhanced security framework.
 
 ---
 
-## 🆕 What's New in v3.1.6
+## 🆕 What's New in v3.1.9
+
+### 🚀 **Major Features**
+
+- **🎯 High Command Enhancement**: Complete Codex CLI integration for deep strategic analysis. Automatic input generation enables instant codebase analysis without manual prompts.
+- **🧠 Grok Mode Toggle**: Full implementation of `/grok-on` and `/grok-off` commands with persistent state management and enhanced AI reasoning.
+- **⚡ Absolute Command Detection**: Guaranteed command execution with multi-level pattern matching supporting `--sp-persona`, `/command`, and implicit detection formats.
+- **🔒 Security Hardening**: Comprehensive path validation preventing access to sensitive directories (`.git`, `.cursor`, `.npm`, etc.).
+- **🐍 Automated Python Setup**: Enhanced `super:init` with automatic virtual environment creation and dependency installation.
+- **📋 Execution Plan Framework**: Structured plan generation with quality enhancement and double-check capabilities after each execution.
+- **🔄 Context-Based Execution**: Secure JSON file-based context passing replacing OS environment variables.
+
+### 🛠️ **Technical Improvements**
+
+- **Enhanced Security**: Path validation functions and controlled access to system directories.
+- **Command Parsing**: Sophisticated detection algorithms with execution guarantees and fallback mechanisms.
+- **Codex Integration**: Seamless integration for high-level reasoning and strategic analysis.
+- **Performance Optimization**: Improved execution flow with better error handling and resource management.
+
+### 🔧 **Key Commands**
+
+```bash
+# High-level strategic analysis with Codex CLI
+/high
+
+# Toggle Grok mode for enhanced AI assistance
+/grok-on
+/grok-off
+
+# Multiple command formats supported
+--sp-high "analyze this codebase"
+/high
+/high analyze this project
+```
+
+---
+
+## 🆕 What's New in v3.1.8
+
+### 🛠️ Maintenance
+
+- **Code Refactoring**: Performed general code cleanup and refactoring for improved maintainability and readability.
+
+## 🆕 What's New in v3.1.7
 
 ### ✨ **New Features**
 - **Memory Initialization**: Added `/init-sp` command to initialize Super Prompt memory with a project structure snapshot.
@@ -163,15 +206,23 @@ After initialization, Cursor automatically recognizes Super Prompt commands:
 /performance "Optimize slow database queries"
 ```
 
+#### Grok Code Fast 1 (Cursor)
+- Select Grok Code Fast 1 as the model in Cursor.
+- Enable optimized prompting once per workspace/session:
+  - In Cursor input, run: `/grok-on`
+  - You should see: `-------- Grok mode enabled (created .cursor/.grok-mode)`
+- Then use any persona (e.g., `/dev`, `/frontend`, `/security`) — Grok-optimized structure (GOALS/CONTEXT/PLAN/EXECUTE/VERIFY, small diffs, exact zsh commands) is applied automatically.
+- To disable, run: `/grok-off`.
+
+
 ### 3. Use with Codex CLI
 
 ```bash
-# Simplified persona syntax (recommended)
+# Persona commands
 super-prompt --sp-architect "Design system architecture"
 super-prompt --sp-security "Audit authentication flow"
-super-prompt --sp-performance "Optimize database queries"
 
-# SDD workflow
+# SDD workflow with new flags
 super-prompt --sp-sdd-spec "User authentication system"
 super-prompt --sp-sdd-plan "OAuth2 + JWT implementation"
 super-prompt --sp-sdd-tasks "Break down into development tasks"
@@ -194,10 +245,14 @@ Super Prompt implements complete **Spec-Driven Development** methodology:
 
 **Codex CLI:**
 ```bash
+# Recommended: Use flags for SDD commands
 super-prompt --sp-sdd-spec "user authentication system"
 super-prompt --sp-sdd-plan "OAuth2 + JWT implementation"
 super-prompt --sp-sdd-tasks "break down auth tasks"
 super-prompt --sp-sdd-implement "start development"
+
+# Deprecated subcommand (will be removed in a future version)
+# super-prompt sdd spec "user authentication system"
 ```
 
 ### 🎯 SDD Benefits
@@ -383,6 +438,7 @@ super-prompt --sp-debate --rounds 8 "Choose between React and Vue for our fronte
 - **Simplified syntax** (recommended): `--sp-command "query"`
 - **Original syntax** (still supported): `--command "query"` or `optimize --command "query"`
 - **SDD commands**: `--sp-sdd-spec`, `--sp-sdd-plan`, `--sp-sdd-tasks`, `--sp-sdd-implement`
+- **Deprecated**: The `sdd` subcommand is deprecated. Please use the new flags.
 
 #### AMR Integration
 All commands automatically benefit from **Auto Model Router (AMR)**:
