@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.1.13 - 2025-09-13
+
+### 🐛 Fixes
+- fix(bin): send CLI path detection logs to stderr to avoid capture.
+
+
+# Changelog
+
 ## v3.1.12 - 2025-09-13
 
 ### 🐛 Fixes

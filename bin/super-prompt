@@ -13,6 +13,12 @@ if [ "${1-}" = "codex-amr" ]; then
   fi
 fi
 
+# Map legacy alias 'super:init' → core CLI 'init'
+if [ "${1-}" = "super:init" ]; then
+  shift
+  set -- init "$@"
+fi
+
 resolve_app_home() {
   local PRG="$0"
   while [ -h "$PRG" ]; do
@@ -46,19 +52,58 @@ resolve_project_root() {
 
 PROJECT_ROOT="$(resolve_project_root)"
 
+# Detect persona flags: --sp-<persona>
+detect_sp_persona() {
+  local slug=""; local i
+  for i in "$@"; do
+    case "$i" in
+      --sp-*) slug="${i#--sp-}"; break ;;
+    esac
+  done
+  [ -n "$slug" ] && printf "%s" "$slug" || return 1
+}
+
+# If persona flag present, route directly to enhanced persona processor
+if persona_slug="$(detect_sp_persona "$@" 2>/dev/null)"; then
+  # Filter user input: tokens not starting with '--', '-', or '/'
+  USER_INPUT=""
+  for tok in "$@"; do
+    case "$tok" in
+      --sp-*) ;; # drop persona flag
+      --*) ;;    # drop other flags
+      -*) ;;     # drop short flags
+      /*) ;;     # drop slash tags
+      *) USER_INPUT+="$tok ";;
+    esac
+  done
+  USER_INPUT="${USER_INPUT%% }"
+
+  # Resolve processor path (prefer project, fallback to package)
+  PROCESSOR_PATH="$PROJECT_ROOT/.super-prompt/utils/cursor-processors/enhanced_persona_processor.py"
+  if [ ! -f "$PROCESSOR_PATH" ]; then
+    PROCESSOR_PATH="$APP_HOME/.super-prompt/utils/cursor-processors/enhanced_persona_processor.py"
+  fi
+  if [ ! -f "$PROCESSOR_PATH" ]; then
+    echo "-------- ERROR: Enhanced persona processor not found" >&2
+    exit 1
+  fi
+
+  exec python3 "$PROCESSOR_PATH" --persona "$persona_slug" $USER_INPUT
+fi
+
 # Determine which Python CLI to run (project-local preferred)
 resolve_cli_script() {
   local project_cli="$PROJECT_ROOT/.super-prompt/cli.py"
   local packaged_cli="$APP_HOME/.super-prompt/cli.py"
 
   if [ -f "$project_cli" ]; then
-    echo "-------- Using project Python core: $project_cli"
+    echo "-------- Using project Python core: $project_cli" >&2
     printf "%s" "$project_cli"
     return 0
   fi
 
   if [ -f "$packaged_cli" ]; then
-    echo "-------- Using packaged Python core: $packaged_cli"
+    echo "-------- Using packaged Python core: $packaged_cli" >&2
     printf "%s" "$packaged_cli"
     return 0
   fi
@@ -115,6 +160,18 @@ ensure_cli() {
 
 ensure_self_latest
 ensure_codex_latest
+
+# Pre-flight: ensure required Python libs are available for CLI import
+python3 - <<'PY' >/dev/null 2>&1 || true
+import sys, subprocess
+try:
+    import typer, yaml, rich, pathspec, pydantic  # type: ignore
+except Exception:
+    try:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'typer>=0.9.0', 'pyyaml>=6.0', 'rich>=13.0.0', 'pathspec>=0.11.0', 'pydantic>=2.0.0'], check=False)
+    except Exception:
+        pass
+PY
 
 if ! ensure_cli; then
   echo "❌ Python CLI not found. Expected at one of:"
