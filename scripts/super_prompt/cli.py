@@ -452,6 +452,11 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             "cli": "codex",
             "prompt": "",
         },
+        "double-check": {
+            "desc": "Double-Check Auditor (self-review + confessional + remediation plan)",
+            "cli": "codex",
+            "prompt": """**[Persona Identity]**\nYou are a Double-Check Auditor. Your job is to re-validate the last work product for correctness, compliance, and risks; then deliver a candid confessional and a concrete remediation plan. English only. Keep it concise and actionable.\n\n**[Method & Output Contract]**\n- Follow AMR + State Machine. Prefer planning at high reasoning; execution at medium. All incidental logs start with `--------`.\n- Do NOT modify files. Produce checks, a confessional, and a prioritized remediation plan with explicit commands.\n\n**[Sections to Produce]**\n[INTENT] — Restate scope to double-check.\n[TASK_CLASSIFY] — Class: H (audit & planning)\n[PLAN] — What to inspect (files/areas), how to validate (commands), acceptance criteria.\n[EXECUTE] — Findings (bullets):\n- Correctness: …\n- Regressions/Compatibility: …\n- Security/Secrets: …\n- Performance/Resource risk: …\n- Docs/UX/Gov: …\n[CONFESSIONAL] — List specific mistakes, shortcuts, or uncertainty. If none proven, list plausible risks and how you would confirm.\n[REMEDIATION_PLAN] — 3–7 prioritized, minimal steps with macOS zsh commands. Keep diffs minimal and reversible.\n[VERIFY] — Exact commands to validate remediation.\n[REPORT] — 3–5 bullets: impact, risks, next steps.\n""",
+        },
         "docs-refector": {
             "desc": "Documentation Consolidation & Modernization",
             "cli": "codex",
@@ -557,6 +562,10 @@ Output Format:
             return "analyzer"
         if re.search(r"--sp-analyzer(\s|$)", input_text):
             return "analyzer"
+        if re.search(r"--double-check(\s|$)", input_text):
+            return "double-check"
+        if re.search(r"--sp-double-check(\s|$)", input_text):
+            return "double-check"
         if re.search(r"--debate(\s|$)", input_text):
             return "debate"
         if re.search(r"--db-expert(\s|$)", input_text):
@@ -1576,6 +1585,8 @@ def main():
     known_cmds = {
         "super:init",
         "optimize",
+        "run",
+        "scaffold:v3",
         "amr:rules",
         "amr:print",
         "amr:qa",
@@ -1792,6 +1803,38 @@ def main():
             return 0 if ok else 1
         success = optimizer.process_query(query_text)
         return 0 if success else 1
+    elif args.cmd == "run":
+        # Execute a repository script with optional args. Usage:
+        # super-prompt run scripts/codex/npm-cache-fix.sh -- --fix
+        raw = sys.argv[2:]
+        if not raw:
+            print("Usage: super-prompt run <script> [-- <args...>]")
+            return 2
+        # Split at -- to separate script args
+        if "--" in raw:
+            i = raw.index("--")
+            script, rest = raw[:i][0], raw[i + 1 :]
+        else:
+            script, rest = raw[0], raw[1:]
+        if not os.path.isfile(script):
+            print(f"❌ Script not found: {script}")
+            return 2
+        cmd = ["zsh", script, *rest]
+        print("--------run:", " ".join(cmd))
+        try:
+            r = subprocess.run(cmd)
+            return r.returncode
+        except Exception as e:
+            log(f"run failed: {e}")
+            return 1
+    elif args.cmd == "scaffold:v3":
+        # Ensure v3 skeleton exists (non-destructive)
+        try:
+            r = subprocess.run(["python3", "scripts/migration/v3/scaffold.py"], timeout=30)
+            return r.returncode
+        except Exception as e:
+            log(f"v3 scaffold failed: {e}")
+            return 1
     elif args.cmd == "amr:rules":
         path = generate_amr_rules_file(args.out, getattr(args, "dry_run", False))
         print(f"AMR rules written: {path}")
