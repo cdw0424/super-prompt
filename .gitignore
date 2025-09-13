@@ -4,6 +4,14 @@ memory/
 memory-bank/
 .DS_Store
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.db-journal
+
 # Avoid local npm cache churn being tracked by Git
 .npm-cache/
 .npm/

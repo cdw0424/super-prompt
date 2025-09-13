@@ -41,9 +41,17 @@ __pycache__/
 *.pyd
 *.py.class
 
+# Database files (exclude from npm packages)
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.db-journal
+memory/
+
 # Exclude dev-only tooling and local session memory from npm
 tools/
-memory/
 packages/core-py/
 
 # npm package artifacts
