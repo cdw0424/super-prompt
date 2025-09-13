@@ -18,7 +18,7 @@ def main():
     subprocess.run([
         'python3', processor_path,
         '--persona', 'architect',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
+        ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Please describe the system or feature you need to design. I will create a robust and scalable architecture plan.'
     ], check=False)
 
 if __name__ == "__main__":

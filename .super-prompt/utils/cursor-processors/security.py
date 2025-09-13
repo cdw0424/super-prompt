@@ -18,7 +18,7 @@ def main():
     subprocess.run([
         'python3', processor_path,
         '--persona', 'security',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
+        ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Please provide the code or system for a security review. I will identify potential vulnerabilities and suggest mitigation strategies.'
     ], check=False)
 
 if __name__ == "__main__":

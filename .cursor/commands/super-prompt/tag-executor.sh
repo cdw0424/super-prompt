@@ -116,7 +116,6 @@ COMMAND_EXECUTION_GUARANTEED=false
 # PRIMARY DETECTION: Check each argument individually (Cursor-native /command priority)ㅌ
 for arg in "$@"; do
     echo "-------- 🔎 Checking argument: '$arg'" >&2
-
     # PRIORITY 1: Check for Cursor-native /command format (highest priority)
     if [[ "$arg" =~ ^/([a-zA-Z0-9_-]+) ]]; then
         DETECTED_TAG="${BASH_REMATCH[1]}"

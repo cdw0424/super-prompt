@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "3.1.14",
+  "version": "3.1.30",
   "description": "Production-ready prompt engineering toolkit with modular architecture, AMR, SDD workflow, and dual IDE support",
   "main": "index.js",
   "bin": {
@@ -14,6 +14,8 @@
     "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true",
     "postinstall": "node install.js",
     "test": "node --test",
+    "dev": "./bin/super-prompt",
+    "dev:init": "./bin/super-prompt super:init",
     "codex:plan": "bin/codex-high",
     "codex:exec": "bin/codex-medium",
     "amr:rules": "super-prompt amr:rules || npx codex-amr init --target .",
@@ -56,6 +58,7 @@
     "src/",
     "scripts/",
     ".super-prompt/",
+    ".cursor/",
     "docs/",
     "install.js",
     "README.md",

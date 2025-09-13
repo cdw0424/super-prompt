@@ -1,8 +1,7 @@
 ---
-description: re-init-sp command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /re-init-sp"]
+description: Re-Initialize project analysis (refresh memory)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
 ---
 
 🔄 Refresh project analysis and update memory.
-

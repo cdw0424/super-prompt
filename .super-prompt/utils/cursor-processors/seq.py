@@ -18,7 +18,7 @@ def main():
     subprocess.run([
         'python3', processor_path,
         '--persona', 'seq',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
+        ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Ready to execute a sequence of tasks. Please provide the steps.'
     ], check=False)
 
 if __name__ == "__main__":

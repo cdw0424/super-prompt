@@ -18,7 +18,7 @@ def main():
     subprocess.run([
         'python3', processor_path,
         '--persona', 'frontend',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
+        ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Please describe the frontend task. I can help with component development, UI/UX implementation, and state management.'
     ], check=False)
 
 if __name__ == "__main__":

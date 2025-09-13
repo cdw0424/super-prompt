@@ -186,6 +186,123 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function setupPythonVenv(superPromptDir) {
+    try {
+        console.log(`${colors.cyan}🐍 Setting up Python virtual environment...${colors.reset}`);
+
+        const venvDir = path.join(superPromptDir, 'venv');
+        const platform = os.platform();
+
+        // Remove existing venv if it exists
+        if (fs.existsSync(venvDir)) {
+            console.log(`${colors.dim}   → Removing existing venv...${colors.reset}`);
+            fs.rmSync(venvDir, { recursive: true, force: true });
+        }
+
+        // Create virtual environment
+        console.log(`${colors.dim}   → Creating virtual environment...${colors.reset}`);
+        const pythonCmd = platform === 'win32' ? 'python' : 'python3';
+        execSync(`${pythonCmd} -m venv "${venvDir}"`, { stdio: 'inherit' });
+
+        // Determine pip and python paths in venv
+        const venvBin = platform === 'win32' ? path.join(venvDir, 'Scripts') : path.join(venvDir, 'bin');
+        const venvPip = platform === 'win32' ? path.join(venvBin, 'pip.exe') : path.join(venvBin, 'pip');
+        const venvPython = platform === 'win32' ? path.join(venvBin, 'python.exe') : path.join(venvBin, 'python');
+
+        // Upgrade pip in venv
+        console.log(`${colors.dim}   → Upgrading pip in virtual environment...${colors.reset}`);
+        execSync(`"${venvPython}" -m pip install --upgrade pip`, { stdio: 'inherit' });
+
+        // Install required Python packages (minimal set)
+        const packages = [
+            'typer>=0.9.0',      // CLI framework
+            'pyyaml>=6.0',       // YAML parsing
+            'pathspec>=0.11.0'   // File filtering
+        ];
+
+        console.log(`${colors.dim}   → Installing Python dependencies...${colors.reset}`);
+        execSync(`"${venvPip}" install ${packages.join(' ')}`, { stdio: 'inherit' });
+
+        // Create data directory for SQLite and other files
+        const dataDir = path.join(venvDir, 'data');
+        ensureDir(dataDir);
+        console.log(`${colors.dim}   → Created data directory for SQLite/DB files${colors.reset}`);
+
+        // Create venv info file
+        const venvInfo = {
+            created: new Date().toISOString(),
+            python_version: execSync(`"${venvPython}" --version`, { encoding: 'utf8' }).trim(),
+            packages: packages,
+            platform: platform,
+            data_dir: dataDir
+        };
+
+        fs.writeFileSync(
+            path.join(venvDir, 'venv-info.json'),
+            JSON.stringify(venvInfo, null, 2),
+            'utf8'
+        );
+
+        console.log(`${colors.green}   ✓ Python virtual environment created successfully${colors.reset}`);
+        console.log(`${colors.dim}     venv: ${venvDir}${colors.reset}`);
+        console.log(`${colors.dim}     data: ${dataDir}${colors.reset}`);
+
+    } catch (error) {
+        console.log(`${colors.yellow}   ⚠ Virtual environment setup failed: ${error.message}${colors.reset}`);
+        console.log(`${colors.dim}     Super Prompt will attempt to use system Python${colors.reset}`);
+    }
+}
+
+async function migrateLegacyInstallation() {
+    const globalInstall = isGlobalInstall();
+    if (!globalInstall) {
+        console.log(`${colors.dim}   → Skipping legacy migration for local install${colors.reset}`);
+        return;
+    }
+
+    try {
+        // Check for legacy Homebrew symlinks and clean them up
+        const legacyPaths = [
+            '/opt/homebrew/bin/super-prompt',
+            '/usr/local/bin/super-prompt'
+        ];
+
+        let legacyFound = false;
+        for (const legacyPath of legacyPaths) {
+            if (fs.existsSync(legacyPath)) {
+                try {
+                    const linkTarget = fs.readlinkSync(legacyPath);
+                    if (linkTarget && linkTarget.includes('node_modules/@cdw0424/super-prompt')) {
+                        console.log(`${colors.yellow}   → Found legacy symlink: ${legacyPath}${colors.reset}`);
+                        legacyFound = true;
+
+                        // Remove legacy symlink
+                        try {
+                            fs.unlinkSync(legacyPath);
+                            console.log(`${colors.green}   ✓ Removed legacy symlink: ${legacyPath}${colors.reset}`);
+                        } catch (removeError) {
+                            // If we can't remove it directly, it might be owned by root
+                            console.log(`${colors.yellow}   ⚠ Legacy symlink detected but couldn't remove automatically${colors.reset}`);
+                            console.log(`${colors.dim}     Run: sudo rm ${legacyPath}${colors.reset}`);
+                        }
+                    }
+                } catch (readError) {
+                    // Not a symlink or other error, continue
+                }
+            }
+        }
+
+        if (legacyFound) {
+            console.log(`${colors.green}   ✓ Legacy symlink cleanup completed${colors.reset}`);
+        } else {
+            console.log(`${colors.dim}   → No legacy installation found${colors.reset}`);
+        }
+
+    } catch (error) {
+        console.log(`${colors.yellow}   ⚠ Legacy migration skipped: ${error.message}${colors.reset}`);
+    }
+}
+
 async function animatedInstall() {
     try {
         // Step 0: Diagnose npm cache path to avoid repo-local .npm-cache churn
@@ -252,6 +369,10 @@ async function animatedInstall() {
             console.log(`${colors.dim}Skipping Codex CLI install/upgrade (set SUPER_PROMPT_CODEX_INSTALL=1 to enable)${colors.reset}`);
         }
 
+        // Step 1.8: Detect and migrate legacy installations
+        console.log(`${colors.cyan}🔄 Checking for legacy installations...${colors.reset}`);
+        await migrateLegacyInstallation();
+
         // Step 2: Ensure Python CLI lives under .super-prompt (unified location)
         console.log(`${colors.cyan}🐍 Ensuring .super-prompt Python CLI...${colors.reset}`);
         const projectRoot = findProjectRoot();
@@ -270,6 +391,9 @@ async function animatedInstall() {
                 superPromptDir,
                 'Super Prompt utility suite'
             );
+
+            // Create Python virtual environment in .super-prompt
+            await setupPythonVenv(superPromptDir);
         } else {
             console.log(`${colors.dim}Skipping .super-prompt copy on global install${colors.reset}`);
         }
@@ -380,6 +504,20 @@ async function animatedInstall() {
         console.log(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);
         
         console.log(`${colors.magenta}${colors.bold}📖 Quick Start:${colors.reset}`);
+
+        // Check if super-prompt is accessible in current session
+        let commandAvailable = false;
+        try {
+            execSync('which super-prompt', { stdio: 'ignore' });
+            commandAvailable = true;
+        } catch (_) {}
+
+        if (!commandAvailable) {
+            console.log(`${colors.yellow}⚠️  Command not available in current session${colors.reset}`);
+            console.log(`${colors.cyan}   → Try: which super-prompt${colors.reset}`);
+            console.log(`${colors.cyan}   → Or restart terminal for PATH updates${colors.reset}\n`);
+        }
+
         console.log(`${colors.dim}   Initialize in your project:${colors.reset}`);
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}\n`);

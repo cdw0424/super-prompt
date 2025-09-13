@@ -91,7 +91,7 @@ if persona_slug="$(detect_sp_persona "$@" 2>/dev/null)"; then
   exec python3 "$PROCESSOR_PATH" --persona "$persona_slug" $USER_INPUT
 fi
 
-# Determine which Python CLI to run (project-local preferred)
+# Determine which Python CLI to run and find venv Python (project-local preferred)
 resolve_cli_script() {
   local project_cli="$PROJECT_ROOT/.super-prompt/cli.py"
   local packaged_cli="$APP_HOME/.super-prompt/cli.py"
@@ -112,6 +112,55 @@ resolve_cli_script() {
   return 1
 }
 
+# Find the best Python interpreter (prefer venv)
+resolve_python_interpreter() {
+  local cli_script="$1"
+  local cli_dir="$(dirname "$cli_script")"
+  local super_prompt_dir="$(dirname "$cli_dir")"
+
+  # Try venv Python first
+  local venv_dir="$super_prompt_dir/venv"
+  if [ -d "$venv_dir" ]; then
+    # Detect platform more reliably
+    local platform="$(uname -s 2>/dev/null || echo "Unknown")"
+    case "$platform" in
+      Darwin|Linux|*BSD*)
+        local venv_python="$venv_dir/bin/python"
+        ;;
+      MINGW*|MSYS*|CYGWIN*|Windows_NT*)
+        local venv_python="$venv_dir/Scripts/python.exe"
+        ;;
+      *)
+        # Default fallback - try both locations
+        if [ -f "$venv_dir/bin/python" ]; then
+          local venv_python="$venv_dir/bin/python"
+        elif [ -f "$venv_dir/Scripts/python.exe" ]; then
+          local venv_python="$venv_dir/Scripts/python.exe"
+        else
+          local venv_python=""
+        fi
+        ;;
+    esac
+
+    if [ -f "$venv_python" ]; then
+      echo "-------- Using venv Python: $venv_python" >&2
+      printf "%s" "$venv_python"
+      return 0
+    fi
+  fi
+
+  # Fallback to system Python
+  if command -v python3 >/dev/null 2>&1; then
+    printf "%s" "python3"
+    return 0
+  elif command -v python >/dev/null 2>&1; then
+    printf "%s" "python"
+    return 0
+  fi
+
+  return 1
+}
+
 CLI_SCRIPT="$(resolve_cli_script || true)"
 
 # Opportunistic project bootstrap: ensure .super-prompt exists on init
@@ -120,6 +169,18 @@ maybe_bootstrap_super_prompt() {
   if [ ! -d ".super-prompt" ] && [ -d "${APP_HOME}/.super-prompt" ]; then
     echo "-------- Installing project .super-prompt utilities"
     cp -R "${APP_HOME}/.super-prompt" ".super-prompt" 2>/dev/null || true
+
+    # Also copy packages/core-py for Python module imports
+    if [ -d "${APP_HOME}/packages" ]; then
+      cp -R "${APP_HOME}/packages" ".super-prompt/" 2>/dev/null || true
+    fi
+
+    # Copy .cursor directory for Cursor IDE integration (including grok commands)
+    if [ -d "${APP_HOME}/.cursor" ]; then
+      echo "-------- Installing Cursor IDE integration (grok, personas, etc.)"
+      cp -R "${APP_HOME}/.cursor" ".cursor" 2>/dev/null || true
+    fi
+
     # Best-effort: ensure python files are executable
     if command -v find >/dev/null 2>&1; then
       find .super-prompt -type f -name "*.py" -exec chmod 755 {} + 2>/dev/null || true
@@ -143,7 +204,7 @@ ensure_self_latest() {
   fi
   if command -v npm >/dev/null 2>&1; then
     echo "-------- Checking Super Prompt updates (@cdw0424/super-prompt)"
-    npm install -g @cdw0424/super-prompt@latest >/dev/null 2>&1 || true
+    sudo npm install -g @cdw0424/super-prompt@latest >/dev/null 2>&1 || true
   fi
 }
 
@@ -165,10 +226,10 @@ ensure_codex_latest
 python3 - <<'PY' >/dev/null 2>&1 || true
 import sys, subprocess
 try:
-    import typer, yaml, rich, pathspec, pydantic  # type: ignore
+    import typer, yaml, pathspec  # type: ignore
 except Exception:
     try:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'typer>=0.9.0', 'pyyaml>=6.0', 'rich>=13.0.0', 'pathspec>=0.11.0', 'pydantic>=2.0.0'], check=False)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'typer>=0.9.0', 'pyyaml>=6.0', 'pathspec>=0.11.0'], check=False)
     except Exception:
         pass
 PY
@@ -179,7 +240,7 @@ if ! ensure_cli; then
   echo "   - $APP_HOME/.super-prompt/cli.py"
   echo "-------- Remediation:"
   echo "   - npm config set ignore-scripts false"
-  echo "   - npm rebuild -g @cdw0424/super-prompt"
+  echo "   - sudo npm rebuild -g @cdw0424/super-prompt"
   echo "   - or run: node '${APP_HOME}/install.js'"
   echo "   - or ensure your repo includes '.super-prompt/cli.py'"
   exit 1
@@ -195,4 +256,26 @@ req=(3,7)
 sys.exit(0 if sys.version_info>=req else 1)
 PY
 
-exec python3 "$CLI_SCRIPT" "$@"
+# Activate venv and use venv Python if available
+if [ -n "$CLI_SCRIPT" ]; then
+  VENV_PYTHON="$(resolve_python_interpreter "$CLI_SCRIPT" 2>/dev/null || true)"
+
+  if [ -n "$VENV_PYTHON" ] && [ "$VENV_PYTHON" != "python3" ] && [ "$VENV_PYTHON" != "python" ]; then
+    # Found venv Python - activate environment
+    VENV_DIR="$(dirname "$(dirname "$VENV_PYTHON")")"
+    if [ -f "$VENV_DIR/pyvenv.cfg" ]; then
+      echo "-------- Activating Python virtual environment: $VENV_DIR" >&2
+      # Set up venv environment variables
+      export VIRTUAL_ENV="$VENV_DIR"
+      export PATH="$(dirname "$VENV_PYTHON"):$PATH"
+      unset PYTHONHOME
+    fi
+    exec "$VENV_PYTHON" "$CLI_SCRIPT" "$@"
+  else
+    # Fallback to system Python
+    exec python3 "$CLI_SCRIPT" "$@"
+  fi
+else
+  echo "❌ Python CLI not found" >&2
+  exit 1
+fi

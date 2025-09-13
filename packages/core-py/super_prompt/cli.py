@@ -571,11 +571,17 @@ Brief description of the feature.
             pyproject_path = core_py_path / "pyproject.toml"
 
             if pyproject_path.exists():
-                # Create virtual environment if it doesn't exist
-                venv_path = target_dir / "venv"
+                # Create virtual environment in .super-prompt/venv if it doesn't exist
+                super_prompt_dir = target_dir / ".super-prompt"
+                super_prompt_dir.mkdir(exist_ok=True)
+                venv_path = super_prompt_dir / "venv"
                 if not venv_path.exists():
-                    typer.echo("   📦 Creating Python virtual environment...")
+                    typer.echo("   📦 Creating Python virtual environment in .super-prompt/venv...")
                     subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+
+                # Create data directory for SQLite and databases
+                data_dir = venv_path / "data"
+                data_dir.mkdir(exist_ok=True)
 
                 # Install dependencies in virtual environment
                 pip_path = venv_path / "bin" / "pip"
@@ -589,7 +595,7 @@ Brief description of the feature.
                 except Exception as pe:
                     typer.echo(f"   ⚠️  Editable install failed: {pe}")
                     # Fallback: install minimal runtime deps into the venv
-                    deps = ["typer>=0.9.0", "pyyaml>=6.0", "rich>=13.0.0", "pathspec>=0.11.0", "pydantic>=2.0.0"]
+                    deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
                     try:
                         subprocess.run([str(pip_path), "install", *deps], check=True)
                         typer.echo("   ✅ Minimal Python dependencies installed in venv")
@@ -598,7 +604,7 @@ Brief description of the feature.
             else:
                 # Minimal fallback: install runtime deps directly into current interpreter
                 typer.echo("⚠️  pyproject.toml not found — installing minimal runtime deps globally")
-                deps = ["typer>=0.9.0", "pyyaml>=6.0", "rich>=13.0.0", "pathspec>=0.11.0", "pydantic>=2.0.0"]
+                deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
                 try:
                     subprocess.run([sys.executable, "-m", "pip", "install", *deps], check=True)
                     typer.echo("   ✅ Minimal Python dependencies installed")

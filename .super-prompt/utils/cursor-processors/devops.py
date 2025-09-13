@@ -18,7 +18,7 @@ def main():
     subprocess.run([
         'python3', processor_path,
         '--persona', 'devops',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
+        ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Please describe the DevOps task. I can assist with CI/CD pipelines, infrastructure as code, and monitoring setup.'
     ], check=False)
 
 if __name__ == "__main__":

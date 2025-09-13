@@ -12,15 +12,27 @@ import json, time, uuid, sqlite3
 class MemoryController:
     def __init__(self, project_root: Optional[Path] = None) -> None:
         self.project_root = Path(project_root or ".").resolve()
-        self.memory_dir = self.project_root / "memory"
+        self.memory_dir = self._resolve_memory_dir()
         self.db_path = self.memory_dir / "ltm.db"
         self.conn: Optional[sqlite3.Connection] = None
         self._ensure_db()
 
-    def _ensure_db(self) -> None:
+    def _resolve_memory_dir(self) -> Path:
+        """Resolve memory directory, preferring venv/data if available."""
+        # Try .super-prompt/venv/data first (preferred)
+        venv_data_dir = self.project_root / ".super-prompt" / "venv" / "data"
+        if venv_data_dir.exists():
+            return venv_data_dir / "memory"
+
+        # Fallback to traditional memory directory
+        return self.project_root / "memory"
+
+    def _ensure_db(self) -> sqlite3.Connection:
         self.memory_dir.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(str(self.db_path))
+        if self.conn is None:
+            self.conn = sqlite3.connect(str(self.db_path))
         cur = self.conn.cursor()
+        # Projects table
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS project(
@@ -31,6 +43,7 @@ class MemoryController:
             );
             """
         )
+        # Generic memory table (facts, messages, etc.)
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS memory(
@@ -50,6 +63,7 @@ class MemoryController:
             """
         )
         self.conn.commit()
+        return self.conn
 
     def _ensure_project(self) -> int:
         code = self.project_root.name or "default"
@@ -81,19 +95,32 @@ class MemoryController:
         return json.dumps(preview, ensure_ascii=False, indent=2)
 
     def append_interaction(self, user_text: str, assistant_text: Optional[str]) -> None:
+        """Append a user/assistant exchange into the generic memory table.
+        Keeps schema minimal and compatible with build_context_block().
+        """
+        if not assistant_text:
+            return
+        conn = self._ensure_db()
         pid = self._ensure_project()
-        cur = self.conn.cursor()
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        cur = conn.cursor()
+        # Store user message
         cur.execute(
-            "INSERT INTO memory(project_id, kind, source, author, title, body, tags, importance, pinned, created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
-            (pid, 'message', 'chat', 'user', (user_text or '').splitlines()[0][:80], user_text, 'chat', 0.0, 0, now)
+            """
+            INSERT INTO memory(project_id, kind, source, author, title, body, tags, importance, pinned, created_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?)
+            """,
+            (pid, 'message', 'cli', 'user', (user_text or '')[:80], user_text or '', 'chat', 0.0, 0, now)
         )
-        if assistant_text:
-            cur.execute(
-                "INSERT INTO memory(project_id, kind, source, author, title, body, tags, importance, pinned, created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                (pid, 'message', 'chat', 'assistant', (assistant_text or '').splitlines()[0][:80], assistant_text, 'chat', 0.0, 0, now)
-            )
-        self.conn.commit()
+        # Store assistant reply
+        cur.execute(
+            """
+            INSERT INTO memory(project_id, kind, source, author, title, body, tags, importance, pinned, created_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?)
+            """,
+            (pid, 'message', 'cli', 'assistant', (assistant_text or '')[:80], assistant_text or '', 'chat', 0.0, 0, now)
+        )
+        conn.commit()
 
     def update_from_extraction(self, extracted: Dict[str, Any]) -> None:
         if not extracted:

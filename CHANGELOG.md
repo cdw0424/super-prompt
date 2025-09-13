@@ -1,5 +1,270 @@
 # Changelog
 
+## v3.1.30 - 2025-09-13
+
+### 🎯 Enhanced Persona System with Mandatory Core Development Principles
+
+- **🛡️ Quality Assurance Framework**: Added mandatory core development principles to all personas
+- **🏗️ SOLID Principles**: Enforced Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion across all development personas
+- **🧪 TDD/BDD Integration**: Mandatory test-first development approach with comprehensive test coverage requirements
+- **🏛️ Clean Architecture**: Enforced proper layering (Presentation → Domain → Infrastructure) with clear separation of concerns
+- **⚠️ Over-engineering Prevention**: Added guidelines to prefer simple solutions and avoid premature optimization
+- **🧐 Confession & Double-Check**: Implemented mandatory self-review methodology for validating assumptions and critical decisions
+- **📋 Code Quality Standards**: Standardized patterns, maintainability requirements, and self-documenting code practices
+
+### 🔧 Technical Implementation
+
+```yaml
+# Added to all development personas:
+CORE DEVELOPMENT PRINCIPLES (MANDATORY):
+- SOLID Principles: Always follow Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion
+- TDD/BDD: Write tests first, ensure comprehensive test coverage, practice test-driven development
+- Clean Architecture: Maintain clear separation of concerns with proper layering (Presentation → Domain → Infrastructure)
+- No Over-engineering: Prefer simple solutions, avoid premature optimization, implement only what's needed
+- Code Quality: Follow established patterns, ensure maintainability, write self-documenting code
+- Confession & Double-Check: Always perform self-review through confession methodology, validate assumptions, and double-check critical decisions before implementation
+```
+
+### 📈 Quality & Consistency Improvements
+
+- **10 Personas Enhanced**: architect, backend, frontend, dev, refactorer, analyzer, implement, troubleshooter, performance, high
+- **Standardized Approach**: Consistent development methodology across all personas
+- **Quality Gates**: Mandatory principles ensure consistent code quality and architectural decisions
+- **Self-Review Process**: Built-in confession methodology for critical decision validation
+
+## v3.1.25 - 2025-09-13
+
+### 🎯 Installation Simplification & PATH Issue Resolution
+
+- **🚫 Removed PATH Migration Logic**: Eliminated problematic npm prefix modification that forced `.npm-global` usage
+- **🏠 Use System Defaults**: Installation now uses system npm defaults (Homebrew `/opt/homebrew/bin` on macOS)
+- **✨ Zero Configuration**: No PATH configuration needed - works immediately after `npm install -g`
+- **🧹 Simplified Troubleshooting**: Streamlined README with basic installation troubleshooting only
+
+### 🔧 Technical Changes
+```bash
+# Before: Forced npm prefix change causing PATH issues
+npm config set prefix ~/.npm-global  # ❌ Removed
+
+# After: Use system defaults that are already in PATH
+# /opt/homebrew/bin is already in macOS PATH ✅
+```
+
+### 📚 Documentation Cleanup
+- **Removed**: Complex cross-platform PATH configuration guides
+- **Simplified**: Basic troubleshooting with standard npm commands
+- **Focus**: Install → Use, no configuration steps
+
+### 🎉 User Experience
+- **Install**: `npm install -g @cdw0424/super-prompt@latest`
+- **Use**: `super-prompt super:init` (works immediately)
+- **No**: PATH configuration, shell setup, or manual exports needed
+
+## v3.1.24 - 2025-09-13
+
+### 🪟 Cross-Platform Support & Windows Enhancement
+
+- **🔧 Enhanced Platform Detection**: Robust platform detection in bash script supporting MINGW, MSYS, CYGWIN, Windows_NT environments
+- **🪟 Windows PATH Configuration**: Native Windows PATH setup via PowerShell and registry modification
+- **🐍 Windows Python venv**: Proper Windows virtual environment path handling (`Scripts/python.exe` vs `bin/python`)
+- **📚 Platform-Specific Documentation**: Separate Mac/Linux and Windows troubleshooting sections
+
+### 🛠️ Technical Improvements
+```bash
+# Enhanced platform detection
+case "$platform" in
+  Darwin|Linux|*BSD*)     # Unix-like systems
+  MINGW*|MSYS*|CYGWIN*)   # Windows environments
+  *)                      # Fallback with auto-detection
+```
+
+### 🎯 Windows-Specific Features
+- **PowerShell Integration**: Automatic Windows user PATH configuration via registry
+- **Multi-Shell Support**: Git Bash, PowerShell, WSL environment detection
+- **Native Windows Commands**: `where` instead of `which`, `setx` for persistent PATH
+- **Path Format Handling**: Both Windows (`%USERPROFILE%`) and Unix (`$HOME`) formats
+
+### 📖 Documentation Updates
+- **Windows Troubleshooting**: Complete Windows PATH configuration guide
+- **Platform-Specific Commands**: Separate command sets for Windows vs Unix-like systems
+- **Shell Environment Notes**: Git Bash, WSL, PowerShell specific instructions
+- **Cross-Platform Examples**: Both Windows CMD and Unix shell examples
+
+## v3.1.23 - 2025-09-13
+
+### 🛤️ PATH Configuration & Troubleshooting
+
+- **🔧 Enhanced PATH Setup**: Robust PATH configuration across multiple shell types (.zshrc, .bashrc, .profile)
+- **⚡ Current Session Fix**: Attempts to update PATH in current installation session
+- **🧪 Command Verification**: Post-install verification that super-prompt is accessible
+- **📚 Comprehensive Troubleshooting**: Detailed README troubleshooting with step-by-step PATH fixes
+- **🔄 Duplicate Prevention**: Smart detection to prevent duplicate PATH entries
+
+### 🎯 User Experience Improvements
+```bash
+# Quick fix guidance in installation output
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# Enhanced troubleshooting documentation
+# 1. Quick fix for current session
+# 2. Installation status check
+# 3. PATH verification
+# 4. Persistent PATH configuration
+# 5. Reinstallation guidance
+```
+
+### 🔧 Technical Enhancements
+- **Multi-Shell Support**: Configures PATH in zsh, bash, and general shell profiles
+- **Session Awareness**: Detects and attempts to fix PATH in current Node.js process
+- **Installation Validation**: Real-time verification that commands work after installation
+- **User Guidance**: Clear instructions for manual PATH fixes when automatic setup fails
+
+## v3.1.22 - 2025-09-13
+
+### ⚡ Performance Optimization & Dependencies
+
+- **📦 Minimal Dependencies**: Removed unnecessary Python packages (pydantic, rich)
+- **🎯 Essential Only**: Core dependencies reduced to typer, pyyaml, pathspec
+- **🐍 Proper venv Activation**: Shell script now properly activates virtual environment
+- **⚙️ Environment Variables**: Sets VIRTUAL_ENV, PATH, unsets PYTHONHOME for clean execution
+- **📈 Performance**: Faster startup with fewer imports and proper environment setup
+
+### 🔧 Technical Improvements
+```bash
+# Before: 5 dependencies (typer, pyyaml, rich, pathspec, pydantic)
+# After: 3 essential dependencies (typer, pyyaml, pathspec)
+# Result: ~40% fewer dependencies, faster imports, smaller footprint
+```
+
+### 🎯 Benefits
+- **Faster Startup**: Reduced import time and memory usage
+- **Cleaner Environment**: Proper virtual environment activation
+- **Minimal Footprint**: Only essential dependencies installed
+- **Better Isolation**: Proper Python path and environment setup
+
+## v3.1.21 - 2025-09-13
+
+### 🐍 Python Virtual Environment Integration
+
+- **🏗️ Isolated Environment**: Creates Python venv in `.super-prompt/venv/` directory
+- **📦 Self-Contained**: All Python dependencies installed in project-local venv
+- **🗄️ Database Isolation**: SQLite and DB files stored in `venv/data/` directory
+- **🚫 Build Exclusion**: venv directory excluded from git and npm packaging
+- **⚡ Smart Detection**: CLI automatically detects and uses venv Python when available
+
+### 🔄 Python Environment Management
+```bash
+# After npm install -g @cdw0424/super-prompt@latest
+cd your-project
+super-prompt super:init
+
+# ✅ Creates:
+# .super-prompt/venv/          - Python virtual environment
+# .super-prompt/venv/data/     - SQLite databases and data files
+# .super-prompt/venv/bin/      - venv Python interpreter
+```
+
+### 🎯 Benefits
+- **No System Pollution**: Python packages contained in project venv
+- **Build Safety**: venv excluded from git and npm builds
+- **Performance**: Faster Python imports with isolated dependencies
+- **Reliability**: Consistent Python environment across deployments
+
+## v3.1.20 - 2025-09-13
+
+### 📖 Documentation Improvements
+
+- **🎯 Clear Instructions**: Emphasized that `super-prompt super:init` must be run in project directory
+- **📦 @latest Flag**: Updated all installation commands to use `@latest` for automatic updates
+- **⚠️ User Guidance**: Added warning about running commands in correct directory
+- **🔄 Migration Info**: Added automatic migration feature documentation
+
+### 🚀 User Experience
+```bash
+# Updated installation pattern (always use @latest)
+npm install -g @cdw0424/super-prompt@latest
+
+# Clear guidance: run in YOUR project directory
+cd your-project
+super-prompt super:init  # ✅ Creates .super-prompt in your project
+```
+
+## v3.1.19 - 2025-09-13
+
+### 🚀 Automatic Legacy Migration
+
+- **🔄 Smart Migration**: Automatically detects and migrates legacy installations
+- **🧹 Symlink Cleanup**: Removes old Homebrew symlinks automatically
+- **⚙️ Auto-Configuration**: Sets up user npm global directory without sudo
+- **🛤️ PATH Setup**: Automatically configures shell PATH for seamless operation
+- **✅ Zero-Config**: Users just run `npm install -g @cdw0424/super-prompt@latest`
+
+### 🎯 User Experience Improvements
+```bash
+# For ALL users (new and existing)
+npm install -g @cdw0424/super-prompt@latest
+# ✅ Automatically migrates legacy installations
+# ✅ Sets up user-owned npm global directory
+# ✅ Configures PATH in shell
+# ✅ super-prompt super:init works immediately
+```
+
+## v3.1.18 - 2025-09-13
+
+### 🔧 Legacy Installation Compatibility Fix
+
+- **🚀 Backward Compatibility**: Enhanced CLI routing to handle mixed installation environments
+- **✅ Universal Fix**: `super:init` command now works consistently across all installation methods
+- **🔄 Seamless Updates**: Existing users can update without manual cleanup
+- **📦 Robust Fallback**: Better handling of legacy symlinks and installation paths
+
+### 🧪 Installation Testing
+```bash
+# For existing users with issues
+npm install -g @cdw0424/super-prompt@latest
+super-prompt super:init  # ✅ Now works universally
+```
+
+## v3.1.17 - 2025-09-13
+
+### 🔧 CLI Routing Fix
+
+- **🚀 Critical Fix**: Updated bin/super-prompt wrapper to correctly map `super:init` → `init` command
+- **❌ Removed Legacy Routing**: Eliminated incorrect routing to non-existent init script path
+- **✅ Unified Command Logic**: Both project-local and system CLI now use consistent routing logic
+- **🎯 Persona Integration**: Fixed `/super-prompt/analyzer super-prompt super:init` workflow compatibility
+
+### 🧪 Verified Fix
+```bash
+./bin/super-prompt super:init --help    # ✅ Now works correctly
+super-prompt super:init --help          # ✅ Will work after npm update
+```
+
+## v3.1.16 - 2025-09-13
+
+### 🔧 CLI Fixes
+
+- **✅ Command Routing Fixed**: Resolved `super:init` command argument parsing error that prevented proper command execution
+- **🎯 Legacy Compatibility**: Enhanced CLI wrapper to properly map `super:init` → `init` for backward compatibility
+- **🚀 Persona Integration**: Fixed cursor command integration allowing `/super-prompt/analyzer super-prompt super:init` workflow to work seamlessly
+- **⚡ Dual Command Support**: Both `super-prompt init` and `super-prompt super:init` now work correctly
+- **🛠️ Error Resolution**: Fixed "invalid choice: 'init'" error by updating command routing logic in bin/super-prompt wrapper
+
+### 🧪 Verified Working Commands
+```bash
+super-prompt --help           # ✅ Shows all available commands
+super-prompt init --help      # ✅ Modern syntax
+super-prompt super:init --help # ✅ Legacy syntax support
+```
+
+## v3.1.15 - 2025-01-12
+
+### ✨ Installation Enhancement
+- **Installation Enhancement**: Updated all installation commands to include `sudo` for proper global package installation
+- **🔧 Security**: Enhanced permission handling for npm global installations
+- **📋 Documentation**: Improved installation instructions across README and CLI scripts
+- **🐛 Bug Fix**: Fixed permission-related installation issues on macOS/Linux systems
+
 ## v3.1.13 - 2025-09-13
 
 ### 🐛 Fixes

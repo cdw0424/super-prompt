@@ -4,6 +4,14 @@ memory/
 memory-bank/
 .DS_Store
 
+# Python virtual environments (in .super-prompt/venv)
+.super-prompt/venv/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
 # Database files
 *.db
 *.sqlite

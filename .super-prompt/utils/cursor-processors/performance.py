@@ -18,7 +18,7 @@ def main():
     subprocess.run([
         'python3', processor_path,
         '--persona', 'performance',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
+        ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Please provide the system or code that needs performance optimization. I will identify bottlenecks and suggest improvements.'
     ], check=False)
 
 if __name__ == "__main__":

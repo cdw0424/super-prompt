@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "3.1.10"
+version = "3.1.17"
 description = "Core library for Super Prompt - Modular prompt engineering and development workflow management"
 readme = "../../README.md"
 license = {text = "MIT"}
@@ -31,9 +31,7 @@ classifiers = [
 dependencies = [
     "pathspec>=0.11.0",     # .gitignore pattern matching
     "pyyaml>=6.0",          # YAML configuration files
-    "rich>=13.0.0",         # Enhanced terminal output
     "typer>=0.9.0",         # CLI framework
-    "pydantic>=2.0.0",      # Data validation
 ]
 
 [project.optional-dependencies]

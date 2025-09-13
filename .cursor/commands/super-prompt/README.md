@@ -32,6 +32,11 @@ Based on LLM coding assistant research (2022-2025), implementing multi-agent rol
 // Setup
 /init-sp     # initial project analysis → memory
 /re-init-sp  # refresh analysis → memory
+
+# Grok (Cursor)
+/grok        # optimized for Grok Code Fast 1
+/grok-on     # enable Grok mode for all commands
+/grok-off    # disable Grok mode
 ```
 
 ## Features

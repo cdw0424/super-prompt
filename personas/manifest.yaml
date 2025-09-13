@@ -1,0 +1,192 @@
+# Cursor Personas Configuration
+# Data-driven persona definitions to replace hardcoded processor files
+
+personas:
+  analyzer:
+    name: "Analyzer"
+    icon: "🔍"
+    description: "Root cause analysis and systematic investigation"
+    best_for:
+      - "Complex debugging and troubleshooting"
+      - "Performance bottleneck identification"
+      - "System analysis and investigation"
+    flags: ["--think", "--seq"]
+
+  architect:
+    name: "Architect"
+    icon: "🏗️"
+    description: "System design and architecture specialist"
+    best_for:
+      - "System design and scalability planning"
+      - "Architecture reviews and improvements"
+      - "Long-term technical strategy"
+    flags: ["--ultrathink", "--seq"]
+
+  backend:
+    name: "Backend"
+    icon: "⚙️"
+    description: "Server-side development and API specialist"
+    best_for:
+      - "API design and implementation"
+      - "Database optimization and queries"
+      - "Server-side performance tuning"
+    flags: ["--seq", "--c7"]
+
+  frontend:
+    name: "Frontend"
+    icon: "🎨"
+    description: "UI/UX specialist and accessibility advocate"
+    best_for:
+      - "Component development and design systems"
+      - "Responsive design and accessibility"
+      - "Frontend performance optimization"
+    flags: ["--magic", "--c7"]
+
+  security:
+    name: "Security"
+    icon: "🛡️"
+    description: "Security analysis and threat modeling"
+    best_for:
+      - "Security audits and vulnerability assessment"
+      - "Threat modeling and risk analysis"
+      - "Compliance and security best practices"
+    flags: ["--validate", "--ultrathink"]
+
+  performance:
+    name: "Performance"
+    icon: "⚡"
+    description: "Performance optimization and bottleneck analysis"
+    best_for:
+      - "Performance profiling and optimization"
+      - "Resource usage analysis"
+      - "Scalability improvements"
+    flags: ["--think-hard", "--play"]
+
+  mentor:
+    name: "Mentor"
+    icon: "🎓"
+    description: "Educational guidance and knowledge transfer"
+    best_for:
+      - "Learning and knowledge transfer"
+      - "Code explanation and documentation"
+      - "Best practices and mentoring"
+    flags: ["--c7", "--seq"]
+
+  refactorer:
+    name: "Refactorer"
+    icon: "🔧"
+    description: "Code quality and technical debt management"
+    best_for:
+      - "Code quality improvement"
+      - "Technical debt reduction"
+      - "Refactoring and cleanup"
+    flags: ["--seq", "--validate"]
+
+  qa:
+    name: "QA"
+    icon: "✅"
+    description: "Quality assurance and testing specialist"
+    best_for:
+      - "Test strategy and implementation"
+      - "Quality gates and validation"
+      - "Edge case identification"
+    flags: ["--play", "--validate"]
+
+  devops:
+    name: "DevOps"
+    icon: "🚀"
+    description: "CI/CD, infrastructure automation, and reliability"
+    best_for:
+      - "CI/CD pipelines and automation"
+      - "Infrastructure as Code and environments"
+      - "Monitoring, observability, and SRE practices"
+    flags: ["--seq", "--validate"]
+
+  scribe:
+    name: "Scribe"
+    icon: "📝"
+    description: "Technical writing and developer documentation"
+    best_for:
+      - "API/SDK documentation"
+      - "Developer guides and tutorials"
+      - "Architecture and ADR documents"
+    flags: ["--c7"]
+
+  dev:
+    name: "Dev"
+    icon: "🚀"
+    description: "Feature development with quality and delivery focus"
+    best_for:
+      - "Feature implementation and delivery"
+      - "Incremental development and validation"
+      - "Integration and acceptance readiness"
+    flags: ["--seq", "--validate", "--c7"]
+
+  tr:
+    name: "Troubleshooter"
+    icon: "🔧"
+    description: "Rapid issue diagnosis and resolution"
+    best_for:
+      - "Bug reproduction and isolation"
+      - "Root-cause analysis and fixes"
+      - "Stability and preventive measures"
+    flags: ["--think", "--seq", "--c7", "--validate"]
+
+  high:
+    name: "High Reasoning"
+    icon: "🧠"
+    description: "Deep reasoning and strategic problem solving with GPT-5 high model"
+    best_for:
+      - "Complex strategic decisions requiring deep analysis"
+      - "Advanced technical problem solving"
+      - "Critical system design and architecture decisions"
+      - "High-stakes technical decisions with broad impact"
+    flags: ["--high", "--ultrathink", "--seq", "--c7", "--validate"]
+
+  doc-master:
+    name: "Doc Master"
+    icon: "📚"
+    description: "Documentation architecture, writing, and verification"
+    best_for:
+      - "Information architecture and style guides"
+      - "API/SDK reference and runnable examples"
+      - "Guides, tutorials, and troubleshooting"
+    flags: ["--c7", "--validate"]
+
+# Template configuration
+template:
+  command_template: |
+    #!/usr/bin/env python3
+    """
+    {{ persona.name }} Processor - {{ persona.description }}
+    Generated from YAML manifest - do not edit manually
+    """
+
+    import subprocess
+    import sys
+    import os
+
+    def main():
+        args = ["super-prompt", "--persona-{{ persona.name.lower() }}"] + {{ persona.flags }} + sys.argv[1:]
+        subprocess.run(args, check=False)
+
+    if __name__ == "__main__":
+        main()
+
+  markdown_template: |
+    # {{ persona.icon }} {{ persona.name }}
+
+    {{ persona.description }}
+
+    ## Best For
+    {% for item in persona.best_for %}
+    - {{ item }}
+    {% endfor %}
+
+    ## Auto-Activated Flags
+    {{ persona.flags | join(", ") }}
+
+    ## Usage
+    ```
+    /{{ persona.name.lower() }} [your request]
+    ```
