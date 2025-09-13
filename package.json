@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "3.1.10",
+  "version": "3.1.13",
   "description": "Production-ready prompt engineering toolkit with modular architecture, AMR, SDD workflow, and dual IDE support",
   "main": "index.js",
   "bin": {
