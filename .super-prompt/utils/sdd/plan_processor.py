@@ -13,6 +13,17 @@ from typing import Dict, List, Optional, Tuple
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from quality_enhancer import QualityEnhancer
 
+# Add core-py to path to import super_prompt memory controller
+try:
+    from pathlib import Path as _P
+    repo_root = _P(__file__).resolve().parents[3]
+    core_py = repo_root / 'packages' / 'core-py'
+    if str(core_py) not in sys.path:
+        sys.path.append(str(core_py))
+    from super_prompt.memory.controller import MemoryController
+except Exception:
+    MemoryController = None
+
 class PlanProcessor:
     """Processor for generating implementation plans"""
 
@@ -775,6 +786,14 @@ GET /api/v1/resources
             f.write(content)
 
         print(f"----- Implementation plan created: {plan_path}")
+        # Update memory (MCI)
+        try:
+            if MemoryController:
+                mem = MemoryController()
+                summary = f"Created implementation plan for {analysis.get('req_id','REQ-UNKNOWN')} at {plan_path}"
+                mem.append_interaction(f"/plan {analysis.get('req_id','REQ-UNKNOWN')}", summary)
+        except Exception:
+            pass
         return plan_path
 
 def main():

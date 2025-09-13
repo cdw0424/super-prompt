@@ -29,6 +29,9 @@ Based on LLM coding assistant research (2022-2025), implementing multi-agent rol
 ## Usage
 ```
 /[persona] [your request]
+// Setup
+/init-sp     # initial project analysis → memory
+/re-init-sp  # refresh analysis → memory
 ```
 
 ## Features

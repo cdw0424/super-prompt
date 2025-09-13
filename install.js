@@ -63,8 +63,8 @@ console.log(`${colors.yellow}${colors.bold}🚀 Starting installation...${colors
 const platform = os.platform();
 console.log(`${colors.cyan}⚙️  Checking platform compatibility...${colors.reset}`);
 
-if (platform !== 'darwin' && platform !== 'linux') {
-    console.error(`${colors.red}❌ Super Prompt only supports macOS and Linux${colors.reset}`);
+if (platform !== 'darwin' && platform !== 'linux' && platform !== 'win32') {
+    console.error(`${colors.red}❌ Unsupported platform: ${platform}${colors.reset}`);
     process.exit(1);
 }
 
@@ -277,14 +277,78 @@ async function animatedInstall() {
         await sleep(300);
         completedStep('2', '.super-prompt utilities installed');
 
-        // Step 3: Ready for project initialization (run in your project)
+        // Step 3: Ensure system dependencies (Python 3 + SQLite3)
+        try {
+            console.log(`${colors.cyan}🧩 Ensuring system dependencies (Python 3, SQLite3)...${colors.reset}`);
+
+            const hasCmd = (cmd) => {
+                try {
+                    if (platform === 'win32') {
+                        execSync(`where ${cmd}`, { stdio: 'ignore' });
+                    } else {
+                        execSync(`command -v ${cmd}`, { stdio: 'ignore', shell: '/bin/bash' });
+                    }
+                    return true;
+                } catch (_) { return false; }
+            };
+
+            const run = (cmd) => {
+                try { execSync(cmd, { stdio: 'inherit' }); return true; } catch (_) { return false; }
+            };
+
+            // Python
+            let pythonOk = hasCmd('python3') || (platform === 'win32' && (hasCmd('py') || hasCmd('python')));
+            if (!pythonOk) {
+                if (platform === 'darwin') {
+                    if (hasCmd('brew')) {
+                        console.log(`${colors.dim}→ Installing python3 via Homebrew...${colors.reset}`);
+                        pythonOk = run('brew install python@3');
+                    }
+                } else if (platform === 'linux') {
+                    if (hasCmd('apt-get')) pythonOk = run('sudo -n apt-get update && sudo -n apt-get install -y python3') || pythonOk;
+                    if (!pythonOk && hasCmd('dnf')) pythonOk = run('sudo -n dnf install -y python3') || pythonOk;
+                    if (!pythonOk && hasCmd('yum')) pythonOk = run('sudo -n yum install -y python3') || pythonOk;
+                    if (!pythonOk && hasCmd('pacman')) pythonOk = run('sudo -n pacman -S --noconfirm python') || pythonOk;
+                } else if (platform === 'win32') {
+                    if (hasCmd('winget')) pythonOk = run('winget install -e --id Python.Python.3.11') || pythonOk;
+                    if (!pythonOk && hasCmd('choco')) pythonOk = run('choco install -y python') || pythonOk;
+                }
+            }
+            if (!pythonOk) {
+                console.warn(`${colors.yellow}⚠️  Python 3 not installed automatically. Please install manually.${colors.reset}`);
+            }
+
+            // SQLite
+            let sqliteOk = hasCmd('sqlite3');
+            if (!sqliteOk) {
+                if (platform === 'darwin') {
+                    if (hasCmd('brew')) sqliteOk = run('brew install sqlite') || sqliteOk;
+                } else if (platform === 'linux') {
+                    if (hasCmd('apt-get')) sqliteOk = run('sudo -n apt-get install -y sqlite3') || sqliteOk;
+                    if (!sqliteOk && hasCmd('dnf')) sqliteOk = run('sudo -n dnf install -y sqlite') || sqliteOk;
+                    if (!sqliteOk && hasCmd('yum')) sqliteOk = run('sudo -n yum install -y sqlite') || sqliteOk;
+                    if (!sqliteOk && hasCmd('pacman')) sqliteOk = run('sudo -n pacman -S --noconfirm sqlite') || sqliteOk;
+                } else if (platform === 'win32') {
+                    if (hasCmd('winget')) sqliteOk = run('winget install -e --id SQLite.sqlite') || sqliteOk;
+                    if (!sqliteOk && hasCmd('choco')) sqliteOk = run('choco install -y sqlite') || sqliteOk;
+                }
+            }
+            if (!sqliteOk) {
+                console.warn(`${colors.yellow}⚠️  SQLite3 not installed automatically. Please install via your package manager.${colors.reset}`);
+            }
+            completedStep('3', 'System dependencies checked');
+        } catch (e) {
+            console.warn(`${colors.yellow}⚠️  System dependency check skipped: ${e && e.message}${colors.reset}`);
+        }
+
+        // Step 4: Ready for project initialization (run in your project)
         console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
         console.log(`${colors.dim}   Run this inside your project to install rules & commands:${colors.reset}`);
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
         console.log(`   ${colors.cyan}# or if not globally installed:${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
         await sleep(300);
-        completedStep(3, 'Project integration ready')
+        completedStep(4, 'Project integration ready')
 
         // Installation complete
         console.log(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);

@@ -13,6 +13,17 @@ from typing import Dict, List, Optional
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from quality_enhancer import QualityEnhancer
 
+# Add core-py to path to import super_prompt memory controller
+try:
+    from pathlib import Path as _P
+    repo_root = _P(__file__).resolve().parents[3]
+    core_py = repo_root / 'packages' / 'core-py'
+    if str(core_py) not in sys.path:
+        sys.path.append(str(core_py))
+    from super_prompt.memory.controller import MemoryController
+except Exception:
+    MemoryController = None
+
 class SpecifyProcessor:
     """Processor for generating feature specifications"""
 
@@ -348,6 +359,13 @@ class SpecifyProcessor:
             f.write(content)
 
         print(f"----- Specification created: {spec_path}")
+        # Update memory (MCI)
+        try:
+            if MemoryController:
+                mem = MemoryController()
+                mem.append_interaction(f"/specify {parsed_input.get('name','feature')}", f"Created spec at {spec_path}")
+        except Exception:
+            pass
         return spec_path
 
 def main():

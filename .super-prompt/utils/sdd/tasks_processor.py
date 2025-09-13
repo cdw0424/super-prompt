@@ -693,6 +693,19 @@ class TasksProcessor:
             f.write(content)
 
         print(f"----- Task breakdown created: {tasks_path}")
+        # Update memory (MCI)
+        try:
+            # late import to avoid hard dependency during packaging
+            from pathlib import Path as _P
+            repo_root = _P(__file__).resolve().parents[3]
+            core_py = repo_root / 'packages' / 'core-py'
+            if str(core_py) not in sys.path:
+                sys.path.append(str(core_py))
+            from super_prompt.memory.controller import MemoryController
+            mem = MemoryController()
+            mem.append_interaction(f"/tasks {analysis.get('req_id','REQ-UNKNOWN')}", f"Created tasks at {tasks_path}")
+        except Exception:
+            pass
         return tasks_path
 
 def main():

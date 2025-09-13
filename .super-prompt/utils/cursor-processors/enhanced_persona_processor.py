@@ -16,9 +16,33 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
-# Import quality enhancer
+# Import local quality enhancer
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from quality_enhancer import QualityEnhancer
+
+# Add core-py to path to import super_prompt memory controller
+try:
+    repo_root = Path(__file__).resolve().parents[3]
+    core_py = repo_root / 'packages' / 'core-py'
+    if str(core_py) not in sys.path:
+        sys.path.append(str(core_py))
+except Exception:
+    pass
+
+try:
+    from super_prompt.memory.controller import MemoryController  # Dev/runtime within repo
+except Exception:
+    # Safe fallback: no-op memory controller for packaged installs
+    class MemoryController:  # type: ignore
+        def __init__(self, *_args, **_kwargs):
+            pass
+        def build_context_block(self, *args, **kwargs) -> str:
+            return "{}"
+        def append_interaction(self, *args, **kwargs):
+            return None
+        def update_from_extraction(self, *args, **kwargs):
+            return None
+
 from reasoning_delegate import ReasoningDelegate
 
 
@@ -60,6 +84,8 @@ class EnhancedPersonaProcessor:
         self.global_settings: Dict[str, Any] = getattr(self, 'global_settings', {})
         self.current_persona = None
         self.quality_enhancer = QualityEnhancer()  # Quality enhancer for final polish
+        # Memory controller (spec/instance/controller architecture)
+        self.memory = MemoryController(self.project_root)
         self.reasoning_delegate = ReasoningDelegate()  # Deep reasoning planner
 
     def load_personas(self) -> Dict[str, PersonaConfig]:
@@ -125,6 +151,8 @@ class EnhancedPersonaProcessor:
             return f"You are a helpful coding assistant. Please help with: {user_input}"
 
         persona = self.personas[persona_key]
+        # Build memory context block
+        memory_context_json = self.memory.build_context_block()
 
         # Build comprehensive system prompt based on research findings
         system_prompt = f"""# PERSONA ACTIVATION: {persona.name} {persona.icon}
@@ -166,6 +194,9 @@ Based on your persona type:
 
 ## COLLABORATION CONTEXT
 {self._get_collaboration_context(persona)}
+
+## MEMORY CONTEXT (MCI Preview)
+{memory_context_json}
 
 ## EXTERNAL PLAN (if present)
 {json.dumps(external_plan, indent=2) if external_plan else 'None'}
@@ -491,10 +522,17 @@ and follow your defined interaction style throughout the entire response."""
             print(f"-------- Activating {persona.name} {persona.icon}")
             print(f"-------- Role: {persona.role_type} | Style: {persona.interaction_style}")
 
-            result = subprocess.run(cmd_args, check=False)
+            # Stream output while capturing for memory update
+            assistant_output_chunks: List[str] = []
+            with subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True) as proc:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    assistant_output_chunks.append(line)
+                    print(line, end="")
+                returncode = proc.wait()
 
-            if result.returncode != 0:
-                print(f"-------- Warning: Persona execution completed with return code {result.returncode}")
+            if returncode != 0:
+                print(f"-------- Warning: Persona execution completed with return code {returncode}")
             else:
                 # Apply quality enhancement after successful execution
                 print("\n" + "="*60)
@@ -515,6 +553,24 @@ and follow your defined interaction style throughout the entire response."""
 
         except Exception as e:
             print(f"-------- Error executing persona: {e}")
+        finally:
+            try:
+                full_output = None
+                if 'assistant_output_chunks' in locals():
+                    full_output = ''.join(assistant_output_chunks)
+                self.memory.append_interaction(user_input, full_output)
+                # Optional deep extraction using Codex plan (JSON)
+                if full_output and self._should_extract_rich_memory(persona_key, user_input, full_output):
+                    try:
+                        extraction_prompt = self._build_extraction_prompt(user_input, full_output)
+                        res = self.reasoning_delegate.request_plan(extraction_prompt, timeout=120)
+                        if res.get('ok') and res.get('plan'):
+                            self.memory.update_from_extraction(res['plan'])
+                            print("-------- Memory enriched from extraction plan")
+                    except Exception as ex:
+                        print(f"-------- Memory extraction warning: {ex}")
+            except Exception:
+                pass
 
     def _generate_quality_enhancement_prompt(self, persona_key: str, original_input: str) -> str:
         """
@@ -552,6 +608,37 @@ and follow your defined interaction style throughout the entire response."""
 """
 
         return enhancement_prompt
+
+    def _should_extract_rich_memory(self, persona_key: str, user_input: str, assistant_output: str) -> bool:
+        s = (user_input + "\n" + assistant_output).lower()
+        keys = ["spec", "plan", "task", "architecture", "decision", "adr", "entity", "memory", "profile"]
+        return any(k in s for k in keys)
+
+    def _build_extraction_prompt(self, user_input: str, assistant_output: str) -> str:
+        rules = self._get_global_prompt_engineering_rules()
+        safe_output = assistant_output[:8000]
+        return f"""
+You are GPT-5 Memory Extractor. Think internally and output only JSON (no markdown).
+Extract structured memory from the following interaction.
+
+CONTEXT_RULES:
+{rules}
+
+INPUT_USER:
+{user_input}
+
+OUTPUT_ASSISTANT:
+{safe_output}
+
+SCHEMA (strict JSON):
+{{
+  "entities": {{"<name>": {{"type": "user|system|feature|component|other", "notes": "..."}} }},
+  "key_memories": ["short declarative facts (<= 120 chars)"],
+  "notes": ["optional"]
+}}
+
+Return only JSON.
+"""
 
     def list_personas(self) -> None:
         """List all available personas with their descriptions"""

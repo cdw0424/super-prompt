@@ -317,12 +317,56 @@ Brief description of the feature.
 - [ ] Test case 2
 """)
 
+        # Best‑effort: install local dev dependencies for SQLite LTM helpers (pinned)
+        try:
+            import subprocess
+            import os
+            typer.echo("Installing dev dependencies for LTM helpers (SQLite/FTS)…")
+            pinned = [
+                "better-sqlite3@12.2.0",
+                "ajv@8.17.1",
+                "zod@4.1.8",
+                "ioredis@5.7.0",
+            ]
+            override = os.environ.get("SUPER_PROMPT_LTM_PKGS")
+            pkgs = override.split() if override else pinned
+            subprocess.run(["npm", "install", "-D", *pkgs], cwd=str(target_dir), check=False)
+        except Exception as e:
+            typer.echo(f"⚠️  Skipped dev dependency install: {e}")
+
+        # Add Cursor commands for init-sp and re-init
+        try:
+            commands_dir = target_dir / ".cursor" / "commands" / "super-prompt"
+            commands_dir.mkdir(parents=True, exist_ok=True)
+
+            init_sp = commands_dir / "init-sp.md"
+            init_sp.write_text("""---
+description: Initialize Super Prompt memory (project analysis)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "init"]
+---
+
+🧭 Initialize Super Prompt memory with project structure snapshot.
+""")
+
+            reinit = commands_dir / "re-init-sp.md"
+            reinit.write_text("""---
+description: Re-Initialize project analysis (refresh memory)
+run: "python3"
+args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
+---
+
+🔄 Refresh project analysis and update memory.
+""")
+        except Exception as e:
+            typer.echo(f"⚠️  Could not write Cursor commands: {e}")
+
         typer.echo("✅ Super Prompt initialized!")
         typer.echo(f"   Project root: {target_dir.absolute()}")
         typer.echo("   Next steps:")
-        typer.echo("   1. Run 'super-prompt-core optimize \"your query\"' to test")
-        typer.echo("   2. Use Cursor slash commands like /architect, /frontend")
-        typer.echo("   3. Try SDD workflow: super-prompt-core sdd spec \"new-feature\"")
+        typer.echo("   1. Use Cursor: /init-sp (initial index), /re-init-sp (refresh)")
+        typer.echo("   2. Personas: /architect, /frontend, /doc-master, etc.")
+        typer.echo("   3. SDD: /specify → /plan → /tasks")
 
     except Exception as e:
         typer.echo(f"❌ Initialization failed: {e}", err=True)

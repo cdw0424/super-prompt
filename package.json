@@ -5,7 +5,10 @@
   "main": "index.js",
   "bin": {
     "super-prompt": "./bin/super-prompt",
-    "codex-amr": "./bin/codex-amr.js"
+    "codex-amr": "./bin/codex-amr.js",
+    "sp-init": "./bin/sp-init",
+    "sp-reinit": "./bin/sp-reinit",
+    "sp-reinit-sp": "./bin/sp-reinit-sp"
   },
   "scripts": {
     "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true",
@@ -45,7 +48,8 @@
   },
   "os": [
     "darwin",
-    "linux"
+    "linux",
+    "win32"
   ],
   "files": [
     "bin/",

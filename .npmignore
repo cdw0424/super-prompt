@@ -41,5 +41,10 @@ __pycache__/
 *.pyd
 *.py.class
 
+# Exclude dev-only tooling and local session memory from npm
+tools/
+memory/
+packages/core-py/
+
 # npm package artifacts
 *.tgz
