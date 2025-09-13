@@ -1,13 +1,85 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "0.0.1"
-description = "Core engine for Super Prompt (state machine, AMR, context, SDD)"
-readme = "README.md"
-requires-python = ">=3.10"
+version = "3.0.0"
+description = "Core engine for Super Prompt - prompt engineering toolkit"
+authors = [
+    {name = "Daniel Choi", email = "cdw0424@gmail.com"},
+]
 license = {text = "MIT"}
-authors = [{name = "Super Prompt"}]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = ["ai", "development", "prompt-engineering", "cursor", "codex"]
+
+dependencies = [
+    "pathspec>=0.11.0",      # .gitignore parsing
+    "jinja2>=3.1.0",         # Template engine
+    "pyyaml>=6.0",           # YAML parsing
+    "tiktoken>=0.5.0",       # Token counting (optional)
+    "click>=8.0.0",          # CLI framework
+    "rich>=13.0.0",          # Rich console output
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cdw0424/super-promt"
+Repository = "https://github.com/cdw0424/super-promt.git"
+Issues = "https://github.com/cdw0424/super-promt/issues"
+
+[project.scripts]
+super-prompt-core = "super_prompt.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["super_prompt"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = ["--cov=super_prompt", "--cov-report=term-missing"]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+
+[tool.coverage.run]
+source = ["super_prompt"]
+omit = ["tests/*"]
 

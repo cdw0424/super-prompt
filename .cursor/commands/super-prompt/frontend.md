@@ -1,18 +1,11 @@
+# 🎨 Frontend Engineer
+
+Senior Frontend Engineer specializing in modern web development, accessibility, and user experience.
+
+## Usage
+```
+/frontend [your request]
+```
+
 ---
-description: frontend command
-run: "./tag-executor.sh"
-args: ["${input} /frontend"]
----
-
-# 🎨 Frontend Design Advisor
-
-Focus: Prompt engineering for UI/UX and component design.
-
-Usage:
-- Write your request and append `/frontend` (e.g., “Refactor header /frontend”).
-
-Output Expectations:
-- Proposed Prompt (ready for Cursor)
-- Context bullets to include
-- Small step plan
-- Accessibility/performance checks
+*Enhanced based on LLM coding assistant research (2022-2025)*

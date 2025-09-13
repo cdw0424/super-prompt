@@ -24,7 +24,11 @@
       "Bash(git commit:*)",
       "Bash(git tag:*)",
       "Bash(node:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(for module in engine context sdd personas adapters validation)",
+      "Bash(do touch packages/core-py/super_prompt/$module/__init__.py)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

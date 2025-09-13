@@ -1,0 +1,119 @@
+# Cursor Commands Configuration
+# Data-driven command definitions for Super Prompt
+
+commands:
+  # SDD Workflow Commands
+  spec:
+    name: "Spec"
+    icon: "📋"
+    description: "Generate technical specifications with requirements analysis"
+    flags: ["--sdd-spec"]
+    category: "sdd"
+
+  plan:
+    name: "Plan"
+    icon: "📐"
+    description: "Create detailed implementation plans with validation gates"
+    flags: ["--sdd-plan"]
+    category: "sdd"
+
+  tasks:
+    name: "Tasks"
+    icon: "✓"
+    description: "Break down plans into actionable tasks"
+    flags: ["--sdd-tasks"]
+    category: "sdd"
+
+  implement:
+    name: "Implement"
+    icon: "⚡"
+    description: "Execute implementation based on SDD workflow"
+    flags: ["--sdd-implement"]
+    category: "sdd"
+
+  # Analysis Commands
+  analyze:
+    name: "Analyze"
+    icon: "🔍"
+    description: "Comprehensive system analysis"
+    flags: ["--analyze"]
+    category: "analysis"
+
+  debug:
+    name: "Debug"
+    icon: "🐛"
+    description: "Debug and troubleshoot issues"
+    flags: ["--debug", "--think"]
+    category: "analysis"
+
+  # Quality Commands
+  review:
+    name: "Review"
+    icon: "👁️"
+    description: "Code review and quality assessment"
+    flags: ["--review", "--validate"]
+    category: "quality"
+
+  optimize:
+    name: "Optimize"
+    icon: "⚡"
+    description: "Performance optimization and improvements"
+    flags: ["--optimize", "--think-hard"]
+    category: "quality"
+
+  # Meta Commands
+  high:
+    name: "High"
+    icon: "🧠"
+    description: "High-complexity analysis with maximum thinking depth"
+    flags: ["--ultrathink", "--seq", "--all-mcp"]
+    category: "meta"
+
+  seq:
+    name: "Seq"
+    icon: "🔗"
+    description: "Sequential reasoning for complex problems"
+    flags: ["--seq", "--think"]
+    category: "meta"
+
+  wave:
+    name: "Wave"
+    icon: "🌊"
+    description: "Multi-stage orchestration for complex operations"
+    flags: ["--wave-mode", "--systematic"]
+    category: "meta"
+
+# Template configuration
+template:
+  command_template: |
+    #!/usr/bin/env python3
+    """
+    {{ command.name }} Command - {{ command.description }}
+    Generated from YAML manifest - do not edit manually
+    """
+
+    import subprocess
+    import sys
+
+    def main():
+        args = ["super-prompt"] + {{ command.flags }} + sys.argv[1:]
+        subprocess.run(args, check=False)
+
+    if __name__ == "__main__":
+        main()
+
+  markdown_template: |
+    # {{ command.icon }} {{ command.name }}
+
+    {{ command.description }}
+
+    ## Category
+    {{ command.category | title }}
+
+    ## Flags
+    {{ command.flags | join(", ") }}
+
+    ## Usage
+    ```
+    /{{ command.name.lower() }} [your request]
+    ```
