@@ -8,6 +8,7 @@ import argparse, glob, os, sys, re, json, datetime, textwrap, subprocess, shutil
 from typing import Dict, List, Optional
 
 VERSION = "1.0.0"
+CURRENT_CMD: Optional[str] = None  # set in main()
 
 
 def log(msg: str):
@@ -26,9 +27,27 @@ def read_text(path: str) -> str:
         return ""
 
 
+def _allow_write(path: str) -> bool:
+    """Protect .cursor and .codex during optimize. Allow .codex/reports outputs."""
+    p = path.replace("\\", "/")
+    if p.startswith('.codex/reports') or '/.codex/reports/' in p:
+        return True
+    if CURRENT_CMD in ("super:init", "amr:rules", "codex:init"):
+        return True
+    if CURRENT_CMD in ("optimize",):
+        if p.startswith('.cursor') or '/.cursor/' in p:
+            return False
+        if p.startswith('.codex') or '/.codex/' in p:
+            return False
+    return True
+
+
 def write_text(path: str, content: str, dry: bool = False):
     if dry:
         log(f"[DRY] write → {path} ({len(content.encode('utf-8'))} bytes)")
+        return
+    if not _allow_write(path):
+        log(f"write blocked → {path} (policy)")
         return
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -1233,7 +1252,6 @@ State machine (per turn):
 - For planning/implementation personas, prompts include an MCP usage block to ground answers in real sources.
 - If MCP is not detected, it proceeds but prints guidance to install and export `CONTEXT7_MCP=1` after.
 """
-"""
     write_text(os.path.join(agent_dir, "agents.md"), agent_md, dry)
     personas_py = """
 #!/usr/bin/env python3
@@ -1449,6 +1467,14 @@ def main():
     p_optimize.add_argument(
         "--sp-wave", action="store_true", help="Shortcut for wave persona"
     )
+    p_optimize.add_argument(
+        "--double-check", action="store_true",
+        help="Double-Check Auditor (self-review + confessional + remediation plan)"
+    )
+    p_optimize.add_argument(
+        "--sp-double-check", action="store_true",
+        help="Shortcut for Double-Check Auditor (safe compose; no execution)"
+    )
 
     # SDD shortcuts
     p_optimize.add_argument(
@@ -1477,7 +1503,7 @@ def main():
     )
     p_optimize.add_argument(
         "--out",
-        help="When used with --sp-analyzer, save prompt to this file (e.g., .codex/reports/analysis.md)",
+        help="When used with --sp-analyzer/--sp-double-check, save prompt to this file (e.g., .codex/reports/analysis.md)",
     )
 
     # AMR commands
@@ -1553,6 +1579,9 @@ def main():
         args = parser.parse_args(["optimize", *raw_argv])
     else:
         args = parser.parse_args(["optimize", *raw_argv])
+
+    global CURRENT_CMD
+    CURRENT_CMD = args.cmd
 
     if args.cmd == "super:init":
         show_ascii_logo()
@@ -1716,6 +1745,19 @@ def main():
                 query_text += " /high Implement the smallest viable change based on SPEC/PLAN and tasks; output minimal diffs, tests, and docs"
         if getattr(args, "debate", False) and getattr(args, "rounds", None):
             query_text += f" --rounds {int(args.rounds)}"
+        # Safe mode for --sp-double-check: compose and save prompt
+        if getattr(args, "sp_double_check", False):
+            out_path = getattr(args, "out", None)
+            if out_path is None:
+                ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                os.makedirs(os.path.join(".codex", "reports"), exist_ok=True)
+                out_path = os.path.join(".codex", "reports", f"double_check_{ts}.md")
+            persona = "double-check"
+            clean_query = optimizer.clean_input(query_text)
+            ok = optimizer.execute(persona, clean_query, safe=True, out_path=out_path)
+            if ok:
+                print(f"Saved double-check prompt (safe mode) → {out_path}")
+            return 0 if ok else 1
         # Safe mode for --sp-analyzer: do not execute external CLI, print or save the composed prompt
         if getattr(args, "sp_analyzer", False):
             out_path = getattr(args, "out", None)

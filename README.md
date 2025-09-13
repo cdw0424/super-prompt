@@ -769,6 +769,9 @@ codex
 super-prompt --sp-frontend "Design a responsive layout"
 super-prompt --sp-backend  "Retry + idempotency strategy"
 super-prompt --sp-debate --rounds 8 "Feature flags now?"
+# Double-Check Auditor (self-review + confessional + remediation plan)
+super-prompt --sp-double-check "Audit last changes for correctness, honesty, and provide a remediation plan" --out .codex/reports/double_check.md
+super-prompt optimize --double-check "Audit last changes for correctness, honesty, and provide a remediation plan"
 ```
 
 4. Router switches (if not auto‑executed by your environment), copy‑run in TUI:
