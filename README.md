@@ -27,7 +27,14 @@ npm install -g @cdw0424/super-prompt@latest
 cd your-project
 super-prompt super:init
 
+# Analyze project and activate memory mode (recommended)
+super-prompt init-sp
+
 # Use with Cursor IDE
+# 💡 Optional: For best results with Cursor IDE, use the most economically efficient mode
+# To enable grok-on: Go to Cursor Settings → Beta → Enable "grok-on" feature
+/grok-on
+
 /architect "design user authentication system"
 /frontend "create responsive dashboard"
 
@@ -83,9 +90,9 @@ super-prompt --sp-frontend "optimize React performance"
 ### CLI Usage
 ```bash
 # Development workflow
-super-prompt --sp-sdd-spec "user authentication"
-super-prompt --sp-sdd-plan "user registration workflow"
-super-prompt --sp-sdd-implement "authentication system"
+--sp-sdd-spec "user authentication"
+--sp-sdd-plan "user registration workflow"
+--sp-sdd-implement "authentication system"
 
 # Direct persona consultation
 super-prompt --sp-architect "design microservices architecture"
