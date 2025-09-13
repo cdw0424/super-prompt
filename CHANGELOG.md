@@ -5,6 +5,11 @@
 ### 🐛 Fixes
 - fix(bin): send CLI path detection logs to stderr to avoid capture.
 
+## v3.1.14 - 2025-09-13
+
+### 🐛 Fixes
+- fix(py): add missing `super_prompt.personas.config` module and make personas __init__ robust to import variants.
+
 
 # Changelog
 
