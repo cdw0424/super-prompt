@@ -893,6 +893,7 @@ fi
         pass
 
     personas = [
+        # Core Development Personas
         ('high', '🧠 Deep Reasoning Specialist\\nStrategic problem solving and system design expert.'),
         ('frontend-ultra', '🎨 Elite UX/UI Architect\\nTop-tier user experience architecture.'),
         ('frontend', '🎨 Frontend Design Advisor\\nUser-centered frontend design and implementation.'),
@@ -901,9 +902,53 @@ fi
         ('architect', '👷‍♂️ Architect\\nProject-Conformity-First delivery.'),
         ('seq', '🔄 Sequential Thinking (5)\\nStructured step-by-step problem solving.'),
         ('seq-ultra', '🔄 Advanced Sequential (10)\\nIn-depth step-by-step problem solving.'),
+
+        # Additional Development Personas
+        ('debate', '⚖️ Debate Mode\\nSingle-model internal debate with synthesis.'),
+        ('performance', '🚀 Performance Advisor\\nHotspots, quick wins, roll-out checks.'),
+        ('security', '🔐 Security Advisor\\nThreats, mitigations, safe defaults.'),
+        ('task', '🧩 Task Management\\nSmall tasks with IDs, ACs, deps.'),
+        ('wave', '🌊 Wave Planning\\nPhased delivery (MVP → hardening).'),
+        ('ultracompressed', '🗜️ Ultra-Compressed Output\\nToken-efficient answers with preserved fidelity.'),
+        ('docs-refector', '📚 Documentation Consolidation\\nAudit and unify docs with MCP-grounded sources.'),
+        ('refactorer', '🔄 Code Refactoring Specialist\\nSystematic code quality improvements.'),
+        ('implement', '⚡ Implementation Specialist\\nSDD-compliant code implementation.'),
+        ('review', '👁️ Code Review Specialist\\nSDD-compliant implementation review.'),
+        ('dev', '💻 Development Assistant\\nGeneral development support.'),
+        ('devops', '🚢 DevOps Engineer\\nInfrastructure and deployment.'),
+        ('doc-master', '📖 Documentation Master\\nComprehensive documentation creation.'),
+        ('mentor', '🎓 Technical Mentor\\nKnowledge transfer and best practices.'),
+        ('qa', '🧪 Quality Assurance\\nTesting and quality control.'),
+        ('scribe', '✍️ Technical Writer\\nClear technical documentation.'),
+
+        # SDD Workflow Commands
+        ('spec', '📋 Create SPEC (SDD)\\nRequirements definition and scope setting.'),
+        ('plan', '🏗️ Create PLAN (SDD)\\nArchitecture and implementation planning.'),
+        ('tasks', '📝 Break down into TASKS (SDD)\\nDetailed task breakdown and estimation.'),
+        ('specify', '🎯 Specification Assistant\\nDetailed requirements specification.'),
+        ('optimize', '⚡ Run Super Prompt optimize\\nGeneral prompt optimization.'),
+        ('tr', '🔄 Technical Refactoring\\nCode structure and pattern improvements.'),
+
+        # Special Commands
+        ('init-sp', '🚀 Initialize Super Prompt memory\\nProject analysis and setup.'),
+        ('re-init-sp', '🔄 Re-Initialize project analysis\\nRefresh memory and analysis.'),
+
+        # Grok Integration
+        ('grok', '🤖 Grok Code Fast 1 optimized execution\\nCursor IDE grok-code-fast-1 integration.'),
+        ('grok-on', '✅ Enable Grok mode for all commands\\nActivate grok-code-fast-1 mode.'),
+        ('grok-off', '❌ Disable Grok mode for all commands\\nDeactivate grok-code-fast-1 mode.'),
     ]
     for name, desc in personas:
-        content = f"---\ndescription: {name} command\nrun: \"./tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
+        # Handle special commands that need different execution
+        if name == 'init-sp':
+            # Initialize command runs Python script with --mode init
+            content = f"---\ndescription: Initialize Super Prompt memory (project analysis)\nrun: \"python3\"\nargs: [\".super-prompt/utils/init/init_sp.py\", \"--mode\", \"init\"]\n---\n\n🧭 Initialize Super Prompt memory with project structure snapshot."
+        elif name == 're-init-sp':
+            # Re-initialize command runs Python script with --mode reinit
+            content = f"---\ndescription: Re-Initialize project analysis (refresh memory)\nrun: \"python3\"\nargs: [\".super-prompt/utils/init/init_sp.py\", \"--mode\", \"reinit\"]\n---\n\n🔄 Refresh project analysis and update memory."
+        else:
+            # Standard commands use tag-executor.sh
+            content = f"---\ndescription: {name} command\nrun: \"./.cursor/commands/super-prompt/tag-executor.sh\"\nargs: [\"${{input}} /{name}\"]\n---\n\n{desc}"
         write_text(os.path.join(base, f'{name}.md'), content, dry)
 
     # (Codex agent assets are created conditionally in write_codex_agent_assets())

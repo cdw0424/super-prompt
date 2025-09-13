@@ -513,6 +513,30 @@ def init(
 ):
     """Initialize Super Prompt for a project"""
     try:
+        # Display Super Prompt ASCII Art
+        logo = """
+\033[36m\033[1m
+   ███████╗██╗   ██╗██████╗ ███████╗██████╗
+   ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗
+   ███████╗██║   ██║██████╔╝█████╗  ██████╔╝
+   ╚════██║██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗
+   ███████║╚██████╔╝██║     ███████╗██║  ██║
+   ╚══════╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝
+
+   ██████╗ ██████╗  ██████╗ ███╗   ███╗██████╗ ████████╗
+   ██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔══██╗╚══██╔══╝
+   ██████╔╝██████╔╝██║   ██║██╔████╔██║██████╔╝   ██║
+   ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔═══╝    ██║
+   ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║██║        ██║
+   ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝
+\033[0m
+\033[2m              Dual IDE Prompt Engineering Toolkit\033[0m
+\033[2m                     v3.1.34 | @cdw0424/super-prompt\033[0m
+\033[2m                          Made by \033[0m\033[35mDaniel Choi from Korea\033[0m
+"""
+        typer.echo(logo)
+        typer.echo()
+
         target_dir = Path(project_root)
 
         # Initialize adapters
@@ -566,8 +590,8 @@ Brief description of the feature.
             import sys
             typer.echo("🐍 Installing Python dependencies for Super Prompt...")
             # Resolve repo root and core-py path robustly
-            repo_root = Path(__file__).resolve().parents[2]
-            core_py_path = repo_root / "packages" / "core-py"
+            # Fix path resolution - parents[1] gives us core-py directory
+            core_py_path = Path(__file__).resolve().parents[1]
             pyproject_path = core_py_path / "pyproject.toml"
 
             if pyproject_path.exists():
@@ -575,32 +599,53 @@ Brief description of the feature.
                 super_prompt_dir = target_dir / ".super-prompt"
                 super_prompt_dir.mkdir(exist_ok=True)
                 venv_path = super_prompt_dir / "venv"
-                if not venv_path.exists():
-                    typer.echo("   📦 Creating Python virtual environment in .super-prompt/venv...")
-                    subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
 
-                # Create data directory for SQLite and databases
-                data_dir = venv_path / "data"
-                data_dir.mkdir(exist_ok=True)
+                # Check if venv already exists and has dependencies
+                venv_python = venv_path / "bin" / "python"
+                if not venv_python.exists():
+                    venv_python = venv_path / "Scripts" / "python.exe"  # Windows
 
-                # Install dependencies in virtual environment
-                pip_path = venv_path / "bin" / "pip"
-                if not pip_path.exists():
-                    pip_path = venv_path / "Scripts" / "pip"  # Windows
-
-                typer.echo("   ⚙️ Installing Super Prompt core (editable) + deps...")
-                try:
-                    subprocess.run([str(pip_path), "install", "-e", str(core_py_path)], check=True)
-                    typer.echo("   ✅ Python dependencies installed successfully")
-                except Exception as pe:
-                    typer.echo(f"   ⚠️  Editable install failed: {pe}")
-                    # Fallback: install minimal runtime deps into the venv
-                    deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
+                venv_ready = False
+                if venv_python.exists():
+                    # Check if dependencies are already installed
                     try:
-                        subprocess.run([str(pip_path), "install", *deps], check=True)
-                        typer.echo("   ✅ Minimal Python dependencies installed in venv")
-                    except Exception as ie:
-                        typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
+                        result = subprocess.run([
+                            str(venv_python), "-c",
+                            "import typer, yaml, pathspec; print('Dependencies available')"
+                        ], check=True, capture_output=True, text=True)
+                        if "Dependencies available" in result.stdout:
+                            typer.echo("   ✅ Virtual environment and dependencies already available")
+                            venv_ready = True
+                    except:
+                        pass
+
+                if not venv_ready:
+                    if not venv_path.exists():
+                        typer.echo("   📦 Creating Python virtual environment in .super-prompt/venv...")
+                        subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+
+                    # Create data directory for SQLite and databases
+                    data_dir = venv_path / "data"
+                    data_dir.mkdir(exist_ok=True)
+
+                    # Install dependencies in virtual environment
+                    pip_path = venv_path / "bin" / "pip"
+                    if not pip_path.exists():
+                        pip_path = venv_path / "Scripts" / "pip"  # Windows
+
+                    typer.echo("   ⚙️ Installing Super Prompt core (editable) + deps...")
+                    try:
+                        subprocess.run([str(pip_path), "install", "-e", str(core_py_path)], check=True)
+                        typer.echo("   ✅ Python dependencies installed successfully")
+                    except Exception as pe:
+                        typer.echo(f"   ⚠️  Editable install failed: {pe}")
+                        # Fallback: install minimal runtime deps into the venv
+                        deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
+                        try:
+                            subprocess.run([str(pip_path), "install", *deps], check=True)
+                            typer.echo("   ✅ Minimal Python dependencies installed in venv")
+                        except Exception as ie:
+                            typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
             else:
                 # Minimal fallback: install runtime deps directly into current interpreter
                 typer.echo("⚠️  pyproject.toml not found — installing minimal runtime deps globally")

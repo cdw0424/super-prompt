@@ -1,5 +1,110 @@
 # Changelog
 
+## v3.1.37 - 2025-09-14
+
+### 🧠 Memory System Enhancement - Real-time Context Loading
+
+- **🔄 DB Context Integration**: Confirmed and documented real-time DB context loading from `memory/ltm.db` during command execution
+- **💬 Conversation History Persistence**: Verified conversation history persistence with recent 8 messages retrieval per session
+- **📊 Project State Tracking**: Enhanced project state tracking through SDD compliance checking (SPEC/PLAN files)
+- **🔗 Context Continuity**: Improved context continuity across sessions using SQLite-backed memory controller
+- **📈 Performance Optimization**: Optimized memory queries with LIMIT 8 for recent chat history
+
+### 📝 Memory System Architecture
+
+```sql
+-- Real-time context loading query
+SELECT author, body FROM memory
+WHERE project_id=? AND kind='message'
+ORDER BY id DESC LIMIT 8
+```
+
+### 🔍 Context Building Process
+
+1. **Project Detection**: Auto-detect project from user input or use default
+2. **DB Query**: Retrieve recent conversation history from SQLite database
+3. **SDD Context**: Load SPEC/PLAN files and framework detection
+4. **Context Injection**: Build comprehensive context block for AI processing
+5. **Session Persistence**: Store new interactions back to database
+
+## v3.1.36 - 2025-09-14
+
+### 🐛 Critical Initialization Bug Fix
+
+- **🔧 Fixed Command Installation**: Resolved critical bug where `super-prompt super:init` only installed 8 commands instead of all 35+ available commands
+- **📋 Complete Persona Support**: Updated `install_cursor_commands_in_project()` function to properly generate all Cursor command files:
+  - Core Personas (8): high, frontend-ultra, frontend, backend, analyzer, architect, seq, seq-ultra
+  - Additional Personas (17): debate, performance, security, task, wave, ultracompressed, docs-refector, refactorer, implement, review, dev, devops, doc-master, mentor, qa, scribe
+  - SDD Workflow (6): spec, plan, tasks, specify, optimize, tr
+  - Special Commands (2): init-sp, re-init-sp
+  - Grok Integration (3): grok, grok-on, grok-off
+
+- **🎯 Path Corrections**: Fixed tag-executor.sh path references to use correct absolute paths
+- **⚙️ Special Command Handling**: Properly configured init-sp and re-init-sp to run Python scripts directly with correct --mode parameters
+
+### 📊 Impact Assessment
+
+- **Before**: Only 8/35+ commands installed (23% coverage)
+- **After**: All 35+ commands installed (100% coverage)
+- **User Experience**: Complete command set now available after `super-prompt super:init`
+
+## v3.1.32 - 2025-09-14
+
+### 🎨 Visual Enhancement
+
+- **🎯 Added ASCII Art Banner**: Restored beautiful ASCII art logo to `super-prompt super:init` command
+- **🇰🇷 Korean Pride**: Added "Made by Daniel Choi from Korea" signature to init display
+- **🌈 Colorful Display**: Enhanced visual presentation with cyan/magenta color scheme matching install script
+
+```
+   ███████╗██╗   ██╗██████╗ ███████╗██████╗
+   ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗
+   ███████╗██║   ██║██████╔╝█████╗  ██████╔╝
+   ╚════██║██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗
+   ███████║╚██████╔╝██║     ███████╗██║  ██║
+   ╚══════╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝
+
+   ██████╗ ██████╗  ██████╗ ███╗   ███╗██████╗ ████████╗
+   ██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔══██╗╚══██╔══╝
+   ██████╔╝██████╔╝██║   ██║██╔████╔██║██████╔╝   ██║
+   ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔═══╝    ██║
+   ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║██║        ██║
+   ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝
+              Dual IDE Prompt Engineering Toolkit
+                 Made by Daniel Choi from Korea
+```
+
+## v3.1.31 - 2025-09-14
+
+### 🐍 Python Virtual Environment Auto-Setup Enhancement
+
+- **🔧 Fixed Virtual Environment Detection**: Resolved issue where `super-prompt super:init` failed to detect existing virtual environments
+- **📁 Improved Path Resolution**: Fixed pyproject.toml path resolution from `parents[2]` to `parents[1]` for correct dependency detection
+- **⚡ Smart Dependency Checking**: Added intelligent check for existing dependencies before attempting installation
+- **🛡️ Homebrew Compatibility**: Enhanced compatibility with macOS Homebrew's externally-managed Python environments
+- **🎯 Grok-Optimized**: Added documentation highlighting optimization for [grok-code-fast-1 MAX mode] in Cursor IDE
+
+### 🔄 Installation Flow Improvements
+
+```python
+# Enhanced virtual environment detection logic:
+if venv_python.exists():
+    # Check if dependencies are already installed
+    result = subprocess.run([
+        str(venv_python), "-c",
+        "import typer, yaml, pathspec; print('Dependencies available')"
+    ], check=True, capture_output=True, text=True)
+    if "Dependencies available" in result.stdout:
+        typer.echo("   ✅ Virtual environment and dependencies already available")
+        venv_ready = True
+```
+
+### 📚 Documentation Updates
+
+- **🆘 Enhanced Troubleshooting**: Added comprehensive Python environment troubleshooting section
+- **🤖 Grok Integration**: Documented Cursor IDE grok-code-fast-1 MAX mode optimization
+- **🔧 macOS Homebrew Guide**: Added specific guidance for Homebrew Python environment issues
+
 ## v3.1.30 - 2025-09-13
 
 ### 🎯 Enhanced Persona System with Mandatory Core Development Principles

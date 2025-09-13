@@ -24,56 +24,125 @@ class CursorAdapter:
         return {"personas": {}}
 
     def generate_commands(self, project_root: Path) -> None:
-        """Generate Cursor slash commands from manifests"""
+        """Generate Cursor slash commands from manifests and copy existing templates"""
         commands_dir = project_root / ".cursor" / "commands" / "super-prompt"
         commands_dir.mkdir(parents=True, exist_ok=True)
+
+        # First, copy all existing .md command files from the package
+        source_commands_dir = self.project_root / ".cursor" / "commands" / "super-prompt"
+
+        if source_commands_dir.exists():
+            import shutil
+            for md_file in source_commands_dir.glob("*.md"):
+                shutil.copy2(md_file, commands_dir / md_file.name)
+
+            # Also copy the tag-executor.sh script
+            tag_executor = source_commands_dir / "tag-executor.sh"
+            if tag_executor.exists():
+                shutil.copy2(tag_executor, commands_dir / "tag-executor.sh")
+                # Make it executable
+                import os
+                os.chmod(commands_dir / "tag-executor.sh", 0o755)
+
+        # Auto-generate .md commands for ALL .py processors that don't have .md files
+        processors_dir = self.project_root / ".super-prompt" / "utils" / "cursor-processors"
+        if processors_dir.exists():
+            for py_file in processors_dir.glob("*.py"):
+                processor_name = py_file.stem
+                # Only skip Python module files, generate commands for ALL processors
+                if processor_name in ["__init__"]:
+                    continue
+
+                md_file = commands_dir / f"{processor_name}.md"
+                if not md_file.exists():
+                    self._generate_processor_command(commands_dir, processor_name)
 
         # Load personas from manifest
         manifest = self.load_personas_manifest()
         personas = manifest.get("personas", {})
 
-        # Generate command files for each persona in manifest
+        # Generate command files for each persona in manifest (if not already exists)
         for persona_key, persona_config in personas.items():
-            self._generate_persona_command(commands_dir, persona_key, persona_config)
+            if not (commands_dir / f"{persona_key}.md").exists():
+                self._generate_persona_command(commands_dir, persona_key, persona_config)
 
         # Generate SDD commands
         self._generate_sdd_commands(commands_dir)
 
     def _generate_persona_command(self, commands_dir: Path, persona: str, persona_config: Dict[str, Any]) -> None:
         """Generate a persona command file from manifest data"""
-        command_file = commands_dir / f"{persona}.py"
+        command_file = commands_dir / f"{persona}.md"
         name = persona_config.get("name", persona.title())
         icon = persona_config.get("icon", "🤖")
         description = persona_config.get("description", f"{name} persona")
 
-        content = f'''#!/usr/bin/env python3
-"""
-{name} Persona Command - Cursor Wrapper
-{description}
-"""
+        content = f'''---
+description: {persona} command
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
+args: ["${{input}} /{persona}"]
+---
 
-import subprocess
-import sys
-import os
-
-def main():
-    # Use enhanced persona processor for all personas
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.join(script_dir, '..', '..', '..')
-    processor_path = os.path.join(project_root, '.super-prompt', 'utils', 'cursor-processors', 'enhanced_persona_processor.py')
-
-    # Execute the enhanced persona processor
-    subprocess.run([
-        'python3', processor_path,
-        '--persona', '{persona}',
-        '--user-input', ' '.join(sys.argv[1:]) if sys.argv[1:] else 'Hello! How can I help you today?'
-    ], check=False)
-
-if __name__ == "__main__":
-    main()
-'''
+{icon} {name}\\n{description}.'''
 
         command_file.write_text(content)
+
+    def _generate_processor_command(self, commands_dir: Path, processor_name: str) -> None:
+        """Generate a .md command file for a processor"""
+        command_file = commands_dir / f"{processor_name}.md"
+
+        # Create human-readable name from processor name
+        display_name = processor_name.replace("-", " ").replace("_", " ").title()
+        icon = self._get_processor_icon(processor_name)
+
+        content = f'''---
+description: {processor_name} command
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
+args: ["${{input}} /{processor_name}"]
+---
+
+{icon} {display_name}\\nSpecialized processor for {processor_name.replace("-", " ").replace("_", " ")} operations.'''
+
+        command_file.write_text(content)
+
+    def _get_processor_icon(self, processor_name: str) -> str:
+        """Get appropriate icon for processor"""
+        icon_map = {
+            "analyzer": "🔍",
+            "architect": "🏗️",
+            "backend": "⚙️",
+            "frontend": "🎨",
+            "frontend-ultra": "🎨✨",
+            "security": "🛡️",
+            "performance": "⚡",
+            "qa": "✅",
+            "devops": "🚀",
+            "mentor": "👨‍🏫",
+            "debate": "💬",
+            "review": "📋",
+            "scribe": "✍️",
+            "refactorer": "🔧",
+            "tr": "🌐",
+            "ultracompressed": "📦",
+            "wave": "🌊",
+            "implement": "🔨",
+            "optimize": "🎯",
+            "docs-refector": "📚",
+            "doc-master": "📖",
+            "auto-setup": "⚙️",
+            "emergency-recovery": "🚨",
+            "enhanced-auto-setup": "⚙️✨",
+            "enhanced-persona-processor": "🤖✨",
+            "health-check": "🏥",
+            "db-expert-tools": "🗄️",
+            "simple-persona-generator": "🤖",
+            "tag-executor": "🏃‍♂️",
+            "high": "🔥",
+            "seq": "🔢",
+            "seq-ultra": "🔢✨",
+            "dev": "💻",
+            "grok": "🧠"
+        }
+        return icon_map.get(processor_name, "🤖")
 
     def _generate_sdd_commands(self, commands_dir: Path) -> None:
         """Generate SDD workflow commands"""

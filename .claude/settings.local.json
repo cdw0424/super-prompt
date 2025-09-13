@@ -10,7 +10,17 @@
       "Bash(tar:*)",
       "Bash(npm publish:*)",
       "Bash(npm install:*)",
-      "Bash(super-prompt super:*)"
+      "Bash(super-prompt super:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(.super-prompt/venv/bin/python -c \"import typer, yaml, pathspec; print(''All dependencies available'')\")",
+      "Bash(.super-prompt/venv/bin/python:*)",
+      "Bash(super-prompt:*)",
+      "Bash(npm pack:*)",
+      "Bash(grep:*)",
+      "Read(//private/tmp/super-prompt-test/**)"
     ],
     "deny": [],
     "ask": []

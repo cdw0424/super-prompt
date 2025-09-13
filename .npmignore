@@ -52,7 +52,7 @@ memory/
 
 # Exclude dev-only tooling and local session memory from npm
 tools/
-packages/core-py/
+# Keep packages/core-py/ - it's needed for Python CLI functionality
 
 # npm package artifacts
 *.tgz

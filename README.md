@@ -6,7 +6,7 @@
 
 **Production-ready prompt engineering toolkit** supporting both **Cursor IDE** and **Codex CLI** with **Spec-Driven Development (SDD)** workflow and **Auto Model Router (AMR)** for intelligent reasoning optimization.
 
-🚀 **Latest**: v3.1.30 - Enhanced persona system with mandatory core development principles including SOLID, TDD/BDD, Clean Architecture, confession & double-check methodology, and quality assurance standards.
+🚀 **Latest**: v3.1.37 - Enhanced memory system with real-time DB context loading, conversation history persistence, and project state tracking for continuous workflow.
 
 ## ⚡ Quick Start
 
@@ -40,6 +40,8 @@ super-prompt --sp-frontend "optimize React performance"
 🛡️ **Production Ready**: Global write protection, validation, testing, and quality assurance
 
 ⚡ **Performance Optimized**: 30-50% token reduction through intelligent context engineering
+
+🤖 **Grok-Optimized**: Specially optimized for [grok-code-fast-1 MAX mode] in Cursor IDE
 
 ## 🎭 Popular Personas
 
@@ -179,10 +181,30 @@ npm install @cdw0424/super-prompt@latest
 ./node_modules/.bin/super-prompt super:init
 ```
 
-**Python dependencies:**
+**Python dependencies & environment issues:**
 ```bash
-# Automatically handled via virtual environment in your project
-# No manual Python installation needed!
+# Super Prompt automatically creates virtual environment
+# If you see "externally-managed-environment" error:
+
+# Method 1: Use the built-in virtual environment (recommended)
+super-prompt super:init  # Creates .super-prompt/venv automatically
+
+# Method 2: If issues persist, check venv setup
+cd your-project/.super-prompt/venv/bin
+python -c "import typer, yaml, pathspec; print('Dependencies OK')"
+
+# Method 3: Manual venv setup (if needed)
+cd your-project/.super-prompt
+python3 -m venv venv
+source venv/bin/activate
+pip install typer>=0.9.0 pyyaml>=6.0 pathspec>=0.11.0
+```
+
+**For macOS Homebrew users:**
+```bash
+# If you get externally-managed-environment errors
+# Super Prompt handles this automatically with virtual environments
+# Just run super-prompt super:init and it will set everything up
 ```
 
 ## 📚 Documentation
