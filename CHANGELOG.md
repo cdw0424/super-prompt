@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.0.41 - 2025-09-14
+
+### 🔧 Critical Installation Fix
+- **fix(install)**: Install latest wheel version instead of oldest
+  - Modified install.js to sort wheel files by version (newest first)
+  - Ensures the most recent wheel with CLI fixes gets installed in venv
+  - Resolves issue where old wheel versions were installed despite newer builds being available
+
 ## v4.0.40 - 2025-09-14
 
 ### 🔧 Critical CLI Root Resolution Fix

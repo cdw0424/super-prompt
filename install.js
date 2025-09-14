@@ -255,6 +255,15 @@ async function setupPythonVenv(superPromptDir) {
         if (fs.existsSync(corePyDistDir)) {
             const wheelFiles = fs.readdirSync(corePyDistDir).filter(f => f.endsWith('.whl'));
             if (wheelFiles.length > 0) {
+                // Sort by version (newest first) to install the latest wheel
+                wheelFiles.sort((a, b) => {
+                    const versionA = a.match(/super_prompt_core-(\d+\.\d+\.\d+)/)?.[1];
+                    const versionB = b.match(/super_prompt_core-(\d+\.\d+\.\d+)/)?.[1];
+                    if (versionA && versionB) {
+                        return versionB.localeCompare(versionA, undefined, { numeric: true });
+                    }
+                    return b.localeCompare(a); // fallback to alphabetical
+                });
                 const wheelPath = path.join(corePyDistDir, wheelFiles[0]);
                 console.log(`${colors.dim}   → Installing core-py package from ${wheelFiles[0]}...${colors.reset}`);
                 execSync(`"${venvPip}" install "${wheelPath}"`, { stdio: 'inherit' });
