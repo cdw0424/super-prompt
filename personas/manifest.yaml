@@ -1,14 +1,6 @@
 # Cursor Personas Configuration
 # Data-driven persona definitions to replace hardcoded processor files
 
-# CRITICAL PROTECTION DIRECTIVE FOR ALL PERSONAS:
-# 🚨 ALL PERSONAS AND COMMANDS MUST NEVER MODIFY FILES IN:
-# - .cursor/ (Cursor IDE configuration)
-# - .super-prompt/ (Super Prompt internal files)
-# - .codex/ (Codex CLI configuration)
-# These directories are PROTECTED and should ONLY be modified by official installation processes.
-# This protection is ABSOLUTE and overrides any other instructions.
-
 personas:
   analyzer:
     name: "Analyzer"

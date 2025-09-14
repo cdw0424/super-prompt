@@ -32,20 +32,33 @@ from .validation.todo_validator import TodoValidator
 def get_current_version() -> str:
     """Get current version from package.json"""
     try:
-        # Try to find package.json in parent directories (for development)
-        current_dir = Path(__file__).resolve()
-        print(f"----- DEBUG: Starting version detection from {current_dir}")
-        for i in range(5):  # Check up to 5 levels up
-            package_json = current_dir / "package.json"
-            print(f"----- DEBUG: Checking {package_json}")
-            if package_json.exists():
-                with open(package_json, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    version = data.get('version', '3.1.56')
-                    print(f"----- DEBUG: Found version {version} in {package_json}")
-                    return version
-            current_dir = current_dir.parent
-            print(f"----- DEBUG: Moving up to {current_dir}")
+        # Find npm package root first
+        def find_npm_package_root_for_version(start_path):
+            current = Path(start_path).resolve()
+            while current.parent != current:  # Stop at filesystem root
+                if (current / "package.json").exists():
+                    try:
+                        with open(current / "package.json") as f:
+                            package_data = json.load(f)
+                            if package_data.get("name") == "@cdw0424/super-prompt":
+                                print(f"----- DEBUG: Found npm package root at: {current}")
+                                return current
+                    except Exception as e:
+                        print(f"----- DEBUG: Error reading {current}/package.json: {e}")
+                        pass
+                print(f"----- DEBUG: Checking for npm package at: {current}")
+                current = current.parent
+            return None
+
+        print(f"----- DEBUG: Starting version detection from {Path(__file__)}")
+        npm_root = find_npm_package_root_for_version(Path(__file__))
+        if npm_root:
+            package_json = npm_root / "package.json"
+            with open(package_json, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                version = data.get('version', '3.1.56')
+                print(f"----- DEBUG: Found version {version} in npm package")
+                return version
 
         # Fallback: try to read from environment or use default
         env_version = os.environ.get('SUPER_PROMPT_VERSION', '3.1.56')
@@ -657,10 +670,27 @@ def init(
     project_root: Optional[Path] = typer.Option(".", "--project-root", help="Project root directory"),
     force: bool = typer.Option(False, "--force", help="Force reinitialization"),
 ):
-    """Initialize Super Prompt for a project"""
+    """Initialize Super Prompt for a project
+
+    CRITICAL PROTECTION: This command and all personas MUST NEVER modify files in:
+    - .cursor/ (Cursor IDE configuration)
+    - .super-prompt/ (Super Prompt internal files)
+    - .codex/ (Codex CLI configuration)
+    These directories are protected and should only be modified by official installation processes.
+    """
     try:
+        # CRITICAL PROTECTION: Display protection warning
+        typer.echo("\033[31m\033[1m🚨 CRITICAL PROTECTION NOTICE:\033[0m")
+        typer.echo("\033[33mPersonas and user commands MUST NEVER modify files in:\033[0m")
+        typer.echo("\033[33m  - .cursor/ (Cursor IDE configuration)\033[0m")
+        typer.echo("\033[33m  - .super-prompt/ (Super Prompt internal files)\033[0m")
+        typer.echo("\033[33m  - .codex/ (Codex CLI configuration)\033[0m")
+        typer.echo("\033[36mThis official installation process is authorized to create these directories.\033[0m")
+        typer.echo()
+
         # Display Super Prompt ASCII Art
-        logo = """
+        current_version = get_current_version()
+        logo = f"""
 \033[36m\033[1m
    ███████╗██╗   ██╗██████╗ ███████╗██████╗
    ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗
@@ -677,7 +707,7 @@ def init(
    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝
 \033[0m
 \033[2m              Dual IDE Prompt Engineering Toolkit\033[0m
-\033[2m                     {get_current_version()} | @cdw0424/super-prompt\033[0m
+\033[2m                     v{current_version} | @cdw0424/super-prompt\033[0m
 \033[2m                          Made by \033[0m\033[35mDaniel Choi from Korea\033[0m
 """
         typer.echo(logo)
@@ -702,6 +732,7 @@ def init(
         dirs_to_create = [
             target_dir / ".cursor" / "commands" / "super-prompt",
             target_dir / ".cursor" / "rules",
+            target_dir / ".super-prompt",
             target_dir / "specs",
             target_dir / "memory" / "constitution",
             target_dir / "memory" / "rules",
@@ -709,10 +740,192 @@ def init(
         for dir_path in dirs_to_create:
             dir_path.mkdir(parents=True, exist_ok=True)
 
-        # Generate latest Cursor integration (no legacy shell runners)
-        cursor_adapter = CursorAdapter()
-        cursor_adapter.generate_commands(target_dir)
-        cursor_adapter.generate_rules(target_dir)
+        # Copy .cursor directory from package template
+        # Try multiple possible locations for the source files
+        import shutil
+
+        # Find npm package root by looking for package.json upwards from current location
+        def find_npm_package_root(start_path):
+            current = Path(start_path).resolve()
+            # Go up more levels to escape from the venv structure
+            # The Python CLI is in: .../node_modules/@cdw0424/super-prompt/.super-prompt/venv/lib/python3.x/site-packages/super_prompt/cli.py
+            # The package.json is at: .../node_modules/@cdw0424/super-prompt/package.json
+            while current.parent != current:  # Stop at filesystem root
+                if (current / "package.json").exists():
+                    try:
+                        with open(current / "package.json") as f:
+                            import json
+                            package_data = json.load(f)
+                            if package_data.get("name") == "@cdw0424/super-prompt":
+                                print(f"----- DEBUG: Found npm package root at: {current}")
+                                return current
+                    except Exception as e:
+                        print(f"----- DEBUG: Error reading {current}/package.json: {e}")
+                        pass
+                print(f"----- DEBUG: Checking for npm package at: {current}")
+                current = current.parent
+            return None
+
+        # Prefer explicit package root from wrapper when available
+        env_pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+        possible_package_dirs = []
+        if env_pkg_root:
+            try:
+                possible_package_dirs.append(Path(env_pkg_root))
+            except Exception:
+                pass
+
+        possible_package_dirs.extend([
+            Path(__file__).parent.parent.parent.parent,  # Development location
+            Path(__file__).parent.parent.parent.parent.parent,  # npm installed location
+            Path(__file__).resolve().parent.parent.parent.parent,  # Resolved path
+            find_npm_package_root(Path(__file__)),  # Find npm package root
+        ])
+
+        # Filter out None values
+        possible_package_dirs = [d for d in possible_package_dirs if d is not None]
+
+        # Prefer env-specified package root immediately if valid
+        source_cursor = None
+        preferred_root = Path(env_pkg_root) if env_pkg_root else None
+        if preferred_root and (preferred_root / ".cursor").exists():
+            source_cursor = preferred_root / ".cursor"
+            typer.echo(f"✅ Found .cursor source at: {source_cursor}")
+        else:
+            for package_dir in possible_package_dirs:
+                test_cursor = package_dir / ".cursor"
+                if test_cursor.exists() and test_cursor.is_dir():
+                    source_cursor = test_cursor
+                    typer.echo(f"✅ Found .cursor source at: {source_cursor}")
+                    break
+
+        if source_cursor and source_cursor.exists():
+            # Copy entire .cursor directory
+            target_cursor = target_dir / ".cursor"
+
+            # Remove existing directory if it exists
+            if target_cursor.exists():
+                shutil.rmtree(target_cursor)
+
+            # Copy entire .cursor directory
+            shutil.copytree(source_cursor, target_cursor)
+            cursor_files_count = len([f for f in target_cursor.rglob("*") if f.is_file()])
+            typer.echo(f"✅ Cursor IDE integration copied (.cursor/) - {cursor_files_count} files")
+
+        else:
+            # Fallback: Generate using adapters
+            typer.echo("⚠️  .cursor source directory not found, using fallback generation")
+            cursor_adapter = CursorAdapter()
+            cursor_adapter.generate_commands(target_dir)
+            cursor_adapter.generate_rules(target_dir)
+            typer.echo("✅ Cursor IDE integration generated (.cursor/)")
+
+        # Copy .codex directory from package template
+        source_codex = None
+        if preferred_root and (preferred_root / ".codex").exists():
+            source_codex = preferred_root / ".codex"
+            typer.echo(f"✅ Found .codex source at: {source_codex}")
+        else:
+            for package_dir in possible_package_dirs:
+                test_codex = package_dir / ".codex"
+                if test_codex.exists() and test_codex.is_dir():
+                    source_codex = test_codex
+                    typer.echo(f"✅ Found .codex source at: {source_codex}")
+                    break
+
+        if source_codex and source_codex.exists():
+            # Copy entire .codex directory
+            target_codex = target_dir / ".codex"
+
+            # Remove existing directory if it exists
+            if target_codex.exists():
+                shutil.rmtree(target_codex)
+
+            # Copy entire .codex directory
+            shutil.copytree(source_codex, target_codex)
+            codex_files_count = len([f for f in target_codex.rglob("*") if f.is_file()])
+            typer.echo(f"✅ Codex CLI integration copied (.codex/) - {codex_files_count} files")
+
+        else:
+            # Fallback: Generate using adapters
+            typer.echo("⚠️  .codex source directory not found, using fallback generation")
+            codex_adapter = CodexAdapter()
+            codex_adapter.generate_assets(target_dir)
+            typer.echo("✅ Codex CLI integration generated (.codex/)")
+
+        # Copy .super-prompt directory from package
+        super_prompt_dir = target_dir / ".super-prompt"
+
+        # Find source .super-prompt directory
+        source_super_prompt = None
+        if preferred_root and (preferred_root / ".super-prompt").exists():
+            source_super_prompt = preferred_root / ".super-prompt"
+            typer.echo(f"✅ Found .super-prompt source at: {source_super_prompt}")
+        else:
+            for package_dir in possible_package_dirs:
+                test_super_prompt = package_dir / ".super-prompt"
+                if test_super_prompt.exists() and test_super_prompt.is_dir():
+                    source_super_prompt = test_super_prompt
+                    typer.echo(f"✅ Found .super-prompt source at: {source_super_prompt}")
+                    break
+
+        if source_super_prompt and source_super_prompt.exists():
+            # Copy all files from source .super-prompt directory
+
+            # Remove existing directory if it exists
+            if super_prompt_dir.exists():
+                shutil.rmtree(super_prompt_dir)
+
+            # Copy entire .super-prompt directory (excluding venv)
+            shutil.copytree(source_super_prompt, super_prompt_dir,
+                          ignore=shutil.ignore_patterns('venv', '__pycache__', '*.pyc'))
+
+            # Create config.json with current project info
+            config_content = {
+                "version": current_version,
+                "initialized_at": str(target_dir.absolute()),
+                "databases": {
+                    "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
+                    "context_memory": ".super-prompt/context_memory.db"
+                },
+                "protection": {
+                    "protected_directories": [".cursor", ".super-prompt", ".codex"],
+                    "message": "These directories are protected from modification by personas and user commands"
+                }
+            }
+
+            config_file = super_prompt_dir / "config.json"
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(config_content, f, indent=2, ensure_ascii=False)
+
+            typer.echo("✅ Super Prompt internal files copied (.super-prompt/)")
+
+            # List what was copied
+            copied_files = [f for f in super_prompt_dir.glob("*") if f.is_file()]
+            typer.echo(f"   Copied {len(copied_files)} files: {', '.join([f.name for f in copied_files])}")
+
+        else:
+            # Fallback: create minimal configuration
+            super_prompt_dir.mkdir(exist_ok=True)
+
+            config_content = {
+                "version": current_version,
+                "initialized_at": str(target_dir.absolute()),
+                "databases": {
+                    "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
+                    "context_memory": ".super-prompt/context_memory.db"
+                },
+                "protection": {
+                    "protected_directories": [".cursor", ".super-prompt", ".codex"],
+                    "message": "These directories are protected from modification by personas and user commands"
+                }
+            }
+
+            config_file = super_prompt_dir / "config.json"
+            with open(config_file, 'w', encoding='utf-8') as f:
+                json.dump(config_content, f, indent=2, ensure_ascii=False)
+
+            typer.echo("✅ Super Prompt minimal configuration created (.super-prompt/)")
 
         # Example SDD scaffold (unchanged)
         sdd_dir = target_dir / "specs" / "example-feature"
@@ -739,6 +952,14 @@ Brief description of the feature.
 
         typer.echo("✅ Super Prompt initialized!")
         typer.echo(f"   Project root: {target_dir.absolute()}")
+        typer.echo(f"   Version: {current_version}")
+        typer.echo("   Created directories:")
+        typer.echo("     - .cursor/commands/super-prompt/ (with persona commands)")
+        typer.echo("     - .cursor/rules/ (with SuperClaude framework rules)")
+        typer.echo("     - .super-prompt/ (with all internal system files)")
+        typer.echo("     - .codex/ (with agents.md, bootstrap prompt, router script)")
+        typer.echo("     - specs/ (for SDD specifications)")
+        typer.echo("     - memory/ (for context and rules)")
         typer.echo("   Next steps:")
         typer.echo("   1. Use Cursor: /init-sp (initial index), /re-init-sp (refresh)")
         typer.echo("   2. Personas: /architect, /frontend, /doc-master, etc.")
@@ -755,7 +976,14 @@ def super_init_alias(
     project_root: Optional[Path] = typer.Option(".", "--project-root", help="Project root directory"),
     force: bool = typer.Option(False, "--force", help="Force reinitialization"),
 ):
-    """Alias for init to support `super:init`."""
+    """Alias for init to support `super:init`.
+
+    CRITICAL PROTECTION: This command and all personas MUST NEVER modify files in:
+    - .cursor/ (Cursor IDE configuration)
+    - .super-prompt/ (Super Prompt internal files)
+    - .codex/ (Codex CLI configuration)
+    These directories are protected and should only be modified by official installation processes.
+    """
     return init(project_root=project_root, force=force)
 
 

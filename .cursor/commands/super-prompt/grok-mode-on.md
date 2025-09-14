@@ -1,10 +1,8 @@
 ---
 description: grok-mode-on command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'grok-mode-on'], check=False)"]
+run: "super-prompt"
+args: ["grok-mode-on"]
 ---
 
-🤖 Grok Mode On
-Enable Grok mode and install Grok guidance rules.
-
-Note: Modes are mutually exclusive. This turns off other modes.
+🧠 Grok Mode On
+Enable Grok mode (disables Codex AMR).

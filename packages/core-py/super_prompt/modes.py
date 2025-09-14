@@ -130,6 +130,13 @@ Include and follow structured blocks when present:
 
     # Persona overrides for GPT
     logs.extend(_install_persona_overrides(root, model="gpt"))
+    # Materialize GPT prompting guide from docs
+    try:
+        _write_model_prompt_guide(root, model="gpt")
+        logs.append("-------- Installed GPT prompting guide (.cursor/rules/22-model-guide.mdc)")
+    except Exception:
+        # Non-fatal if docs are missing
+        pass
     logs.append("-------- Codex AMR mode: ENABLED (.cursor/.codex-mode)")
     logs.append("-------- Installed GPT-5 guidance rules (.cursor/rules/20-gpt5-guidance.mdc)")
     return logs
@@ -154,6 +161,11 @@ def disable_codex_mode(project_root: Optional[Path] = None) -> List[str]:
     if ov.exists():
         ov.unlink()
         logs.append("-------- Removed persona overrides")
+    # Remove model guide
+    mg = root / ".cursor" / "rules" / "22-model-guide.mdc"
+    if mg.exists():
+        mg.unlink()
+        logs.append("-------- Removed model prompting guide")
     return logs
 
 
@@ -226,6 +238,12 @@ alwaysApply: true
     )
 
     logs.extend(_install_persona_overrides(root, model="grok"))
+    # Materialize Grok prompting guide from docs
+    try:
+        _write_model_prompt_guide(root, model="grok")
+        logs.append("-------- Installed Grok prompting guide (.cursor/rules/22-model-guide.mdc)")
+    except Exception:
+        pass
     logs.append("-------- Grok mode: ENABLED (.cursor/.grok-mode)")
     logs.append("-------- Installed Grok guidance rules (.cursor/rules/20-grok-guidance.mdc)")
     return logs
@@ -250,6 +268,10 @@ def disable_grok_mode(project_root: Optional[Path] = None) -> List[str]:
     if ov.exists():
         ov.unlink()
         logs.append("-------- Removed persona overrides")
+    mg = root / ".cursor" / "rules" / "22-model-guide.mdc"
+    if mg.exists():
+        mg.unlink()
+        logs.append("-------- Removed model prompting guide")
     return logs
 
 
@@ -327,3 +349,37 @@ def _install_persona_overrides(root: Path, model: str) -> List[str]:
     (rules_dir / "21-persona-overrides.mdc").write_text("\n".join(lines), encoding="utf-8")
     logs.append("-------- Installed persona overrides (.cursor/rules/21-persona-overrides.mdc)")
     return logs
+
+
+def _write_model_prompt_guide(root: Path, model: str) -> None:
+    """Write model-specific prompting guide from docs into .cursor/rules.
+
+    Reads docs/gpt_promt_guide.md or docs/grok_promt_guide.md and writes a
+    rule file so the agent consistently sees the correct guidance.
+    """
+    docs_map = {
+        "gpt": Path("docs") / "gpt_promt_guide.md",
+        "grok": Path("docs") / "grok_promt_guide.md",
+    }
+    src = docs_map.get(model)
+    if not src:
+        return
+    try:
+        text = src.read_text(encoding="utf-8")
+    except Exception:
+        # Try project root relative
+        try:
+            text = (root / src).read_text(encoding="utf-8")
+        except Exception:
+            return
+
+    rules_dir = root / ".cursor" / "rules"
+    rules_dir.mkdir(parents=True, exist_ok=True)
+    header = (
+        "---\n"
+        f"description: \"Model prompting guide materialized from {src}\"\n"
+        "globs: [\"**/*\"]\n"
+        "alwaysApply: true\n"
+        "---\n"
+    )
+    (rules_dir / "22-model-guide.mdc").write_text(header + "\n" + text, encoding="utf-8")

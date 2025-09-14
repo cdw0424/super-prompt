@@ -1,105 +1,116 @@
 # Changelog
 
-## v4.0.20 - 2025-09-14
+## v4.0.39 - 2025-09-14
 
-### 🌟 **Project Philosophy & README Improvements**
-- **feat(docs)**: Added comprehensive project philosophy emphasizing efficiency through model optimization
-- **fix(docs)**: Changed Korean "(더블 체크)" to English "(Double Check)" in README
-- **improvement**: Enhanced documentation clarity and internationalization
-- **philosophy**: "Maximum Efficiency Through Model Optimization" - leveraging fast, affordable models like Grok Code Fast with optimized modes for each LLM
+### 🔧 Critical Package Distribution Fix
+- **fix(publish)**: Include missing asset directories in npm package distribution
+  - Added `packages/cursor-assets/` and `packages/codex-assets/` to package.json files array
+  - Ensures all required manifests and templates are included in published packages
+- **fix(init)**: Prioritize `SUPER_PROMPT_PACKAGE_ROOT` environment variable for asset path resolution
+  - Updated CursorAdapter, CodexAdapter, and PersonaLoader to use env var as first priority
+  - Eliminates fallback-only generation when proper asset files are available
+  - Resolves issue where `npx super-prompt super:init` only created fallback files instead of full manifest-based generation
 
-### 🎯 **Core Value Proposition**
-We pursue the utmost efficiency in both time and cost by providing optimized modes tailored to each LLM model's strengths, maximizing productivity while minimizing resource consumption.
+## v4.0.38 - 2025-09-14
 
----
+### 🧭 Env-root priority for templates
+- **fix(init)**: If `SUPER_PROMPT_PACKAGE_ROOT` is set, `super:init` now uses its `.cursor/`, `.codex/`, `.super-prompt/` as first priority before fallbacks. Eliminates unintended fallback generation even when env var is provided.
 
-## v4.0.19 - 2025-09-14
+## v4.0.37 - 2025-09-14
 
-### 🎉 **Complete Command Arsenal: 25+ Personas Ready!**
-- **feat(commands)**: Added ALL missing essential commands
-  - 🔍 `/seq` - Sequential reasoning and step-by-step analysis
-  - 🧠 `/seq-ultra` - Ultra-deep sequential reasoning
-  - ⚡ `/ultracompressed` - Highly compressed, efficient responses
-  - 🤖 `/grok-mode-on` & `/grok-mode-off` - Grok mode toggle
-  - 💻 `/gpt-mode-on` & `/gpt-mode-off` - GPT mode toggle (renamed from codex)
+### 🧭 Template source resolution via env
+- **fix(init)**: `super:init` now consults `SUPER_PROMPT_PACKAGE_ROOT` (exported by wrapper) to reliably locate packaged `.cursor/` and `.codex/` templates and avoid fallback generation.
+- **chore**: Improves deterministic template copying across global/local installs.
 
-### 🧹 **Enhanced Migration Guide**
-- **improvement**: Added comprehensive clean migration instructions
-- **safety**: Clear guidance to delete old `.super-prompt/` and `.cursor/commands/` folders
-- **explanation**: Detailed reasons why clean installation is required
-- **automation**: Complete setup with just `npx super-prompt init`
+## v4.0.36 - 2025-09-14
 
-### ✅ **Complete Command Set (26 Commands)**
-Now when you run `npx super-prompt init`, you get:
+### 🔧 Robust venv resolution & install alignment
+- **feat(install)**: Create package-scoped venv at install time to guarantee availability for both global and local installs.
+- **feat(cli)**: Runner now prefers project venv (`.super-prompt/venv` at project root) and falls back to package venv if not present.
+- **fix(init)**: Resolves failures where `npx super-prompt super:init` couldn't locate Python env in some setups.
 
-**🏗️ Core Development**
-- `/architect` - Systems architecture specialist
-- `/frontend` - UI/UX specialist and accessibility advocate
-- `/backend` - Server-side development and API specialist
-- `/dev` - Feature development specialist
+## v4.0.35 - 2025-09-14
 
-**🔬 Analysis & Quality**
-- `/analyzer` - Root cause analysis specialist
-- `/security` - Security analysis and threat modeling
-- `/performance` - Performance optimization specialist
-- `/qa` - Quality assurance and testing specialist
+### 🔧 Critical Runner Path Fix
+- **fix(cli)**: Fixed a critical bug where the `super-prompt` command runner (`bin/super-prompt`) was looking for the Python virtual environment in the wrong directory.
+- **feat(cli)**: The runner now correctly locates the `venv` inside the project's root `.super-prompt` directory, aligning it with the location set by the installation script.
+- **chore(verification)**: This resolves the issue where `npx super-prompt super:init` would fail to find the Python executable.
 
-**🎓 Knowledge & Guidance**
-- `/mentor` - Educational guidance and knowledge transfer
-- `/scribe` - Technical writing and documentation
-- `/doc-master` - Documentation architecture specialist
+## v4.0.34 - 2025-09-14
 
-**⚡ Advanced Reasoning**
-- `/seq` - Sequential reasoning and analysis
-- `/seq-ultra` - Ultra-deep sequential reasoning
-- `/high` - Deep reasoning with advanced models
+### 🔧 Installation Path Fix
+- **fix(install)**: Resolved a critical issue where the package installed its files (`.super-prompt` directory) into the package's own source folder within `node_modules` instead of the project root.
+- **feat(install)**: The `install.js` script now correctly uses `findProjectRoot()` to identify the target project's root directory, ensuring all files are placed in the correct location.
+- **fix(install)**: Corrected the path to the Python wheel file (`.whl`) within the installation script to ensure the core Python module is installed correctly from the package's `dist` folder.
+- **chore(verification)**: Performed a full re-installation test in a clean environment to confirm that all commands, personas, and Python modules are installed correctly in the project root.
 
-**🔧 Utilities**
-- `/refactorer` - Code quality and technical debt management
-- `/devops` - CI/CD and infrastructure automation
-- `/tr` - Troubleshooter for rapid issue resolution
-- `/ultracompressed` - Token-optimized responses
+## v4.0.32 - 2025-09-14
 
-**🎛️ Mode Controls**
-- `/grok-mode-on` & `/grok-mode-off` - Grok mode toggle
-- `/gpt-mode-on` & `/gpt-mode-off` - GPT mode toggle
+### 🔧 Path Detection Fix for npm Installation
+- **fix(init)**: Implement npm package root detection for file copying
+  - Add package.json-based package root finder
+  - Resolve issue where Python CLI in venv couldn't find source directories
+  - Fixed path calculation from venv/lib/python3.x/site-packages back to package root
+- **debug**: Enhanced logging for package root detection debugging
 
-**📋 SDD Workflow**
-- `/implement`, `/plan`, `/specify`, `/tasks` - Spec-Driven Development
+## v4.0.31 - 2025-09-14
 
-## v4.0.18 - 2025-09-14
+### 🔧 Critical Installation Fix
+- **fix(init)**: Fix incomplete file installation issue
+  - Add multiple path detection for npm installed packages
+  - Ensure all 34+ .cursor files are properly copied during init
+  - Add detailed logging for source directory detection
+  - Fix .codex and .super-prompt directory copying as well
+- **debug**: Add source path logging to help debug installation issues
+- **fallback**: Improved fallback messaging when source directories not found
 
-### 🚀 **Major Improvement: Complete Persona Setup**
-- **feat(init)**: `npx super-prompt init` now automatically generates ALL persona commands
-- **enhancement**: Added automatic `personas-init` and `personas-build` to the init process
-- **improvement**: Users now get 15+ persona commands (architect, frontend, backend, security, etc.) out of the box
-- **user-experience**: No more manual steps needed - one command does everything!
+## v4.0.30 - 2025-09-14
 
-### 🎯 **What's New**
-When you run `npx super-prompt init`, you now automatically get:
-- 🏗️ `/architect` - System design and architecture specialist
-- 🎨 `/frontend` - UI/UX specialist and accessibility advocate
-- ⚙️ `/backend` - Server-side development and API specialist
-- 🛡️ `/security` - Security analysis and threat modeling
-- ⚡ `/performance` - Performance optimization specialist
-- 🎓 `/mentor` - Educational guidance and knowledge transfer
-- ✅ `/qa` - Quality assurance and testing specialist
-- 🔧 `/refactorer` - Code quality and technical debt management
-- 🚀 `/devops` - CI/CD, infrastructure automation
-- 📝 `/scribe` - Technical writing and documentation
-- 🧠 `/high` - Deep reasoning with advanced models
-- And 5+ more specialized personas!
+### 🎯 Final Release with Complete Fixes
+- **build**: Stable release with all critical fixes applied
+- **verification**: Confirmed package distribution optimization (90% size reduction)
+- **testing**: Version display and asset distribution fully tested
+- **security**: All vulnerabilities resolved and dependencies updated
 
-## v4.0.17 - 2025-09-14
+## v4.0.29 - 2025-09-14
 
-### 🔧 **Command Fix**
-- **fix(cli)**: Corrected initialization command from `super:init` to `init` in documentation and examples
-- **docs**: Updated README.md to use correct `npx super-prompt init` command
-- **improvement**: Enhanced CLI command consistency across different installation methods
+### 🔧 Package Distribution Fixes
+- **fix(package)**: Replace packages/ source code with built assets in npm distribution
+  - Users now receive compiled `.cursor/`, `.codex/`, `.super-prompt/` directories instead of raw source
+  - Include Python wheel in `dist/` directory for proper installation
+  - Remove development-only packages/ directory from npm distribution
+- **fix(install)**: Update install.js to reference built Python wheel from `dist/` directory
 
-### 📚 **Documentation Updates**
-- Updated README.md quick start guide with correct initialization command
-- Improved troubleshooting section for better user experience
+## v4.0.28 - 2025-09-14
+
+### 🔧 Fixes & Security Updates
+- **fix(version)**: Fix version display in ASCII art during initialization (was showing `{get_current_version()}` literal text)
+- **security**: Update npm dependencies to resolve potential vulnerabilities
+- **chore**: Clean up dependency versions for better compatibility
+
+## v4.0.27 - 2025-09-14
+
+### 🚨 Critical Protection & Complete File Initialization
+- **feat(protection)**: Add critical protection directive for `.cursor/`, `.super-prompt/`, `.codex/` directories
+  - All personas and user commands MUST NEVER modify files in these protected directories
+  - Added protection notices to CLI, personas.yaml, README.md, and adapter files
+- **feat(init)**: Complete file copying implementation for `super-prompt init` command
+  - `.cursor/` directory: Copy all 40+ files (commands, rules, configurations)
+  - `.codex/` directory: Copy all 3 files (agents.md, bootstrap_prompt_en.txt, router-check.sh)
+  - `.super-prompt/` directory: Copy all 7 files (internal system files, configurations)
+  - Replace partial generation with complete directory copying for better UX
+- **feat(version)**: Display current version in ASCII art during initialization
+- **fix(init)**: Ensure all necessary files are present when users run init in project root
+
+## v4.0.26 - 2025-09-14
+
+### ✨ Enhancements
+- feat(persona): Add Service Planner persona (service-planner) aligned with dual‑track discovery → delivery → growth
+- feat(mcp): New MCP tools: `service_planner_prd` (PRD scaffold) and `service_planner_discovery` (discovery outline)
+- feat(cursor): Add `/service-planner`, `/gpt-mode-on|off`, `/grok-mode-on|off` commands under `.cursor`
+- feat(modes): Materialize model prompting guides into `.cursor/rules/22-model-guide.mdc` for GPT↔Grok modes
+- feat(codex): Include Service Planner in Codex agents manifest; regenerate `.codex` assets
+- chore: Ensure all logs are English and prefixed with `--------` per guidelines
 
 ## v4.0.0 - 2025-09-14
 
@@ -746,41 +757,3 @@ super-prompt super:init --help # ✅ Legacy syntax support
 ### 🛠️ Dev persona flag
 - feat(cli): Add `--sp-dev` and `--dev` flags to `optimize` command.
 - feat(optimizer): Add `dev` persona to PromptOptimizer so `/dev` and flags resolve without unknown-persona errors.
-## v4.0.21 - 2025-09-14
-
-### ✨ Architecture & MCP
-- docs(readme): Add detailed architecture section (MCP-first, AMR global, mode guidance, components)
-- feat(mcp): Add FastMCP server exposing AMR, context, validation, personas, and mode toggles
-- refactor(core): Modularize large CLI into commands/* and modes.py (MCP-first functions)
-
-### 🧠 AMR & Model Guidance
-- feat(amr): Global AMR rules apply to all LLM interactions and commands (`.cursor/rules/12-amr.mdc`)
-- feat(mode): Strict mutual exclusivity between GPT and Grok modes with auto-installed guidance rules
-- feat(amr): Repo overview + handoff brief MCP tools for small→large reasoning flow
-
-### 📦 Packaging & Install
-- feat(install): Fallback to pip install from source if wheel not present
-- chore(version): Bump to 4.0.21 (npm, pyproject)
-
-### 🧹 Cleanup
-- chore(personas): Canonicalize personas manifest under packages/cursor-assets/manifests/personas.yaml
-- chore: Remove redundant Python files and legacy analyzer
-## v4.0.22 - 2025-09-14
-
-### 🔐 SSOT + Personas
-- feat(ssot): Add global SSOT rule (11-ssot.mdc) and integrate SSOT-first guidance into GPT/Grok rules
-- feat(personas): Add Grok model overrides/guidance across all personas; ensure no missing overrides
-- feat(personas): Auto-append standardized <mcp_usage> into materialized overrides for each persona
-- chore(loader): Default persona manifest now copies canonical SSOT manifest instead of generating hardcoded defaults
-- chore(cli): Persona manifest loading follows SSOT order (project → package)
-
-### 🧠 AMR + Memory
-- feat(memory): SQLite-backed persistent memory tools (kv, task_tag, events) and event logging for CLI/MCP tool calls
-- feat(amr): Orchestrator tool `amr_persona_orchestrate` includes memory task_tag, overview, brief, and suggested next steps
-
-### ⚙️ Modes
-- feat(grok): Expanded Grok guidance (context discipline, explicit goals, native tool-calling, cache optimization)
-- feat(gpt): GPT‑5 guidance applied consistently; SSOT reminder added
-
-### 📦 Packaging
-- chore(version): Bump npm and core-py to 4.0.22

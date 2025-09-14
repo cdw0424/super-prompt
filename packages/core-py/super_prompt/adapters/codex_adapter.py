@@ -1,31 +1,33 @@
 """
 Codex CLI Adapter - Generate Codex-specific integrations
+
+CRITICAL PROTECTION: This adapter is authorized to modify .codex/ directory ONLY during official
+installation processes. All persona commands and user operations MUST NEVER modify .cursor/,
+.super-prompt/, or .codex/ directories. This protection is absolute.
 """
 
 from pathlib import Path
 from typing import Dict, Any
 import yaml
+import os
 
 
 class CodexAdapter:
     """Adapter for Codex CLI integration"""
 
     def __init__(self):
-        # Resolve project root robustly whether running from repo packages/core-py
-        # or bundled under .super-prompt/packages/core-py
-        here = Path(__file__).resolve()
-        self.project_root = here
-        # Search upwards for a directory that contains packages/codex-assets/manifests/agents.yaml
-        marker_rel = Path("packages") / "codex-assets" / "manifests" / "agents.yaml"
-        for p in [here.parent, *here.parents]:
-            candidate = p
-            if (candidate / marker_rel).exists():
-                self.project_root = candidate
-                break
+        # 1순위: npm 래퍼가 넘겨준 패키지 루트
+        pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+        if pkg_root:
+            self.project_root = Path(pkg_root)
         else:
-            # Fallback to historical 4-level assumption
-            self.project_root = Path(__file__).parent.parent.parent.parent
-
+            # 2순위: 위로 올라가며 탐색
+            p = Path(__file__).resolve()
+            while p != p.parent:
+                if (p / "packages" / "codex-assets").exists():
+                    break
+                p = p.parent
+            self.project_root = p
         self.assets_root = self.project_root / "packages" / "codex-assets"
 
     def load_agents_manifest(self) -> Dict[str, Any]:

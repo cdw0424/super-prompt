@@ -1,9 +1,13 @@
 """
 Cursor IDE Adapter - Generate Cursor-specific integrations
+
+CRITICAL PROTECTION: This adapter is authorized to modify .cursor/ directory ONLY during official
+installation processes. All persona commands and user operations MUST NEVER modify .cursor/,
+.super-prompt/, or .codex/ directories. This protection is absolute.
 """
 
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import os
 import json
 import yaml
@@ -13,8 +17,18 @@ class CursorAdapter:
     """Adapter for Cursor IDE integration"""
 
     def __init__(self):
-        # Fix: Go up 4 levels from this file to get to package root
-        self.project_root = Path(__file__).parent.parent.parent.parent.parent
+        # 1순위: npm 래퍼가 넘겨준 패키지 루트
+        pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+        if pkg_root:
+            self.project_root = Path(pkg_root)
+        else:
+            # 2순위: 위로 올라가며 'packages/cursor-assets' 존재 위치 탐색
+            p = Path(__file__).resolve()
+            while p != p.parent:
+                if (p / "packages" / "cursor-assets").exists():
+                    break
+                p = p.parent
+            self.project_root = p
         self.assets_root = self.project_root / "packages" / "cursor-assets"
 
     def log(self, message: str) -> None:
@@ -85,6 +99,26 @@ class CursorAdapter:
         for persona_key, persona_config in personas.items():
             if not (commands_dir / f"{persona_key}.md").exists():
                 self._generate_persona_command(commands_dir, persona_key, persona_config)
+            # Also generate aliases if defined
+            aliases = persona_config.get('aliases', []) if isinstance(persona_config, dict) else []
+            aliases = aliases or []
+            for alias in aliases:
+                alias_file = commands_dir / f"{alias}.md"
+                if not alias_file.exists():
+                    # Generate alias that routes to primary persona
+                    name = persona_config.get("name", persona_key.title())
+                    icon = persona_config.get("icon", "🤖")
+                    description = persona_config.get("description", f"{name} persona")
+                    content = f'''---
+description: {alias} command (alias of {persona_key})
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-{persona_key}'] + __import__('sys').argv[1:], input='${{input}}', text=True, check=False)"]
+---
+
+{icon} {name}
+{description}
+'''
+                    alias_file.write_text(content)
 
         # Generate SDD commands
         self._generate_sdd_commands(commands_dir)
@@ -93,25 +127,27 @@ class CursorAdapter:
         """Generate a persona command file from manifest data or template"""
         command_file = commands_dir / f"{persona}.md"
 
-        # Try to use template from packages/cursor-assets/templates first
+        # Prefer template if present; otherwise generate Python runner
         template_file = self.assets_root / "templates" / f"{persona}.md"
         if template_file.exists():
             import shutil
             shutil.copy2(str(template_file), str(command_file))
             return
 
-        # Fallback: Generate from manifest data
+        # Fallback: Generate from manifest data using python runner (no tag-executor dependency)
         name = persona_config.get("name", persona.title())
         icon = persona_config.get("icon", "🤖")
         description = persona_config.get("description", f"{name} persona")
 
         content = f'''---
 description: {persona} command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${{input}} /{persona}"]
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-{persona}'] + __import__('sys').argv[1:], input='${{input}}', text=True, check=False)"]
 ---
 
-{icon} {name}\\n{description}.'''
+{icon} {name}
+{description}
+'''
 
         command_file.write_text(content)
 
@@ -199,14 +235,15 @@ args: ["${{input}} /{processor_name}"]
                 shutil.copy2(str(template_file), str(command_file))
                 continue
 
-            # Fallback: Generate basic content
+            # Fallback: Generate basic content with python runner
             content = f'''---
 description: {cmd_name} command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${{input}} /{cmd_name}"]
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '{cmd_name}'] + __import__('sys').argv[1:], input='${{input}}', text=True, check=False)"]
 ---
 
-📋 {cmd_name.title()}\\n{description}.'''
+📋 {cmd_name.title()}
+{description}.'''
 
             command_file.write_text(content)
 

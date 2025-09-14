@@ -1,5 +1,11 @@
 """
 Personas tools (MCP-first)
+
+CRITICAL PROTECTION: All persona tools MUST NEVER modify files in:
+- .cursor/ (Cursor IDE configuration)
+- .super-prompt/ (Super Prompt internal files)
+- .codex/ (Codex CLI configuration)
+These directories are PROTECTED and should only be modified by official installation processes.
 """
 
 from pathlib import Path

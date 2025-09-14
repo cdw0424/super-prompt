@@ -1,16 +1,16 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Core CLI: `.super-prompt/cli.py` (Python, gathered under .super-prompt).
-- Node package wrapper: `bin/super-prompt`, metadata in `package.json`.
-- AMR assets: `prompts/`, `docs/`, `bin/codex-*`, `scripts/codex/*`, `.cursor/rules/*`.
-- Keep new personas/rules under `.cursor/commands/super-prompt/` and `.cursor/rules/`.
+- Node wrapper: `bin/super-prompt`, package metadata in `package.json`.
+- Python core (MCP server & tools): `packages/core-py/super_prompt/`
+- Cursor assets: `.cursor/commands/super-prompt/`, `.cursor/rules/`
+- Codex assets: `.codex/`
+- Personas manifest (SSOT): `packages/cursor-assets/manifests/personas.yaml` (project override: `personas/manifest.yaml`)
 
 ## Build, Test, and Development Commands
-- Initialize Cursor rules: `super-prompt super:init`
-- Run personas from CLI: `super-prompt optimize "your query /frontend"`
-- AMR helpers: `npm run codex:plan`, `npm run codex:exec`, `npm run amr:rules`, `npm run amr:print`
-- Guards: `scripts/codex/router-check.sh` (AMR assets) and `scripts/codex/prompt-qa.sh <transcript>` (state‑machine checks)
+- Initialize project assets: `npx super-prompt init`
+- Start MCP server: `npx super-prompt mcp:serve`
+- Guards: `.codex/router-check.sh` and `scripts/codex/prompt-qa.sh <transcript>`
 
 ## Coding Style & Naming Conventions
 - Language: English only in prompts/docs. All logs start with `--------`.
@@ -28,8 +28,7 @@
 - PRs should include: short description, rationale, screenshots (when UX), and steps to verify.
 - Keep diffs minimal and scoped; avoid unrelated refactors.
 
-## Agent‑Specific Instructions (AMR)
-- Auto Model Router (medium ↔ high): start at medium; escalate to high for PLAN/REVIEW or root‑cause, then return to medium for EXECUTION.
-- Manual switches (if TUI does not auto‑run):
-  - `/model gpt-5 high` → plan at high
-  - `/model gpt-5 medium` → execute at medium
+## Agent‑Specific Instructions (AMR + SSOT)
+- AMR: start at medium; escalate to high for PLAN/REVIEW or deep root‑cause, then return to medium for EXECUTION.
+- SSOT: personas manifest → `.cursor/rules` → `AGENTS.md`. Avoid drift; prefer materialized overrides via mode toggles.
+- Modes: `/gpt-mode-on` (GPT‑5), `/grok-mode-on` (Grok); mutual exclusivity enforced.

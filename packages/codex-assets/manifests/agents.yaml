@@ -64,6 +64,10 @@ agents:
       name: Mentor
       description: Educational guidance and knowledge transfer
       flags: ["--mentor", "--sp-mentor"]
+    service-planner:
+      name: Service Planner
+      description: Service planning expert (product strategy from discovery → delivery → growth)
+      flags: ["--service-planner", "--sp-service-planner"]
     scribe:
       name: Scribe
       description: Technical scribe for decisions and processes

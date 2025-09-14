@@ -6,6 +6,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+import os
 
 
 @dataclass
@@ -73,13 +74,21 @@ class PersonaLoader:
         """Create a default persona manifest by copying the canonical SSOT manifest."""
         # SSOT: copy from packages/cursor-assets/manifests/personas.yaml if available
         try:
-            canonical = Path(__file__).parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
-            # __file__/personas/loader.py → super_prompt/personas/ → super_prompt/ → core-py/ → cursor-assets/
-            if not canonical.exists():
-                # Fallback: repo layout packages/cursor-assets
-                canonical = Path(__file__).parent.parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
+            env_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+            if env_root and (Path(env_root) / "packages" / "cursor-assets" / "manifests" / "personas.yaml").exists():
+                canonical = Path(env_root) / "packages" / "cursor-assets" / "manifests" / "personas.yaml"
+            else:
+                # 위로 올라가며 탐색
+                p = Path(__file__).resolve()
+                canonical = None
+                while p != p.parent:
+                    cand = p / "packages" / "cursor-assets" / "manifests" / "personas.yaml"
+                    if cand.exists():
+                        canonical = cand
+                        break
+                    p = p.parent
             self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
-            if canonical.exists():
+            if canonical and canonical.exists():
                 self.manifest_path.write_text(canonical.read_text(encoding='utf-8'), encoding='utf-8')
             else:
                 # Last resort: write an empty scaffold to encourage init

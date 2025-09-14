@@ -24,6 +24,7 @@ Use flag-based personas (no slash commands in Codex). Each persona supports a lo
 
 ### Knowledge Guidance
 - `mentor` - Educational guidance and knowledge transfer
+- `service-planner` - Service planning expert (product strategy from discovery → delivery → growth)
 - `scribe` - Technical scribe for decisions and processes
 - `doc-master` - Documentation architecture, writing, and verification
 - `docs-refector` - Documentation consolidation and refactoring
@@ -87,20 +88,6 @@ super-prompt --sp-sdd-tasks "Authentication system"
 ```bash
 super-prompt --sp-sdd-implement "Authentication system"
 ```
-
-## Tag Command Priority System
-
-**CRITICAL EXECUTION RULES**:
-1. **First Priority**: Tag commands (personas) execute BEFORE any prompt processing
-2. **Position Independent**: Tag commands work regardless of position in prompt
-3. **Context Separation**: Tag commands upgrade persona/prompt WITHOUT affecting user context
-4. **Guaranteed Execution**: Tag command activation is ALWAYS guaranteed
-
-**Tag Command Behavior**:
-- Tag commands are TOOLS, not context modifiers
-- They enhance persona capabilities for the given prompt
-- They execute at highest priority, before any other processing
-- User prompt context remains completely unchanged
 
 ## Tips
 - Logs MUST start with `--------`

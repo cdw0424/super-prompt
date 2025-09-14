@@ -1,20 +1,20 @@
-# Super Prompt Commands Reference
+# Super Prompt Commands Reference (SSOT)
 
-Complete guide to all available Super Prompt personas and utility commands for maximum development efficiency.
+This document reflects the Single Source of Truth for commands, aligned with the personas manifest and rules.
 
 ## 🚀 Quick Start
 
-After running `npx super-prompt init`, you'll have access to 25+ specialized AI personas directly in your IDE:
+After running `npx super-prompt init`:
+- `.cursor/commands/super-prompt/` contains all persona commands
+- `.cursor/rules/` contains global rules (SSOT/AMR); model guidance installs on toggle
+- `.codex/` contains Codex assets
 
-```
-/architect "Design a scalable microservices architecture"
-/frontend "Build a responsive dashboard with React"
-/backend "Create a REST API with authentication"
-```
+Start MCP server: `npx super-prompt mcp:serve`
+Use slash commands in your IDE.
 
 ---
 
-## 🏗️ Core Development Commands
+## 🏗️ Core Personas
 
 ### `/architect` - Systems Architecture Specialist
 **Best for:** System design, scalability planning, architectural decisions
@@ -181,21 +181,12 @@ After running `npx super-prompt init`, you'll have access to 25+ specialized AI 
 
 ---
 
-## 🗃️ Specialized Domain Commands
+## 🧠 Reasoning & Compression
 
-### `/db-expert` - Database Specialist (Prisma + 3NF)
-**Best for:** Database design, Prisma ORM, data modeling
-```
-/db-expert "Design normalized database schema for inventory system"
-/db-expert "Optimize Prisma queries for better performance"
-```
-
-### `/tr` - Translation & Transformation Specialist
-**Best for:** Code translation, format conversion, data transformation
-```
-/tr "Convert this JavaScript code to TypeScript"
-/tr "Transform this REST API to GraphQL"
-```
+### `/seq` — Step-by-step reasoning
+### `/seq-ultra` — Deep sequential reasoning
+### `/high` — High reasoning (planning/review)
+### `/ultracompressed` — Concise, token-optimized responses
 
 ---
 
@@ -231,21 +222,22 @@ After running `npx super-prompt init`, you'll have access to 25+ specialized AI 
 
 ---
 
-## 🎛️ Mode Control Commands
+## 🎛️ Mode Control
 
-### Model Optimization Modes
-Switch between optimized modes for different AI models:
-
-- `/grok-mode-on` - Enable Grok-optimized mode (fast, efficient)
-- `/grok-mode-off` - Disable Grok mode
-- `/codex-mode-on` - Enable Codex AMR mode (advanced reasoning)
-- `/codex-mode-off` - Disable Codex mode
-
-### Experimental Features
-- `/debate` - Internal debate mode (positive vs critical analysis)
-- `/grok` - Session-only Grok optimization
+- `/gpt-mode-on` / `/gpt-mode-off` — GPT‑5 guidance and persona overrides (materialized)
+- `/grok-mode-on` / `/grok-mode-off` — Grok guidance and persona overrides (materialized)
+- Aliases: `/codex-mode-on`, `/codex-mode-off`
 
 ---
+
+## 🧰 MCP Tools
+
+- `amr_repo_overview(project_root)` — Repo map (languages, frameworks, tests)
+- `amr_handoff_brief(project_root, query)` — Brief for high reasoning
+- `amr_persona_orchestrate(persona, project_root, query)` — One‑shot orchestration (includes task_tag, suggested next)
+- `context_collect|stats|clear` — Context tools (with cache)
+- `validate_todo|validate_check` — Validation gates
+- `memory_set|get`, `memory_set_task|get_task`, `memory_append_event`, `memory_recent`
 
 ## 💡 Usage Tips
 
@@ -258,7 +250,7 @@ Switch between optimized modes for different AI models:
 ### ⚡ **Efficiency Modes**
 - Use `/ultracompressed` when you need quick, concise answers
 - Use `/seq` or `/seq-ultra` for complex problem-solving
-- Switch modes (`/grok-mode-on`) based on your current AI model
+- Switch modes (`/gpt-mode-on` / `/grok-mode-on`) based on your active model
 
 ### 🔄 **Iterative Development**
 - Start with `/spec` for requirements
@@ -277,9 +269,10 @@ Switch between optimized modes for different AI models:
 
 ## 📚 Further Resources
 
-- **[Main README](README.md)** - Setup and installation guide
-- **[Changelog](CHANGELOG.md)** - Version history and updates
-- **[GitHub Issues](https://github.com/cdw0424/super-prompt/issues)** - Report bugs and request features
+- **[Main README](README.md)** — Setup and installation guide
+- **[Changelog](CHANGELOG.md)** — Version history and updates
+- **[AGENTS.md](AGENTS.md)** — Repository rules and conventions (SSOT)
+- **[GitHub Issues](https://github.com/cdw0424/super-prompt/issues)** — Report bugs and request features
 
 ---
 

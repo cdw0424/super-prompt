@@ -33,45 +33,49 @@ resolve_project_root() {
 
 PROJECT_ROOT="$(resolve_project_root)"
 
-# Define paths for the venv and the CLI script based on the application's home directory.
-VENV_DIR="$APP_HOME/.super-prompt/venv"
-ENHANCED_CLI_PATH="$APP_HOME/packages/core-py/super_prompt/main.py"
+# Prefer project venv; fall back to package venv
+VENV_DIR_PROJECT="$PROJECT_ROOT/.super-prompt/venv"
+VENV_DIR_PACKAGE="$APP_HOME/.super-prompt/venv"
 
 # Resolve the correct Python executable from the venv.
 resolve_venv_python() {
     local platform
     platform="$(uname -s 2>/dev/null || echo "Unknown")"
-    local venv_python=""
 
+    # Try project venv first, then package venv
+    local candidates=()
     case "$platform" in
       Darwin|Linux|*BSD*)
-        venv_python="$VENV_DIR/bin/python"
+        candidates+=("$VENV_DIR_PROJECT/bin/python")
+        candidates+=("$VENV_DIR_PACKAGE/bin/python")
         ;;
       MINGW*|MSYS*|CYGWIN*|Windows_NT*)
-        venv_python="$VENV_DIR/Scripts/python.exe"
+        candidates+=("$VENV_DIR_PROJECT/Scripts/python.exe")
+        candidates+=("$VENV_DIR_PACKAGE/Scripts/python.exe")
         ;;
       *)
-        if [ -f "$VENV_DIR/bin/python" ]; then
-          venv_python="$VENV_DIR/bin/python"
-        elif [ -f "$VENV_DIR/Scripts/python.exe" ]; then
-          venv_python="$VENV_DIR/Scripts/python.exe"
-        fi
+        candidates+=("$VENV_DIR_PROJECT/bin/python")
+        candidates+=("$VENV_DIR_PROJECT/Scripts/python.exe")
+        candidates+=("$VENV_DIR_PACKAGE/bin/python")
+        candidates+=("$VENV_DIR_PACKAGE/Scripts/python.exe")
         ;;
     esac
-    
-    if [ -f "$venv_python" ]; then
-        printf "%s" "$venv_python"
+
+    for py in "${candidates[@]}"; do
+      if [ -f "$py" ]; then
+        printf "%s" "$py"
         return 0
-    else
-        return 1
-    fi
+      fi
+    done
+
+    return 1
 }
 
 # Find the venv Python interpreter.
-VENV_PYTHON=$(resolve_venv_python)
+VENV_PYTHON=$(resolve_venv_python || true)
 
 # If the venv Python is not found, fall back to the system python3.
-if [ -z "$VENV_PYTHON" ]; then
+if [ -z "${VENV_PYTHON:-}" ]; then
     echo "-------- WARNING: venv not found. Falling back to system python3." >&2
     VENV_PYTHON="python3"
 fi
@@ -79,6 +83,9 @@ fi
 # With the new module-based approach, we no longer check for the existence
 # of a specific source file. The python executable will handle module resolution.
 # The python package is installed via the .whl file in install.js.
+
+# Export package root so Python can reliably locate packaged assets (.cursor, .codex)
+export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
 
 # Execute the CLI as an installed module.
 exec "$VENV_PYTHON" -m super_prompt.cli "$@"

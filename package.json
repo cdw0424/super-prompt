@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.0.22",
-  "description": "Super Prompt v4.0.0 (MCP Architecture)",
+  "version": "4.0.39",
+  "description": "Super Prompt v4.0.39 (MCP Architecture)",
   "bin": {
     "super-prompt": "bin/super-prompt"
   },
@@ -11,8 +11,8 @@
     "postinstall": "node install.js",
     "test": "node --test",
     "dev": "./bin/super-prompt",
-    "dev:init": "./bin/super-prompt init",
-    "amr:rules": "super-prompt init",
+    "dev:init": "./bin/super-prompt super:init",
+    "amr:rules": "super-prompt super:init",
     "amr:print": "cat .cursor/rules/*-sdd-*.mdc",
     "amr:qa": "scripts/codex/prompt-qa.sh"
   },
@@ -49,13 +49,12 @@
   ],
   "files": [
     "bin",
-    "packages/cli-node/",
+    ".cursor/",
+    ".codex/",
+    ".super-prompt/",
+    "packages/cursor-assets/",
     "packages/codex-assets/",
-    "packages/core-py/dist/",
-    "packages/core-py/pyproject.toml",
-    "packages/core-py/pytest.ini",
-    "packages/core-py/super_prompt/",
-    "packages/core-py/tests/",
+    "dist/",
     "install.js",
     "README.md",
     "CHANGELOG.md"
