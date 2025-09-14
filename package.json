@@ -1,16 +1,9 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "3.1.73",
-  "description": "Super Prompt v3 (Enhanced)",
-  "main": ".super-prompt/cli.py",
+  "version": "4.0.12",
+  "description": "Super Prompt v4.0.0 (MCP Architecture)",
   "bin": {
-    "super-prompt": "bin/super-prompt",
-    "codex-amr": "bin/codex-amr.js",
-    "sp": "bin/sp",
-    "sp-setup-shell": "bin/sp-setup-shell",
-    "sp-init": "bin/sp-init",
-    "sp-reinit": "bin/sp-reinit",
-    "sp-reinit-sp": "bin/sp-reinit-sp"
+    "super-prompt": "bin/super-prompt"
   },
   "scripts": {
     "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true",
@@ -19,11 +12,8 @@
     "test": "node --test",
     "dev": "./bin/super-prompt",
     "dev:init": "./bin/super-prompt super:init",
-    "codex:init": "super-prompt codex-init || node ./bin/codex-amr.js init --target .codex",
-    "codex:plan": "bin/codex-high",
-    "codex:exec": "bin/codex-medium",
-    "amr:rules": "super-prompt amr:rules || npx codex-amr init --target .",
-    "amr:print": "node ./bin/codex-amr.js print-bootstrap",
+    "amr:rules": "super-prompt super:init",
+    "amr:print": "cat .cursor/rules/*-sdd-*.mdc",
     "amr:qa": "scripts/codex/prompt-qa.sh"
   },
   "keywords": [
@@ -59,14 +49,10 @@
   ],
   "files": [
     "bin",
-    "src",
-    "packages",
-    "scripts",
-    ".super-prompt",
+    "packages/",
     "install.js",
     "README.md",
-    "CHANGELOG.md",
-    ".cursor"
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public"

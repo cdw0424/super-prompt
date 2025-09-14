@@ -1,5 +1,37 @@
 # Changelog
 
+## v4.0.0 - 2025-09-14
+
+### 🚀 **v4.0.0: The MCP Revolution**
+
+This is a monumental upgrade that refactors the entire `super-prompt` architecture to be MCP-first, providing a robust, programmatic interface for IDEs and other clients. Legacy CLI execution has been deprecated in favor of a powerful and extensible MCP server.
+
+### ✨ Major Features & Architectural Changes
+
+- **👑 MCP-First Architecture**: The core logic is now exposed via a **FastMCP server** (`packages/core-py/super_prompt/mcp_srv/server.py`). All personas and utilities are available as discrete MCP tools, enabling seamless IDE integration.
+- **🧠 Fused Intelligent Memory System**:
+    - **EvolKV LLM Optimization**: A new SQLite-backed memory system (`evol_kv_memory.db`) based on the "Evol-Instruct" concept to persist and evolve task-aware KV-cache profiles, optimizing LLM inference performance over time.
+    - **Context-Aware Memory**: A simple, persistent SQLite-backed key-value store (`context_memory.db`) to maintain task context (e.g., `current_task_tag`) across sessions, ensuring continuity.
+- **🕵️‍♂️ Confession Mode (더블 체크)**: A unique self-auditing decorator (`@confession_decorator`) has been applied to **all MCP tools**. After every operation, the tool provides an honest assessment of what it knows, what it *doesn't* know (potential side-effects, edge cases), and suggests countermeasures, enhancing reliability and transparency.
+- **🐍 Encapsulated Python Environment**: The entire Python backend, including the MCP server and all utilities, is now managed as a proper Python package (`packages/core-py`) and runs within a dedicated, self-contained virtual environment (`venv`) created automatically during installation. This eliminates system dependency conflicts.
+- **🧹 Comprehensive Legacy Cleanup**: Removed dozens of legacy files, including old CLI wrappers (`bin/sp`, `bin/codex-*`), redundant Python scripts, and obsolete scaffolding and template assets. The `package.json` has been streamlined to match the new architecture.
+
+### 🔄 Migration for Existing Users
+
+Migrating from v3.x is seamless. No manual steps are required.
+
+```bash
+# Simply run the install/update command
+npm install -g @cdw0424/super-prompt@latest
+```
+
+The new installation script (`install.js`) handles everything:
+1.  It sets up the new encapsulated Python `venv`.
+2.  It installs the `super_prompt` Python package and all its dependencies.
+3.  The main `super-prompt` command is automatically linked to the new MCP-aware entry point.
+
+**Note**: Old files from previous versions in your project's `.super-prompt` directory are no longer used and can be safely deleted. The new version will create its databases (`evol_kv_memory.db`, `context_memory.db`) inside your project's `.super-prompt` folder upon first use.
+
 ## v3.1.73 - 2025-09-14
 
 ### 🔄 Enhanced Exclusive Mode Switching

@@ -243,11 +243,23 @@ async function setupPythonVenv(superPromptDir) {
         const packages = [
             'typer>=0.9.0',      // CLI framework
             'pyyaml>=6.0',       // YAML parsing
-            'pathspec>=0.11.0'   // File filtering
+            'pathspec>=0.11.0',   // File filtering
+            'mcp>=1.0.0'         // MCP server framework
         ];
 
         console.log(`${colors.dim}   → Installing Python dependencies...${colors.reset}`);
         execSync(`"${venvPip}" install ${packages.join(' ')}`, { stdio: 'inherit' });
+
+        // Install the built wheel for the core-py package
+        const corePyDistDir = path.join(superPromptDir, '..', 'packages', 'core-py', 'dist');
+        if (fs.existsSync(corePyDistDir)) {
+            const wheelFiles = fs.readdirSync(corePyDistDir).filter(f => f.endsWith('.whl'));
+            if (wheelFiles.length > 0) {
+                const wheelPath = path.join(corePyDistDir, wheelFiles[0]);
+                console.log(`${colors.dim}   → Installing core-py package from ${wheelFiles[0]}...${colors.reset}`);
+                execSync(`"${venvPip}" install "${wheelPath}"`, { stdio: 'inherit' });
+            }
+        }
 
         // Create data directory for SQLite and other files
         const dataDir = path.join(venvDir, 'data');
@@ -329,60 +341,6 @@ async function migrateLegacyInstallation() {
     }
 }
 
-function ensureFlagOnlyShellHook() {
-  try {
-    const skip = String(process.env.SP_SKIP_FLAG_ONLY_HOOK || '').toLowerCase();
-    if (skip === '1' || skip === 'true' || skip === 'yes') {
-      console.log(`${colors.dim}Skipping flag-only shell hook (SP_SKIP_FLAG_ONLY_HOOK=1)${colors.reset}`);
-      return;
-    }
-
-    const shellPath = process.env.SHELL || '';
-    const shell = shellPath.split('/').pop();
-    const home = os.homedir();
-
-    const marker = 'SP_FLAG_ONLY_HANDLER';
-    let rcFile = '';
-    let snippet = '';
-
-    if (shell === 'bash') {
-      rcFile = path.join(home, '.bashrc');
-      snippet = `\n# ${marker}\n` +
-        `command_not_found_handle() {\n` +
-        `  case "$1" in\n` +
-        `    --sp-*|--grok-mode-on|--grok-mode-off|--codex-mode-on|--codex-mode-off|--sp-grok-mode-on|--sp-grok-mode-off|--sp-codex-mode-on|--sp-codex-mode-off|--sp-codec-mode-on|--sp-codec-mode-off)\n` +
-        `      command sp \"$@\"; return $? ;;\n` +
-        `  esac\n` +
-        `  echo \"bash: $1: command not found\" 1>&2\n` +
-        `  return 127\n` +
-        `}`;
-    } else {
-      // Default to zsh (macOS default)
-      rcFile = path.join(home, '.zshrc');
-      snippet = `\n# ${marker}\n` +
-        `function command_not_found_handler() {\n` +
-        `  if [[ \"$1\" == --sp-* || \"$1\" == --grok-mode-on || \"$1\" == --grok-mode-off || \"$1\" == --codex-mode-on || \"$1\" == --codex-mode-off || \"$1\" == --sp-grok-mode-on || \"$1\" == --sp-grok-mode-off || \"$1\" == --sp-codex-mode-on || \"$1\" == --sp-codex-mode-off || \"$1\" == --sp-codec-mode-on || \"$1\" == --sp-codec-mode-off ]]; then\n` +
-        `    command sp \"$@\"\n` +
-        `    return $?\n` +
-        `  fi\n` +
-        `  return 127\n` +
-        `}`;
-    }
-
-    // Idempotent append
-    let current = '';
-    try { current = fs.readFileSync(rcFile, 'utf8'); } catch (_) {}
-    if (!current.includes(marker)) {
-      fs.appendFileSync(rcFile, `\n${snippet}\n`, 'utf8');
-      console.log(`-------- Installed flag-only handler in ${rcFile}`);
-    } else {
-      console.log(`-------- Flag-only handler already present in ${rcFile}`);
-    }
-  } catch (e) {
-    console.log(`${colors.dim}Flag-only shell hook skipped: ${e && e.message}${colors.reset}`);
-  }
-}
-
 async function animatedInstall() {
     try {
         // Step 0: Diagnose npm cache path to avoid repo-local .npm-cache churn
@@ -455,225 +413,23 @@ async function animatedInstall() {
 
         // Step 2: Ensure Python CLI lives under .super-prompt (unified location)
         console.log(`${colors.cyan}🐍 Ensuring .super-prompt Python CLI...${colors.reset}`);
-        const projectRoot = findProjectRoot();
-        const globalInstall = isGlobalInstall();
-        if (globalInstall) {
-            console.log(`${colors.dim}Detected global install — will not modify your current directory${colors.reset}`);
-        }
 
-        // Step 2.5: Setting up .super-prompt directory
-        console.log(`${colors.cyan}📁 Installing .super-prompt utilities...${colors.reset}`);
+        // The directory of the package itself, where we will create the venv.
+        const packageDir = __dirname;
+        const superPromptDir = path.join(packageDir, '.super-prompt');
+        ensureDir(superPromptDir);
 
-        if (!globalInstall) {
-            const superPromptDir = path.join(projectRoot, '.super-prompt');
-
-            // FORCE COPY ADVANCED .super-prompt utilities from templates
-            // This ensures all projects get the latest version regardless of installation time
-            const templateSuperPromptDir = path.join(__dirname, 'packages', 'cursor-assets', 'templates');
-
-            try {
-                if (fs.existsSync(templateSuperPromptDir)) {
-                    copyDirectory(
-                        templateSuperPromptDir,
-                        superPromptDir,
-                        'Super Prompt utility suite (advanced version)'
-                    );
-                    console.log(`   ${colors.dim}→ Using advanced .super-prompt utilities from templates${colors.reset}`);
-                } else {
-                    // Try alternative paths
-                    const altPaths = [
-                        path.join(__dirname, 'packages', 'cursor-assets', 'templates'),
-                        path.join(__dirname, '..', 'packages', 'cursor-assets', 'templates'),
-                        path.join(__dirname, 'templates')
-                    ];
-
-                    let copied = false;
-                    for (const altPath of altPaths) {
-                        if (fs.existsSync(altPath)) {
-                            copyDirectory(
-                                altPath,
-                                superPromptDir,
-                                'Super Prompt utility suite (advanced version)'
-                            );
-                            console.log(`   ${colors.dim}→ Using advanced .super-prompt utilities from ${altPath}${colors.reset}`);
-                            copied = true;
-                            break;
-                        }
-                    }
-
-                    if (!copied) {
-                        console.log(`   ${colors.dim}→ Templates not found, skipping .super-prompt setup${colors.reset}`);
-                    }
-                }
-            } catch (error) {
-                console.log(`   ${colors.dim}→ Error copying .super-prompt utilities: ${error.message}${colors.reset}`);
-            }
-
-            // FORCE COPY ADVANCED PACKAGES (core-py, cli-node, cursor-assets)
-            console.log(`${colors.cyan}📦 Installing packages utilities...${colors.reset}`);
-            const packagesDir = path.join(projectRoot, 'packages');
-            const templatePackagesDir = path.join(__dirname, 'packages', 'cursor-assets', 'templates', 'packages');
-
-            console.log(`   ${colors.dim}→ DEBUG: __dirname: ${__dirname}${colors.reset}`);
-            console.log(`   ${colors.dim}→ DEBUG: templatePackagesDir: ${templatePackagesDir}${colors.reset}`);
-            console.log(`   ${colors.dim}→ DEBUG: templatePackagesDir exists: ${fs.existsSync(templatePackagesDir)}${colors.reset}`);
-
-            try {
-                if (fs.existsSync(templatePackagesDir)) {
-                    console.log(`   ${colors.dim}→ DEBUG: Starting packages copy from ${templatePackagesDir} to ${packagesDir}${colors.reset}`);
-                    copyDirectory(
-                        templatePackagesDir,
-                        packagesDir,
-                        'Super Prompt packages suite (advanced version)'
-                    );
-                    console.log(`   ${colors.dim}→ Using advanced packages utilities from templates${colors.reset}`);
-                } else {
-                    console.log(`   ${colors.dim}→ Templates not found, skipping packages setup${colors.reset}`);
-                    console.log(`   ${colors.dim}→ DEBUG: Looking for alternative paths...${colors.reset}`);
-
-                    // Try alternative paths
-                    const altPaths = [
-                        path.join(__dirname, 'packages', 'cursor-assets', 'templates'),
-                        path.join(__dirname, '..', 'packages', 'cursor-assets', 'templates', 'packages'),
-                        path.join(__dirname, 'templates', 'packages')
-                    ];
-
-                    let copied = false;
-                    for (const altPath of altPaths) {
-                        console.log(`   ${colors.dim}→ DEBUG: Trying alternative path: ${altPath} (exists: ${fs.existsSync(altPath)})${colors.reset}`);
-                        if (fs.existsSync(altPath)) {
-                            copyDirectory(
-                                altPath,
-                                packagesDir,
-                                'Super Prompt packages suite (alternative path)'
-                            );
-                            console.log(`   ${colors.dim}→ Using advanced packages utilities from ${altPath}${colors.reset}`);
-                            copied = true;
-                            break;
-                        }
-                    }
-
-                    if (!copied) {
-                        console.log(`   ${colors.dim}→ No packages templates found, skipping setup${colors.reset}`);
-                    }
-                }
-            } catch (error) {
-                console.log(`   ${colors.dim}→ Error copying packages utilities: ${error.message}${colors.reset}`);
-            }
-
-            // Install canonical tag-executor.sh (kept minimal to avoid drift)
-            const advancedTagSrc = path.join(__dirname, 'packages', 'cursor-assets', 'templates', 'tag-executor.sh');
-            const cursorCommandsDir = path.join(projectRoot, '.cursor', 'commands', 'super-prompt');
-            ensureDir(cursorCommandsDir);
-            const advancedTagDest = path.join(cursorCommandsDir, 'tag-executor.sh');
-
-            if (fs.existsSync(advancedTagSrc)) {
-                fs.copyFileSync(advancedTagSrc, advancedTagDest);
-                fs.chmodSync(advancedTagDest, '755');
-                console.log(`   ${colors.dim}→ tag-executor.sh installed (canonical wrapper with Python fallback)${colors.reset}`);
-            } else {
-                console.log(`   ${colors.dim}→ Warning: tag-executor.sh not found at ${advancedTagSrc}${colors.reset}`);
-            }
-
-            // Create Python virtual environment in .super-prompt
-            await setupPythonVenv(superPromptDir);
-        } else {
-            console.log(`${colors.dim}Skipping .super-prompt copy on global install${colors.reset}`);
-        }
+        // Always set up the Python venv inside the package's .super-prompt directory.
+        await setupPythonVenv(superPromptDir);
         
         await sleep(300);
         completedStep('2', '.super-prompt utilities installed');
 
-        // Step 3: Ensure system dependencies (Python 3 + SQLite3)
-        try {
-            console.log(`${colors.cyan}🧩 Ensuring system dependencies (Python 3, SQLite3)...${colors.reset}`);
+        // Step 3: System dependency checks are no longer necessary as venv is self-contained.
+        completedStep('3', 'System dependency checks skipped (using self-contained venv)');
 
-            const hasCmd = (cmd) => {
-                try {
-                    if (platform === 'win32') {
-                        execSync(`where ${cmd}`, { stdio: 'ignore' });
-                    } else {
-                        execSync(`command -v ${cmd}`, { stdio: 'ignore', shell: '/bin/bash' });
-                    }
-                    return true;
-                } catch (_) { return false; }
-            };
-
-            const run = (cmd) => {
-                try { execSync(cmd, { stdio: 'inherit' }); return true; } catch (_) { return false; }
-            };
-
-            // Python
-            let pythonOk = hasCmd('python3') || (platform === 'win32' && (hasCmd('py') || hasCmd('python')));
-            if (!pythonOk) {
-                if (platform === 'darwin') {
-                    if (hasCmd('brew')) {
-                        console.log(`${colors.dim}→ Installing python3 via Homebrew...${colors.reset}`);
-                        pythonOk = run('brew install python@3');
-                    }
-                } else if (platform === 'linux') {
-                    if (hasCmd('apt-get')) pythonOk = run('sudo -n apt-get update && sudo -n apt-get install -y python3') || pythonOk;
-                    if (!pythonOk && hasCmd('dnf')) pythonOk = run('sudo -n dnf install -y python3') || pythonOk;
-                    if (!pythonOk && hasCmd('yum')) pythonOk = run('sudo -n yum install -y python3') || pythonOk;
-                    if (!pythonOk && hasCmd('pacman')) pythonOk = run('sudo -n pacman -S --noconfirm python') || pythonOk;
-                } else if (platform === 'win32') {
-                    if (hasCmd('winget')) pythonOk = run('winget install -e --id Python.Python.3.11') || pythonOk;
-                    if (!pythonOk && hasCmd('choco')) pythonOk = run('choco install -y python') || pythonOk;
-                }
-            }
-            if (!pythonOk) {
-                console.warn(`${colors.yellow}⚠️  Python 3 not installed automatically. Please install manually.${colors.reset}`);
-            }
-
-            // SQLite
-            let sqliteOk = hasCmd('sqlite3');
-            if (!sqliteOk) {
-                if (platform === 'darwin') {
-                    if (hasCmd('brew')) sqliteOk = run('brew install sqlite') || sqliteOk;
-                } else if (platform === 'linux') {
-                    if (hasCmd('apt-get')) sqliteOk = run('sudo -n apt-get install -y sqlite3') || sqliteOk;
-                    if (!sqliteOk && hasCmd('dnf')) sqliteOk = run('sudo -n dnf install -y sqlite') || sqliteOk;
-                    if (!sqliteOk && hasCmd('yum')) sqliteOk = run('sudo -n yum install -y sqlite') || sqliteOk;
-                    if (!sqliteOk && hasCmd('pacman')) sqliteOk = run('sudo -n pacman -S --noconfirm sqlite') || sqliteOk;
-                } else if (platform === 'win32') {
-                    if (hasCmd('winget')) sqliteOk = run('winget install -e --id SQLite.sqlite') || sqliteOk;
-                    if (!sqliteOk && hasCmd('choco')) sqliteOk = run('choco install -y sqlite') || sqliteOk;
-                }
-            }
-            if (!sqliteOk) {
-                console.warn(`${colors.yellow}⚠️  SQLite3 not installed automatically. Please install via your package manager.${colors.reset}`);
-            }
-            completedStep('3', 'System dependencies checked');
-        } catch (e) {
-            console.warn(`${colors.yellow}⚠️  System dependency check skipped: ${e && e.message}${colors.reset}`);
-        }
-
-        // Step 4: Optional auto-init into current project on global install (opt-in)
-        try {
-            const autoInit = process.env.SUPER_PROMPT_AUTO_INIT;
-            const shouldAuto = autoInit && /^(1|true|yes|y)$/i.test(autoInit);
-            if (shouldAuto) {
-                // Determine a safe project root (prefer INIT_CWD with package.json that is not ours)
-                const initCwd = process.env.INIT_CWD || process.cwd();
-                const pj = path.join(initCwd, 'package.json');
-                if (fs.existsSync(pj)) {
-                    const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
-                    if (p && p.name !== '@cdw0424/super-prompt') {
-                        console.log(`${colors.cyan}⚡ Auto-initializing Super Prompt in ${initCwd} (SUPER_PROMPT_AUTO_INIT=1)${colors.reset}`);
-                        try {
-                            execSync('super-prompt super:init', { cwd: initCwd, stdio: 'inherit' });
-                            completedStep('4', `Project initialized at ${initCwd}`);
-                        } catch (e) {
-                            console.warn(`${colors.yellow}⚠️  Auto-init failed; run manually in your project:${colors.reset}`);
-                            console.warn(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn(`${colors.yellow}⚠️  Auto-init skipped: ${e && e.message}${colors.reset}`);
-        }
-
+        // Step 4: Remove auto-init logic, it's better for the user to run it explicitly.
+        
         // Step 5: Ready for project initialization (run in your project)
         console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
         console.log(`${colors.dim}   Run this inside your project to install rules & commands:${colors.reset}`);
@@ -681,12 +437,10 @@ async function animatedInstall() {
         console.log(`   ${colors.cyan}# or if not globally installed:${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
         await sleep(300);
-        completedStep(5, 'Project integration ready')
+        completedStep(4, 'Project integration ready')
 
-        // Install flag-only shell hook automatically (optional)
-        console.log(`${colors.cyan}🪝 Installing flag-only shell handler (--sp-*, mode toggles)...${colors.reset}`);
-        ensureFlagOnlyShellHook();
-
+        // Remove legacy flag-only shell hook installation
+        
         // Installation complete
         console.log(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);
         
@@ -709,12 +463,10 @@ async function animatedInstall() {
         console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}\n`);
 
-        console.log(`${colors.dim}   Use personas in CLI (optimize command is optional):${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt --sp-frontend  "design strategy"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt --sp-backend   "debug intermittent failures"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt --sp-architect "break down a feature"${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt --sp-debate --rounds 6 "Should we adopt feature flags?"${colors.reset}`);
-        console.log(`${colors.dim}   Tip: control runtime Codex upgrade via SP_SKIP_CODEX_UPGRADE=1 env var.${colors.reset}\n`);
+        console.log(`${colors.dim}   Use personas in your IDE after configuring the MCP Server.${colors.reset}`);
+        console.log(`   ${colors.cyan}/frontend  "design strategy"${colors.reset}`);
+        console.log(`   ${colors.cyan}/backend   "debug intermittent failures"${colors.reset}`);
+        console.log(`   ${colors.cyan}/architect "break down a feature"${colors.reset}`);
         
         console.log(`${colors.blue}🔗 Package: https://npmjs.com/package/@cdw0424/super-prompt${colors.reset}`);
         console.log(`${colors.green}✨ Ready for next-level prompt engineering!${colors.reset}`);

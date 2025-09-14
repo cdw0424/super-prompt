@@ -19,11 +19,6 @@ const AGENTS_MD = `# AGENTS.md — Super-Prompt × Codex: Auto Model Router (med
 - User override respected.
 `;
 
-const BIN_HIGH = `#!/usr/bin/env zsh
-exec codex --model gpt-5 -c model_reasoning_effort="high" "$@"`;
-const BIN_MED = `#!/usr/bin/env zsh
-exec codex --model gpt-5 -c model_reasoning_effort="medium" "$@"`;
-
 const ROUTER_CHECK = `#!/usr/bin/env zsh
 set -euo pipefail
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -49,8 +44,6 @@ async function scaffoldCodexAmr(opts = {}) {
     ['AGENTS.md', AGENTS_MD],
     ['agents.md', AGENTS_MD],
     ['prompts/codex_amr_bootstrap_prompt_en.txt', createBootstrap()],
-    ['bin/codex-high', BIN_HIGH, 0o755],
-    ['bin/codex-medium', BIN_MED, 0o755],
     ['scripts/codex/router-check.sh', ROUTER_CHECK, 0o755],
   ];
   for (const [rel, content, mode] of files) {

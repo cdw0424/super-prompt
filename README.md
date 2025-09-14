@@ -1,317 +1,174 @@
-# Super Prompt v3
+# Super Prompt v4.0.0: The MCP Revolution
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Production-ready prompt engineering toolkit** supporting both **Cursor IDE** and **Codex CLI** with **Spec-Driven Development (SDD)** workflow and **Auto Model Router (AMR)** for intelligent reasoning optimization.
+**A powerful prompt engineering toolkit, now rebuilt from the ground up as a FastMCP server for seamless IDE integration.**
 
-- [x] **Latest**: v3.1.65 - Flag-only mode + minimal `sp`.
-- [ ] **Next**: v3.1.66 - Enhanced error handling and user experience improvements.
+Super Prompt v4 marks a fundamental shift from a command-line utility to a robust, programmatic backend for your IDE. It exposes its powerful persona-based prompt optimization engine as a set of MCP tools, enabling a fluid and integrated development experience.
 
-<br>
+---
 
-## v3.1.60 - Canonical tag executor across all paths
-- Fixed: `super:init` now writes the same canonical tag-executor wrapper as templates/installer (no newline/comment drift).
-- Verified: Generated command files point to the canonical wrapper consistently.
+### 🚀 The Core Concepts of v4
 
-## v3.1.61 - Rules from templates + pkg fix
-- Fixed: All rule files under `.cursor/rules` are now copied from packaged templates for perfect consistency; no more dynamic drift in `super:init`.
-- Chore: Ran `npm pkg fix` to normalize `bin` entries and tidy package metadata.
+1.  **👑 MCP-First Architecture**: Super Prompt is now a server. All functionality, including the specialized personas, is exposed as MCP tools that your IDE can call directly. This means faster, more reliable, and more deeply integrated interactions.
 
-## v3.1.62 - Exact tag-executor byte match
-- Fixed: `super:init` now writes `tag-executor.sh` without a trailing newline to exactly match the shipped template (byte-for-byte).
+2.  **🧠 Fused Intelligent Memory**: A groundbreaking dual-memory system that makes the assistant smarter over time.
+    - **EvolKV Optimization**: Persists and evolves task-aware KV-cache profiles to optimize LLM inference performance.
+    - **Context-Aware Memory**: Maintains task context across sessions for seamless continuity.
 
-## v3.1.63 - Persona flag reliability
-- Fixed: `--sp-<persona>` flags (e.g., `--sp-analyzer`) now work on clean systems by auto‑ensuring PyYAML before executing the enhanced persona processor.
+3.  **🕵️‍♂️ Confession Mode (더블 체크)**: Radical transparency for every action. All MCP tools automatically append a self-audit to their output, detailing what is known, what is unknown (potential side-effects, edge cases), and proposing countermeasures to ensure reliability.
 
-## v3.1.64 - Works without global super-prompt
-- Feature: Cursor tag executor prefers project-local Python CLI (`.super-prompt/cli.py`), then falls back to global binary or `npx`. This enables fully offline, no-global install usage.
+---
 
-## v3.1.59 - CANONICAL TAG EXECUTOR & DRIFT FIX
-- Fixed: Eliminated file drift between published package and project-generated assets (Cursor tag-executor).
-- Fixed: `install.js` and `super:init` now install the same canonical tag executor wrapper.
-- Refactor: Simplified `tag-executor.sh` to delegate to `super-prompt optimize` (or `npx` fallback) to avoid future divergence.
+## ⚡ Quick Start
 
-## v3.1.58 - UNIFIED CLI EXECUTOR & VERSION FIX
-- **🐛 FIXED**: `super-prompt init` now correctly displays the latest dynamic version instead of the outdated `v2.9.1`.
-- **🛠️ REFACTORED**: Unified all CLI command executions to a single, consistent entry point, eliminating architectural debt and preventing future version drift.
-- **🧹 CLEANED**: Removed obsolete legacy files and redundant code from the installation process, resulting in a cleaner and more reliable package.
+1.  **Install as a Dev Dependency (Recommended)**
+    This is the modern, recommended way to use CLI tools. It installs `super-prompt` locally into your project, avoiding all permission issues.
+    ```bash
+    cd your-project
+    npm install --save-dev @cdw0424/super-prompt@latest
+    ```
 
-## v3.1.56 - DYNAMIC VERSION DISPLAY & ENHANCED ANALYZER COMMAND
-- **📊 DYNAMIC VERSION DISPLAY**: Added automatic version detection from package.json for accurate version display in CLI
-- **🔍 ENHANCED ANALYZER COMMAND**: Improved analyzer command description with more detailed capabilities and expertise areas
+2.  **Initialize Your Project**
+    Use `npx` to run the locally installed `super-prompt`. This command generates the necessary `.cursor/` files for IDE integration.
+    ```bash
+    npx super-prompt super:init
+    ```
 
-## 📜 Overview
+3.  **Configure and Run the MCP Server in Your IDE**
+    For Super Prompt to work, your IDE (e.g., Cursor) must be configured to run its MCP server. Since `super-prompt` is installed locally, the command should also use `npx`.
 
-## ⚡ Quick Start (No global install required)
+    - **Example Cursor MCP Server Configuration**:
+        - **Name**: `super-prompt (local)`
+        - **Command**: `npx`
+        - **Arguments**: `["super-prompt", "mcp:serve"]`
+
+4.  **Use Personas in Your IDE**
+    With the server running, you can now use the slash commands in your IDE's chat to invoke the persona tools.
+    ```
+    /frontend "Build a responsive login form using React and Tailwind CSS."
+    /architect "Design a scalable microservices architecture for an e-commerce platform."
+    /backend "Write a NodeJS endpoint to handle user registration."
+    ```
+
+---
+
+## 🔧 How It Works: The MCP Server
+
+The heart of Super Prompt v4 is the MCP server. You run it, and your IDE connects to it.
+
+-   **Start the server**: `super-prompt mcp:serve`
+-   **Transport**: The server uses `stdio` for communication, so no network ports are required.
+-   **Logs**: All diagnostic logs are sent to `stderr` (prefixed with `-----`), while `stdout` is reserved for clean MCP communication.
+
+### Available MCP Tools
+
+The server exposes all personas and utilities as tools. Here are a few examples:
+
+| Tool Name         | Description                                                               |
+| ----------------- | ------------------------------------------------------------------------- |
+| `frontend`        | Runs the expert UI/UX persona for frontend development.                   |
+| `backend`         | Runs the expert reliability engineer persona for backend tasks.           |
+| `architect`       | Runs the systems architecture specialist.                                 |
+| `security`        | Runs the threat modeling and vulnerability analysis persona.              |
+| `set_task_context`| Sets the current task tag for the Context-Aware Memory system.            |
+| `super_init`      | Initializes the `.cursor` command files in a project.                     |
+| ...and 25+ more!  | All personas from v3 are available as dedicated tools.                    |
+
+
+---
+
+## 🔄 Migration from v3.x
+
+Migrating from older versions is seamless. If you previously installed globally, we recommend uninstalling the global version and installing locally in your project.
 
 ```bash
-# 1) Initialize in your project (recommended, no global install)
+# 1. Uninstall the old global package (if it exists)
+npm uninstall -g @cdw0424/super-prompt
+
+# 2. Install locally in your project
 cd your-project
-npx -y @cdw0424/super-prompt@latest super:init
-
-# Optional: initialize Codex CLI assets (AGENTS.md, bootstrap, wrappers)
-npm run codex:init
-
-# 2) Use Cursor IDE slash commands
-/grok-on (or /grok-mode-on)
-/codex-on (or /codex-mode-on)
-/architect "design user authentication system"
-/frontend "create responsive dashboard"
-
-# 3) CLI flags (optional)
-# After init, tag executor prefers the project-local Python CLI automatically
-super-prompt --sp-architect "design microservices architecture" || \
-  npx @cdw0424/super-prompt --sp-architect "design microservices architecture"
-
-# 4) Codex CLI pairing (optional)
-# Plan at high effort, execute at medium
-npm run codex:plan -- "Plan complex refactor across modules"
-npm run codex:exec -- "Apply patch and run tests"
+npm install --save-dev @cdw0424/super-prompt@latest
 ```
+The new installation script automatically sets up the encapsulated Python virtual environment within your project's `node_modules`.
 
-## ✨ Key Features
+**Note**: Old files from previous versions located in your project's `.super-prompt` directory are no longer used and can be safely deleted. The new v4 databases (`evol_kv_memory.db`, `context_memory.db`) will be created in your project's `.super-prompt` directory on first use.
 
-🎯 **Dual IDE Support**: Seamless integration with both Cursor (slash commands) and Codex CLI (flag-based personas)
+---
 
-🧠 **AMR (Auto Model Router)**: Intelligent medium↔high reasoning switching with fixed state machine
-
-🚀 **SDD Workflow**: Complete Spec-Driven Development pipeline with quality gates
-
-🎭 **29+ Specialized Personas**: Domain experts (architect, frontend, backend, security, performance, etc.)
-
-🛡️ **Production Ready**: Global write protection, validation, testing, and quality assurance
-
-⚡ **Performance Optimized**: 30-50% token reduction through intelligent context engineering
-
-🤖 **Grok-Optimized**: Specially optimized for [grok-code-fast-1 MAX mode] in Cursor IDE
-
-🔧 **Codex AMR Mode**: Toggle codex-amr mode for intelligent task classification and reasoning level switching
-
-🔄 **Exclusive Mode Switching**: Grok and Codex modes are mutually exclusive - enabling one automatically disables the other
-🧭 **Codex CLI Integration**: Scaffold `.codex/` assets (AGENTS.md, bootstrap prompt, router checks) and wrappers for high/medium execution
-
-## 🎭 Popular Personas
-
-| Persona | Description | Use Case |
-|---------|-------------|----------|
-| **`/architect`** | Systems architecture specialist | System design, scalability planning |
-| **`/frontend`** | UI/UX specialist, accessibility advocate | React components, responsive design |
-| **`/backend`** | Reliability engineer, API specialist | Server-side development, APIs |
-| **`/security`** | Threat modeler, vulnerability specialist | Security audits, threat analysis |
-| **`/analyzer`** | Root cause specialist | Debugging, investigation |
-| **`/doc-master`** | Documentation specialist | Comprehensive documentation creation |
-| **`/qa`** | Quality advocate, testing specialist | Test strategies, quality assurance |
-
-## 🚀 Quick Examples
-
-### Cursor IDE Integration
-```bash
-# Architecture & Planning
-/architect "design user authentication system"
-/specify "user registration workflow"
-
-# Development
-/frontend "create responsive dashboard component"
-/backend "implement REST API for user management"
-
-# Quality & Analysis
-/analyzer "investigate performance bottleneck"
-/doc-master "create comprehensive API documentation"
-/security "audit authentication implementation"
-```
-
-### CLI Usage
-```bash
-# Development workflow
---sp-sdd-spec "user authentication"
---sp-sdd-plan "user registration workflow"
---sp-sdd-implement "authentication system"
-
-# Direct persona consultation
-# Preferred minimal command for Codex: just use flags with `sp`
-sp --sp-architect "design microservices architecture"
-sp --sp-doc-master "create comprehensive project documentation"
-sp --sp-security  "review API security"
-sp --sp-tr         "triage failing CI job and propose fix"
-
-# Also works with global/local super-prompt
-super-prompt --sp-architect "design microservices architecture"
-super-prompt --sp-doc-master "create comprehensive project documentation"
-super-prompt --sp-security  "review API security"
-
-# Codex CLI helpers
-npm run codex:init   # writes .codex/AGENTS.md, bootstrap prompt, router-check
-npm run codex:plan -- "deep planning (high)"
-npm run codex:exec -- "execute steps (medium)"
-
-# Flag‑only mode (no 'sp' or 'super-prompt' prefix)
-# This makes "--sp-analyzer \"...\"" work as a command in your shell
-sp-setup-shell   # run once, then restart your terminal (bash/zsh)
---sp-analyzer "investigate CPU usage spikes in logs"
-```
-
-## 🏗️ SDD Workflow
-
-**Spec-Driven Development** with automated quality gates:
-
-```bash
-# 1. Create specification
-super-prompt --sp-sdd-spec "feature description"
-
-# 2. Generate implementation plan
-super-prompt --sp-sdd-plan "feature description"
-
-# 3. Break down into tasks
-super-prompt --sp-sdd-tasks "feature description"
-
-# 4. Implement with quality gates
-super-prompt --sp-sdd-implement "feature description"
-```
-
-## 🔧 Installation & Setup
+## 🛠️ Installation
 
 ### Requirements
-- **Node.js** 14+
-- **Python** 3.10+ (auto-installed via virtual environment)
+- **Node.js**: v14+
+- **Python**: v3.10+ (A dedicated virtual environment is created and managed automatically).
 
-### Installation
+### Command (Recommended: Local Install)
 ```bash
-# Option A (recommended): No global install
-cd your-project
-npx -y @cdw0424/super-prompt@latest super:init
-
-# Option B: Local devDependency
-npm install -D @cdw0424/super-prompt@latest
-./node_modules/.bin/super-prompt super:init
-
-# Option C: Global install (optional)
-npm install -g @cdw0424/super-prompt@latest
-super-prompt super:init
+npm install --save-dev @cdw0424/super-prompt@latest
 ```
+The installer handles the creation of a self-contained Python virtual environment and all necessary dependencies within your project's `node_modules`. No manual Python package management or `sudo` is required.
 
-### What gets installed?
-- **Project**: All files go into `.super-prompt/` folder only
-- **Python**: Isolated virtual environment in `.super-prompt/venv/`
-- **Databases**: SQLite and data files in `.super-prompt/venv/data/`
-- **Global (optional)**: The `super-prompt` CLI command
-
-### ⚠️ Important: Run in Your Project Directory
-**Always run `super-prompt super:init` in your project's root directory** where you want to add Super Prompt integration.
-
-### 🔄 Automatic Migration
-Super Prompt v3.1.19+ automatically handles legacy installations:
-- **✅ Detects** old Homebrew symlinks and configurations
-- **✅ Migrates** to user-owned npm global directory (no sudo needed)
-- **✅ Configures** shell PATH automatically
-- **✅ Works** immediately after `npm install -g @cdw0424/super-prompt@latest`
-
-### IDE Integration
-
-**Cursor IDE** (Automatic):
-- Run `super-prompt init` to generate slash commands
-- Use `/architect`, `/frontend`, `/backend`, etc.
-
-**Codex CLI** (Manual):
-```bash
-# Install Codex CLI
-npm install -g @openai/codex
-
-# Use with Super Prompt
-super-prompt --sp-high "analyze this codebase"
-```
+---
 
 ## 🆘 Troubleshooting
 
-### Common Issues
+**`command not found: super-prompt` when using `npx`**
 
-**Command not found: `super-prompt`**
+This is rare, but can happen if npm's environment is not configured correctly.
+1. Ensure you are in the same directory where you ran `npm install`.
+2. Try deleting `node_modules` and `package-lock.json` and running `npm install` again.
+
+### **Using Global Install (Advanced)**
+If you still prefer to install globally, you may encounter `EACCES` permission errors. **Do not use `sudo` to fix this.** The official and safest solution is to tell npm to use a directory you own.
+
+**1. Create a directory for global packages:**
 ```bash
-# 1. Check if installed
-which super-prompt
-npm list -g @cdw0424/super-prompt
+mkdir -p ~/.npm-global
+```
 
-# 2. If not found, reinstall
+**2. Configure npm to use the new directory path:**
+```bash
+npm config set prefix '~/.npm-global'
+```
+
+**3. Add the new directory to your shell's `PATH`:**
+Open your shell configuration file (`.zshrc`, `.bash_profile`, or `.profile`).
+```bash
+# For macOS Catalina (10.15) or later (using zsh)
+open ~/.zshrc
+
+# For older macOS or most Linux distros (using bash)
+open ~/.bash_profile
+```
+Then, add the following line to the end of the file:
+```bash
+export PATH=~/.npm-global/bin:$PATH
+```
+
+**4. Update your shell:**
+Either restart your terminal or run the source command on your config file.
+```bash
+# For zsh
+source ~/.zshrc
+
+# For bash
+source ~/.bash_profile
+```
+
+**5. Try installing again (without `sudo`):**
+```bash
 npm install -g @cdw0424/super-prompt@latest
-
-# 3. On some systems, you may need sudo
-sudo npm install -g @cdw0424/super-prompt@latest
-
-# 4. Restart terminal after installation
 ```
 
-**Alternative installation methods:**
-```bash
-# Use npx (no global install needed) - RUN IN YOUR PROJECT DIRECTORY
-cd your-project
-npx @cdw0424/super-prompt@latest super:init
+---
 
-# Or install locally in project
-npm install @cdw0424/super-prompt@latest
-./node_modules/.bin/super-prompt super:init
-```
+## 📚 Documentation & Resources
 
-**npm EEXIST/EACCES during global install (cache permission):**
-```bash
-# Best: Avoid global install — use npx or local devDependency (see above)
-
-# If you still want global install, set a user cache and retry
-npm config set cache "$HOME/.npm-cache" --global
-npm cache clean --force
-npm install -g @cdw0424/super-prompt@latest
-
-# One‑shot alternative
-npm_config_cache="$HOME/.npm-cache" npm install -g @cdw0424/super-prompt@latest
-
-# If /tmp/.npm-cache is corrupted and you have permissions
-rm -rf /tmp/.npm-cache
-```
-
-**Python dependencies & environment issues:**
-```bash
-# Super Prompt automatically creates virtual environment
-# If you see "externally-managed-environment" error:
-
-# Method 1: Use the built-in virtual environment (recommended)
-super-prompt super:init  # Creates .super-prompt/venv automatically
-
-# Method 2: If issues persist, check venv setup
-cd your-project/.super-prompt/venv/bin
-python -c "import typer, yaml, pathspec; print('Dependencies OK')"
-
-# Method 3: Manual venv setup (if needed)
-cd your-project/.super-prompt
-python3 -m venv venv
-source venv/bin/activate
-pip install typer>=0.9.0 pyyaml>=6.0 pathspec>=0.11.0
-```
-
-**For macOS Homebrew users:**
-```bash
-# If you get externally-managed-environment errors
-# Super Prompt handles this automatically with virtual environments
-# Just run super-prompt super:init and it will set everything up
-```
-
-## 📚 Documentation
-
-📖 **[Complete Documentation](https://github.com/cdw0424/super-prompt/blob/main/ARCHITECTURE.md)** - Detailed architecture and advanced usage
-
-📋 **[Changelog](https://github.com/cdw0424/super-prompt/blob/main/CHANGELOG.md)** - Version history and updates
-
-🐛 **[Issues & Support](https://github.com/cdw0424/super-prompt/issues)** - Bug reports and feature requests
+-   **[Changelog](CHANGELOG.md)**: View detailed version history and updates.
+-   **[Issues & Support](https://github.com/cdw0424/super-prompt/issues)**: Report bugs and request features.
 
 ## 📄 License
 
 MIT © [Daniel Choi](https://github.com/cdw0424)
-
----
-
-<div align="center">
-
-**🚀 Ready to supercharge your development workflow?**
-
-[Install Now](#-installation--setup) • [View Documentation](https://github.com/cdw0424/super-prompt/blob/main/ARCHITECTURE.md) • [Report Issues](https://github.com/cdw0424/super-prompt/issues)
-
-</div>
