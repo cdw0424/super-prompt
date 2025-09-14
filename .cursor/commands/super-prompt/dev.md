@@ -1,8 +1,4 @@
 ---
-description: dev command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /dev"]
+description: "Run super-prompt dev persona"
+run: "super-prompt mcp tool dev --query '$_prompt_'"
 ---
-
-🚀 Feature Development Specialist
-New feature implementation and delivery specialist.

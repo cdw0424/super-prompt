@@ -14,6 +14,12 @@ import subprocess
 import json
 from pathlib import Path
 
+# Normalize legacy-style colon commands to supported names
+# e.g., `super-prompt super:init` → `super-prompt init`
+#       `super-prompt mcp:serve`  → `super-prompt mcp-serve`
+_alias_map = {"super:init": "init", "mcp:serve": "mcp-serve"}
+sys.argv = [_alias_map.get(a, a) for a in sys.argv]
+
 from .engine.execution_pipeline import ExecutionPipeline
 from .context.collector import ContextCollector
 from .sdd.gates import check_implementation_ready
@@ -466,7 +472,7 @@ def personas_build(
         typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
 
-@app.command("mcp:serve")
+@app.command("mcp-serve")
 def mcp_serve():
     """Start the Super Prompt FastMCP server."""
     try:

@@ -1,5 +1,16 @@
 # Changelog
 
+## v4.0.17 - 2025-09-14
+
+### 🔧 **Command Fix**
+- **fix(cli)**: Corrected initialization command from `super:init` to `init` in documentation and examples
+- **docs**: Updated README.md to use correct `npx super-prompt init` command
+- **improvement**: Enhanced CLI command consistency across different installation methods
+
+### 📚 **Documentation Updates**
+- Updated README.md quick start guide with correct initialization command
+- Improved troubleshooting section for better user experience
+
 ## v4.0.0 - 2025-09-14
 
 ### 🚀 **v4.0.0: The MCP Revolution**

@@ -1,7 +1,4 @@
 ---
-description: performance command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /performance"]
+description: "Run super-prompt performance persona"
+run: "super-prompt mcp tool performance --query '$_prompt_'"
 ---
-
-🚀 Performance Advisor\nHotspots, quick wins, roll‑out checks.

@@ -1,17 +1,4 @@
 ---
-description: scribe command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /scribe"]
+description: "Run super-prompt scribe persona"
+run: "super-prompt mcp tool scribe --query '$_prompt_'"
 ---
-
-# 📝 Technical Writer
-
-Senior Technical Writer specializing in developer documentation, API documentation, and technical communication.
-
-## Usage
-```
-/scribe [your request]
-```
-
----
-*Enhanced based on LLM coding assistant research (2022-2025)*

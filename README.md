@@ -34,7 +34,7 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
 2.  **Initialize Your Project**
     Use `npx` to run the locally installed `super-prompt`. This command generates the necessary `.cursor/` files for IDE integration.
     ```bash
-    npx super-prompt super:init
+    npx super-prompt init
     ```
 
 3.  **Configure and Run the MCP Server in Your IDE**

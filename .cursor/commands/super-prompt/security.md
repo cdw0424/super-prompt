@@ -1,7 +1,4 @@
 ---
-description: security command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /security"]
+description: "Run super-prompt security persona"
+run: "super-prompt mcp tool security --query '$_prompt_'"
 ---
-
-🔐 Security Advisor\nThreats, mitigations, safe defaults.

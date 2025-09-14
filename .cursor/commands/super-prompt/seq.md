@@ -1,7 +1,4 @@
 ---
-description: seq command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /seq"]
+description: "Run super-prompt seq persona"
+run: "super-prompt mcp tool seq --query '$_prompt_'"
 ---
-
-🔄 Sequential Thinking (5)\nStructured step-by-step problem solving.

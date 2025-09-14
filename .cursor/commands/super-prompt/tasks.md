@@ -1,7 +1,7 @@
 ---
-description: Break down into TASKS (SDD)
+description: tasks command
 run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /architect Break work into small, testable tasks with IDs, acceptance criteria, estimates, and dependencies, referencing SPEC/PLAN"]
+args: ["${input} /tasks"]
 ---
 
-Break down into TASKS (SDD)
+📋 Tasks\nCreate Task Breakdown.

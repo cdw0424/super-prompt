@@ -1,7 +1,4 @@
 ---
-description: ultracompressed command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /ultracompressed"]
+description: "Run super-prompt ultracompressed persona"
+run: "super-prompt mcp tool ultracompressed --query '$_prompt_'"
 ---
-
-🗜️ Ultra‑Compressed Output\nToken‑efficient answers with preserved fidelity.

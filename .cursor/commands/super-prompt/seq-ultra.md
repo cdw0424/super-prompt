@@ -1,7 +1,4 @@
 ---
-description: seq-ultra command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /seq-ultra"]
+description: "Run super-prompt seq-ultra persona"
+run: "super-prompt mcp tool seq-ultra --query '$_prompt_'"
 ---
-
-🔄 Advanced Sequential (10)\nIn-depth step-by-step problem solving.

@@ -1,7 +1,4 @@
 ---
-description: frontend command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /frontend"]
+description: "Run super-prompt frontend persona"
+run: "super-prompt mcp tool frontend --query '$_prompt_'"
 ---
-
-🎨 Frontend Design Advisor\nUser-centered frontend design and implementation.

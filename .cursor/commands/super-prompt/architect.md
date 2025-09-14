@@ -1,7 +1,4 @@
 ---
-description: architect command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /architect"]
+description: "Run super-prompt architect persona"
+run: "super-prompt mcp tool architect --query '$_prompt_'"
 ---
-
-👷‍♂️ Architect\nProject-Conformity-First delivery.

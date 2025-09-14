@@ -1,7 +1,4 @@
 ---
-description: task command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /task"]
+description: "Run super-prompt task persona"
+run: "super-prompt mcp tool task --query '$_prompt_'"
 ---
-
-🧩 Task Breakdown\nSmall tasks with IDs, ACs, deps.

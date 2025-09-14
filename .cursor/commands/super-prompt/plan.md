@@ -1,7 +1,7 @@
 ---
-description: Create PLAN (SDD)
+description: plan command
 run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /architect Create a PLAN file for this feature following SDD guidelines: architecture, constraints, NFRs, risks, and security considerations"]
+args: ["${input} /plan"]
 ---
 
-Create PLAN (SDD)
+📋 Plan\nCreate Implementation Plan.

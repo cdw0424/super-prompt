@@ -1,7 +1,4 @@
 ---
-description: debate command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /debate"]
+description: "Run super-prompt debate persona"
+run: "super-prompt mcp tool debate --query '$_prompt_'"
 ---
-
-⚖️ Internal Debate (Positive vs Critical)\nStructured alternating reasoning with synthesis.

@@ -1,7 +1,4 @@
 ---
-description: Review against SPEC/PLAN (SDD)
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /high Review this implementation against SDD SPEC/PLAN files and provide compliance assessment"]
+description: "Run super-prompt review persona"
+run: "super-prompt mcp tool review --query '$_prompt_'"
 ---
-
-Review against SPEC/PLAN (SDD)

@@ -1,7 +1,4 @@
 ---
-description: wave command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /wave"]
+description: "Run super-prompt wave persona"
+run: "super-prompt mcp tool wave --query '$_prompt_'"
 ---
-
-🌊 Wave Planning\nPhased delivery (MVP → hardening).

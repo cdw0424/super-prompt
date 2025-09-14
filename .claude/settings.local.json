@@ -27,7 +27,8 @@
       "Bash(/Users/choi-dong-won/Desktop/devs/super-promt/scripts/npm-cache-fix.sh)",
       "Bash(npm uninstall:*)",
       "Bash(NPM_CONFIG_CACHE=/tmp/npm-cache-clean npm install -g @cdw0424/super-prompt@3.1.70 --force)",
-      "Bash(sp:*)"
+      "Bash(sp:*)",
+      "Bash(/Users/choi-dong-won/.local/bin/super-prompt --help)"
     ],
     "deny": [],
     "ask": []

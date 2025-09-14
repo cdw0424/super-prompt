@@ -1,7 +1,4 @@
 ---
-description: backend command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /backend"]
+description: "Run super-prompt backend persona"
+run: "super-prompt mcp tool backend --query '$_prompt_'"
 ---
-
-🔧 Backend Reliability Engineer\nScalable, reliable backend systems.

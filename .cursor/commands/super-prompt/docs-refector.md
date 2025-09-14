@@ -1,7 +1,4 @@
 ---
-description: docs-refector command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /docs-refector"]
+description: "Run super-prompt docs-refector persona"
+run: "super-prompt mcp tool docs-refector --query '$_prompt_'"
 ---
-
-📚 Documentation Consolidation\nAudit and unify docs with MCP-grounded sources.

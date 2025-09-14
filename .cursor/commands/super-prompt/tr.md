@@ -1,8 +1,4 @@
 ---
-description: tr command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /tr"]
+description: "Run super-prompt tr persona"
+run: "super-prompt mcp tool tr --query '$_prompt_'"
 ---
-
-🔧 Troubleshooter
-Expert diagnostician for complex technical issues.
