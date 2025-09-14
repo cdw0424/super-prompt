@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "4.0.34"
+version = "4.0.36"
 description = "Core library for Super Prompt - Modular prompt engineering and development workflow management"
 readme = "README.md"
 license = {text = "MIT"}

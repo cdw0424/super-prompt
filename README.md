@@ -1,4 +1,4 @@
-# Super Prompt v4.0.0: The MCP Revolution
+# Super Prompt v4.0.45: Production Ready MCP Architecture
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -19,6 +19,10 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
     - **Context-Aware Memory**: Maintains task context across sessions for seamless continuity.
 
 3.  **🕵️‍♂️ Confession Mode (더블 체크)**: Radical transparency for every action. All MCP tools automatically append a self-audit to their output, detailing what is known, what is unknown (potential side-effects, edge cases), and proposing countermeasures to ensure reliability.
+
+4.  **🔄 Mode Toggle System**: Seamless switching between GPT and Grok models with environment variables, CLI flags, and automatic resource management.
+
+5.  **🧠 MCP Memory System**: Comprehensive span-based memory tracking across all commands with automatic error handling and health checks.
 
 ---
 
@@ -88,6 +92,60 @@ The server exposes all personas and utilities as tools. Here are a few examples:
 | `super_init`      | Initializes the `.cursor` command files in a project.                     |
 | ...and 25+ more!  | All personas from v3 are available as dedicated tools.                    |
 
+
+---
+
+## 🔄 Mode Toggle System
+
+Super Prompt v4.0.45 supports seamless switching between GPT and Grok models with comprehensive resource management.
+
+### Environment Variables
+```bash
+# Set default mode
+export LLM_MODE=gpt     # or 'grok'
+
+# Enable specific modes
+export ENABLE_GPT=true
+export ENABLE_GROK=true
+
+# Disable MCP client (NOOP mode)
+export MCP_CLIENT_DISABLED=true
+```
+
+### CLI Flags
+```bash
+# Use GPT mode
+npx super-prompt --gpt --version
+npx super-prompt --mode=gpt super:init
+
+# Use Grok mode
+npx super-prompt --grok --version
+npx super-prompt --mode=grok super:init
+```
+
+### Safety Features
+- **Mutual Exclusion**: Cannot enable both GPT and Grok simultaneously
+- **Resource Cleanup**: Automatic disposal of previous provider resources
+- **Graceful Fallback**: NOOP mode for environments without full MCP setup
+
+---
+
+## 🧠 MCP Memory System
+
+Comprehensive span-based memory tracking with automatic error handling and health checks.
+
+### Features
+- **Span Tracking**: Every command creates memory spans with start/write/end lifecycle
+- **Error Handling**: Automatic error capture and span marking
+- **Health Checks**: Built-in system validation spans
+- **Event Logging**: Detailed event recording with timestamps
+
+### Example Output
+```
+-------- memory: span started span_0 for sp.init
+-------- MCP memory: healthcheck OK
+-------- memory: span ended span_0 status=ok duration=1.23s
+```
 
 ---
 

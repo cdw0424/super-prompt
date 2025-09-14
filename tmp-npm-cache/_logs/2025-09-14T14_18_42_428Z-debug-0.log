@@ -7,14 +7,14 @@
 6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
 7 verbose title npm publish
 8 verbose argv "publish"
-9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T14_10_53_278Z-
-10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T14_10_53_278Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T14_18_42_428Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T14_18_42_428Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 verbose publish [ '.' ]
 13 silly logfile done cleaning log files
 14 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 15 notice
-16 notice 📦  @cdw0424/super-prompt@4.0.42
+16 notice 📦  @cdw0424/super-prompt@4.0.43
 17 notice Tarball Contents
 18 notice 3.4kB .codex/agents.md
 18 notice 1.1kB .codex/bootstrap_prompt_en.txt
@@ -60,10 +60,10 @@
 18 notice 2.2kB .cursor/rules/20-gpt5-guidance.mdc
 18 notice 15.2kB .cursor/rules/21-persona-overrides.mdc
 18 notice 3.3kB .cursor/rules/22-model-guide.mdc
-18 notice 46.0kB CHANGELOG.md
+18 notice 46.6kB CHANGELOG.md
 18 notice 1.1kB LICENSE
 18 notice 7.9kB README.md
-18 notice 3.0kB bin/super-prompt
+18 notice 4.1kB bin/super-prompt
 18 notice 79.7kB dist/super_prompt_core-4.0.28-py3-none-any.whl
 18 notice 79.7kB dist/super_prompt_core-4.0.29-py3-none-any.whl
 18 notice 79.7kB dist/super_prompt_core-4.0.30-py3-none-any.whl
@@ -77,16 +77,16 @@
 18 notice 29.8kB packages/cursor-assets/manifests/personas.yaml
 19 notice Tarball Details
 20 notice name: @cdw0424/super-prompt
-21 notice version: 4.0.42
-22 notice filename: cdw0424-super-prompt-4.0.42.tgz
-23 notice package size: 582.6 kB
-24 notice unpacked size: 717.4 kB
-25 notice shasum: 3970fe05c188df64723c4cd08dd4f93fb87e934f
-26 notice integrity: sha512-7TqaJvlXyXUHs[...]eT1CEhKnfC4ww==
+21 notice version: 4.0.43
+22 notice filename: cdw0424-super-prompt-4.0.43.tgz
+23 notice package size: 583.3 kB
+24 notice unpacked size: 719.2 kB
+25 notice shasum: 2eb9b59818237b30dd52196629928abacb75c88b
+26 notice integrity: sha512-yPEaGjaseCYXg[...]XPS4ev4CXoiDg==
 27 notice total files: 59
 28 notice
 29 notice Publishing to https://registry.npmjs.org/ with tag latest and public access
-30 http fetch PUT 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 2413ms
+30 http fetch PUT 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 2809ms
 31 verbose cwd /Users/choi-dong-won/Desktop/devs/super-promt
 32 verbose os Darwin 24.6.0
 33 verbose node v23.11.0

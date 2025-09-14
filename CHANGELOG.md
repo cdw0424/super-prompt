@@ -1,5 +1,60 @@
 # Changelog
 
+## v4.0.45 - 2025-09-14
+
+### 🚀 **Deployment & Build Automation Complete**
+- **build**: Automated build pipeline with `npm run prepack`
+  - Clean + build execution before every `npm publish`
+  - JavaScript project optimized build system
+  - Python cache cleanup integration
+- **packaging**: Enhanced package contents optimization
+  - Added comprehensive `.npmignore` for clean deployments
+  - Reduced package size with selective file inclusion
+  - Maintained all required assets (.cursor, .codex, packages/*)
+
+### 🔧 **Mode Toggle System Enhancement**
+- **feat**: Robust GPT/Grok mode switching with resource management
+  - Environment variables: `LLM_MODE`, `ENABLE_GPT`, `ENABLE_GROK`
+  - CLI flags: `--gpt`, `--grok`, `--mode=gpt|grok`
+  - Mutual exclusion validation with clear error messages
+  - Resource disposal logging for clean mode transitions
+
+### 🧠 **MCP Memory System Completion**
+- **feat**: Comprehensive memory span tracking across all commands
+  - `withMemory` wrapper applied to all MCP tool functions
+  - `memory_span` context manager with error handling
+  - Health check spans for system validation
+  - Event logging: start/write/end span lifecycle
+- **mcp**: Graceful fallback system for MCP client
+  - NOOP mode support with `MCP_CLIENT_DISABLED=true`
+  - Successful command execution even without full MCP setup
+  - Future-ready for complete MCP client implementation
+
+### 🛠️ **Quality Assurance & Audit System**
+- **tool**: Comprehensive `audit-all.mjs` validation script
+  - Automated checks for NPM packaging, CLI functionality, mode toggle
+  - MCP memory system verification
+  - Real-time project health assessment
+- **docs**: Enhanced error messages and setup guidance
+- **test**: Automated validation scenarios for deployment readiness
+
+### 📦 **Distribution Ready**
+- **publish**: Full NPM deployment preparation complete
+  - Architecture, services, commands, personas all functional
+  - Mode toggle system operational
+  - MCP memory system integrated across all commands
+  - Build automation ensures fresh builds on publish
+
+## v4.0.44 - 2025-09-14
+
+### 🔒 **Security: Enhanced MCP-Only Enforcement**
+- **security**: Strengthen MCP-only policy with import protection
+  - Add runtime check in `mcp_server.py` to prevent direct Python execution
+  - `MCP_SERVER_MODE=1` environment variable required for MCP server startup
+  - Direct CLI calls now show comprehensive MCP setup instructions
+- **build**: Updated wheel to v4.0.35 with enhanced security guards
+- **docs**: Improved error messages with MCP client configuration examples
+
 ## v4.0.43 - 2025-09-14
 
 ### 🔒 **Security: MCP-Only Access Policy**

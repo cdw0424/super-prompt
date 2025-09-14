@@ -14,6 +14,11 @@ import subprocess
 import json
 from pathlib import Path
 
+# MCP 전용 강제: 환경에서 명시 해제하지 않는 한 직접 실행 불가
+if os.environ.get("SUPER_PROMPT_REQUIRE_MCP", "1") == "1":
+    sys.stderr.write("Direct CLI is disabled. Use MCP only.\n")
+    raise SystemExit(97)
+
 # Normalize legacy-style colon commands to supported names
 # e.g., `super-prompt super:init` → `super-prompt init`
 #       `super-prompt mcp:serve`  → `super-prompt mcp-serve`
@@ -28,6 +33,7 @@ from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
 from .paths import package_root, project_root, project_data_dir, cursor_assets_root
+from .mcp_register import ensure_cursor_mcp_registered
 
 
 def get_current_version() -> str:
@@ -957,6 +963,12 @@ Brief description of the feature.
 - [ ] Test case 2
 """)
 
+        # MCP 서버 자동 등록 (.cursor/mcp.json 병합)
+        try:
+            cfg_path = ensure_cursor_mcp_registered(target_dir)
+            typer.echo(f"✅ Cursor MCP server registered: {cfg_path}")
+        except Exception as e:
+            typer.echo(f"⚠️  MCP registration skipped: {e}")
         typer.echo("✅ Super Prompt initialized!")
         typer.echo(f"   Project root: {target_dir.absolute()}")
         typer.echo(f"   Version: {current_version}")
