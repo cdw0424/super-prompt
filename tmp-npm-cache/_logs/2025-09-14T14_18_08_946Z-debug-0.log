@@ -1,0 +1,39 @@
+0 verbose cli /opt/homebrew/Cellar/node/23.11.0/bin/node /opt/homebrew/bin/npm
+1 info using npm@10.9.2
+2 info using node@v23.11.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/private/tmp/sp-test-mcp/.npmrc
+5 silly config load:file:/Users/choi-dong-won/.npmrc
+6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
+7 verbose title npm install @cdw0424/super-prompt@latest
+8 verbose argv "install" "@cdw0424/super-prompt@latest"
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T14_18_08_946Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T14_18_08_946Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly logfile done cleaning log files
+14 silly packumentCache corgi:https://registry.npmjs.org/@cdw0424%2fsuper-prompt cache-miss
+15 http fetch GET 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 1600ms (cache miss)
+16 silly packumentCache corgi:https://registry.npmjs.org/@cdw0424%2fsuper-prompt set size:undefined disposed:false
+17 silly idealTree buildDeps
+18 silly fetch manifest @cdw0424/super-prompt@4.0.42
+19 silly packumentCache full:https://registry.npmjs.org/@cdw0424%2fsuper-prompt cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 82ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/@cdw0424%2fsuper-prompt set size:undefined disposed:false
+22 silly placeDep ROOT @cdw0424/super-prompt@4.0.42 OK for: sp-test-mcp@1.0.0 want: 4.0.42
+23 silly reify moves {}
+24 silly audit bulk request { '@cdw0424/super-prompt': [ '4.0.42' ] }
+25 http cache @cdw0424/super-prompt@https://registry.npmjs.org/@cdw0424/super-prompt/-/super-prompt-4.0.42.tgz 1ms (cache hit)
+26 info run @cdw0424/super-prompt@4.0.42 preinstall node_modules/@cdw0424/super-prompt mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true
+27 info run @cdw0424/super-prompt@4.0.42 preinstall { code: 0, signal: null }
+28 info run @cdw0424/super-prompt@4.0.42 postinstall node_modules/@cdw0424/super-prompt node install.js
+29 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 227ms
+30 silly audit report {}
+31 info run @cdw0424/super-prompt@4.0.42 postinstall { code: 0, signal: null }
+32 silly ADD node_modules/@cdw0424/super-prompt
+33 verbose cwd /private/tmp/sp-test-mcp
+34 verbose os Darwin 24.6.0
+35 verbose node v23.11.0
+36 verbose npm  v10.9.2
+37 verbose exit 0
+38 info ok

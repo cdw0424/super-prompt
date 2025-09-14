@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.0.43 - 2025-09-14
+
+### 🔒 **Security: MCP-Only Access Policy**
+- **security**: Enforce MCP-only usage - direct CLI calls are blocked
+  - `npx super-prompt` commands now redirect to MCP usage instructions
+  - Direct Python execution blocked with security guard in `mcp_server.py`
+  - Environment variable `MCP_SERVER_MODE=1` required for server execution
+- **feat**: Enhanced MCP server security with import protection
+- **breaking**: CLI commands like `npx super-prompt --persona-analyzer` are disabled
+  - Must use MCP client tools: `sp.init()`, `sp.list_commands()`, `sp.list_personas()`
+  - Provides clear setup instructions for MCP client configuration
+
 ## v4.0.42 - 2025-09-14
 
 ### 🚀 **MCP Server Support Added**

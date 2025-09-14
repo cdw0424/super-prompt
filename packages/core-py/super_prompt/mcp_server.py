@@ -1,4 +1,5 @@
 # packages/core-py/super_prompt/mcp_server.py
+# SECURITY: MCP-only access - Direct CLI calls are blocked
 # pip dep: mcp >= 0.4.0  (pyproject.toml 또는 setup.cfg에 추가)
 import os
 import sys
@@ -12,6 +13,15 @@ from mcp.types import TextContent
 # 내부 CLI 재사용
 from .cli import app as cli_app  # typer app import
 from .paths import package_root, project_root, project_data_dir
+
+# SECURITY: Prevent direct execution
+if __name__ != "__main__":
+    # If imported directly (not run as MCP server), block access
+    if not os.environ.get("MCP_SERVER_MODE"):
+        print("❌ ERROR: Super Prompt MCP server must be run through MCP protocol only.")
+        print("🔒 Direct Python execution is not allowed.")
+        print("📋 Use MCP client tools: sp.init(), sp.refresh(), sp.list_commands(), etc.")
+        sys.exit(1)
 
 mcp = FastMCP("super-prompt")
 

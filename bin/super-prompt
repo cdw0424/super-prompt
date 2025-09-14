@@ -90,11 +90,39 @@ case "$1" in
     shift
     # Export package root so Python can reliably locate packaged assets (.cursor, .codex)
     export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+    export MCP_SERVER_MODE="1"  # Mark as MCP server mode
     exec "$VENV_PYTHON" -m super_prompt.mcp_server "$@"
     ;;
   *)
-    # Export package root so Python can reliably locate packaged assets (.cursor, .codex)
-    export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
-    exec "$VENV_PYTHON" -m super_prompt.cli "$@"
+    # SECURITY: Force MCP-only usage
+    # Direct CLI calls are blocked - must use MCP tools
+    echo "❌ ERROR: Direct CLI usage is disabled."
+    echo "🔒 Super Prompt must be used through MCP (Model Context Protocol) only."
+    echo ""
+    echo "📋 Available MCP Tools:"
+    echo "  • sp.init() - Initialize Super Prompt for current project"
+    echo "  • sp.refresh() - Refresh Super Prompt assets"
+    echo "  • sp.list_commands() - List available commands"
+    echo "  • sp.list_personas() - List available personas"
+    echo "  • sp.version() - Get version information"
+    echo ""
+    echo "🔧 MCP Client Setup:"
+    echo "  Add this to your MCP client configuration:"
+    echo ""
+    echo '  {'
+    echo '    "mcpServers": {'
+    echo '      "super-prompt": {'
+    echo '        "command": "npx",'
+    echo '        "args": ["-y", "@cdw0424/super-prompt@latest", "super-prompt", "mcp-server"],'
+    echo '        "env": {'
+    echo '          "SUPER_PROMPT_ALLOW_INIT": "true",'
+    echo '          "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}"'
+    echo '        }'
+    echo '      }'
+    echo '    }'
+    echo '  }'
+    echo ""
+    echo "🚫 Direct CLI calls like 'npx super-prompt --persona-analyzer' are not allowed."
+    exit 1
     ;;
 esac
