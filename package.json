@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.0.14",
+  "version": "4.0.15",
   "description": "Super Prompt v4.0.0 (MCP Architecture)",
   "bin": {
     "super-prompt": "bin/super-prompt"
