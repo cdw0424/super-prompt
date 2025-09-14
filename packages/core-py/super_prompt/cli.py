@@ -27,6 +27,7 @@ from .personas.loader import PersonaLoader
 from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
+from .paths import package_root, project_root, project_data_dir, cursor_assets_root
 
 
 def get_current_version() -> str:
@@ -719,7 +720,7 @@ def init(
         typer.echo(logo)
         typer.echo()
 
-        target_dir = Path(project_root)
+        target_dir = project_data_dir() if project_root == "." else Path(project_root)
 
         # --- Legacy cleanup (idempotent) ---
         legacy_paths = [
@@ -1115,7 +1116,7 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         print(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
 
         # Load persona configuration from project
-        personas_dir = Path(__file__).parent.parent.parent / "packages" / "cursor-assets" / "manifests"
+        personas_dir = cursor_assets_root() / "manifests"
         manifest_path = personas_dir / "enhanced_personas.yaml"
 
         persona_name = persona_key

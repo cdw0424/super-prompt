@@ -11,25 +11,15 @@ from typing import Dict, Any, List, Optional
 import os
 import json
 import yaml
+from ..paths import package_root, cursor_assets_root
 
 
 class CursorAdapter:
     """Adapter for Cursor IDE integration"""
 
     def __init__(self):
-        # 1순위: npm 래퍼가 넘겨준 패키지 루트
-        pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
-        if pkg_root:
-            self.project_root = Path(pkg_root)
-        else:
-            # 2순위: 위로 올라가며 'packages/cursor-assets' 존재 위치 탐색
-            p = Path(__file__).resolve()
-            while p != p.parent:
-                if (p / "packages" / "cursor-assets").exists():
-                    break
-                p = p.parent
-            self.project_root = p
-        self.assets_root = self.project_root / "packages" / "cursor-assets"
+        self.project_root = package_root()
+        self.assets_root = cursor_assets_root()
 
     def log(self, message: str) -> None:
         """Uniform adapter log output with required prefix."""

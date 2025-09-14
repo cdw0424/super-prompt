@@ -84,8 +84,17 @@ fi
 # of a specific source file. The python executable will handle module resolution.
 # The python package is installed via the .whl file in install.js.
 
-# Export package root so Python can reliably locate packaged assets (.cursor, .codex)
-export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
-
-# Execute the CLI as an installed module.
-exec "$VENV_PYTHON" -m super_prompt.cli "$@"
+# Handle subcommands
+case "$1" in
+  mcp-server)
+    shift
+    # Export package root so Python can reliably locate packaged assets (.cursor, .codex)
+    export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+    exec "$VENV_PYTHON" -m super_prompt.mcp_server "$@"
+    ;;
+  *)
+    # Export package root so Python can reliably locate packaged assets (.cursor, .codex)
+    export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+    exec "$VENV_PYTHON" -m super_prompt.cli "$@"
+    ;;
+esac

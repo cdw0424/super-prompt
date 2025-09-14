@@ -10,25 +10,15 @@ from pathlib import Path
 from typing import Dict, Any
 import yaml
 import os
+from ..paths import package_root, codex_assets_root
 
 
 class CodexAdapter:
     """Adapter for Codex CLI integration"""
 
     def __init__(self):
-        # 1순위: npm 래퍼가 넘겨준 패키지 루트
-        pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
-        if pkg_root:
-            self.project_root = Path(pkg_root)
-        else:
-            # 2순위: 위로 올라가며 탐색
-            p = Path(__file__).resolve()
-            while p != p.parent:
-                if (p / "packages" / "codex-assets").exists():
-                    break
-                p = p.parent
-            self.project_root = p
-        self.assets_root = self.project_root / "packages" / "codex-assets"
+        self.project_root = package_root()
+        self.assets_root = codex_assets_root()
 
     def load_agents_manifest(self) -> Dict[str, Any]:
         """Load agents configuration from manifest"""

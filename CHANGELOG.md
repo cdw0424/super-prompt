@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.0.42 - 2025-09-14
+
+### 🚀 **MCP Server Support Added**
+- **feat(mcp)**: Add MCP (Model Context Protocol) server support
+  - New `mcp_server.py` with FastMCP integration
+  - Tools: `sp.init()`, `sp.refresh()`, `sp.list_commands()`, `sp.list_personas()`, `sp.version()`
+  - Security: Write operations require `SUPER_PROMPT_ALLOW_INIT=true` environment variable
+- **feat(cli)**: Add `mcp-server` subcommand to bin/super-prompt
+  - `npx super-prompt mcp-server` starts MCP server in stdio mode
+  - Compatible with MCP clients (Claude Desktop, Cursor, etc.)
+- **feat(paths)**: Centralized path resolution with typo correction
+  - New `paths.py` utility for consistent path handling
+  - Auto-correct `.super-promp` → `.super-prompt` folder names
+  - Unified path resolution across CLI, adapters, and loaders
+- **fix(install)**: Resolved `.super-prompt` folder creation issues
+  - All components now use `project_data_dir()` for consistent data directory handling
+  - Fixed path confusion between package venv and project data directories
+- **deps**: Added optional MCP dependency (`mcp>=0.4.0`)
+- **build**: Updated wheel to v4.0.34 with MCP server and path fixes
+
 ## v4.0.41 - 2025-09-14
 
 ### 🔧 Critical Installation Fix

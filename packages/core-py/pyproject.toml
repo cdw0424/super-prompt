@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "4.0.33"
+version = "4.0.34"
 description = "Core library for Super Prompt - Modular prompt engineering and development workflow management"
 readme = "README.md"
 license = {text = "MIT"}
@@ -51,6 +51,9 @@ performance = [
     "ripgrep",              # Fast text search (external)
     "cachecontrol>=0.13.0", # HTTP caching
     "tiktoken>=0.5.0",      # Token counting
+]
+mcp = [
+    "mcp>=0.4.0",          # MCP server framework
 ]
 
 [project.urls]

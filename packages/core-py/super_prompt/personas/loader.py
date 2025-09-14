@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 import os
+from .paths import package_root, cursor_assets_root
 
 
 @dataclass
@@ -74,21 +75,9 @@ class PersonaLoader:
         """Create a default persona manifest by copying the canonical SSOT manifest."""
         # SSOT: copy from packages/cursor-assets/manifests/personas.yaml if available
         try:
-            env_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
-            if env_root and (Path(env_root) / "packages" / "cursor-assets" / "manifests" / "personas.yaml").exists():
-                canonical = Path(env_root) / "packages" / "cursor-assets" / "manifests" / "personas.yaml"
-            else:
-                # 위로 올라가며 탐색
-                p = Path(__file__).resolve()
-                canonical = None
-                while p != p.parent:
-                    cand = p / "packages" / "cursor-assets" / "manifests" / "personas.yaml"
-                    if cand.exists():
-                        canonical = cand
-                        break
-                    p = p.parent
+            canonical = cursor_assets_root() / "manifests" / "personas.yaml"
             self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
-            if canonical and canonical.exists():
+            if canonical.exists():
                 self.manifest_path.write_text(canonical.read_text(encoding='utf-8'), encoding='utf-8')
             else:
                 # Last resort: write an empty scaffold to encourage init
