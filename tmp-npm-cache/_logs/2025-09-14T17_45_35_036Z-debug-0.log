@@ -7,23 +7,23 @@
 6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
 7 verbose title npm publish
 8 verbose argv "publish" "--access" "public"
-9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T16_54_25_514Z-
-10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T16_54_25_514Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T17_45_35_036Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T17_45_35_036Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 verbose publish [ '.' ]
 13 silly logfile done cleaning log files
 14 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 15 notice
-16 notice 📦  @cdw0424/super-prompt@4.0.53
+16 notice 📦  @cdw0424/super-prompt@4.0.55
 17 notice Tarball Contents
-18 notice 56.0kB CHANGELOG.md
+18 notice 56.5kB CHANGELOG.md
 18 notice 1.1kB LICENSE
-18 notice 9.9kB README.md
+18 notice 10.3kB README.md
 18 notice 182B bin/sp-mcp
 18 notice 5.5kB bin/super-prompt
 18 notice 86.7kB dist/super_prompt_core-4.0.39-py3-none-any.whl
 18 notice 23.5kB install.js
-18 notice 2.2kB package.json
+18 notice 2.3kB package.json
 18 notice 1.4kB src/amr/router.js
 18 notice 3.8kB src/commands/super-init.ts
 18 notice 582B src/config/codexAmr.js
@@ -46,16 +46,16 @@
 18 notice 226B templates/personas/default.json
 19 notice Tarball Details
 20 notice name: @cdw0424/super-prompt
-21 notice version: 4.0.53
-22 notice filename: cdw0424-super-prompt-4.0.53.tgz
-23 notice package size: 123.7 kB
-24 notice unpacked size: 207.2 kB
-25 notice shasum: 2e96c27622ae611d588c4551e0953895cef707c6
-26 notice integrity: sha512-WAOyB/ilLuSfK[...]CMH1z5OkMBbDw==
+21 notice version: 4.0.55
+22 notice filename: cdw0424-super-prompt-4.0.55.tgz
+23 notice package size: 123.9 kB
+24 notice unpacked size: 208.1 kB
+25 notice shasum: 9a4825b9d10c8bd0152111c4968d13096cd36cea
+26 notice integrity: sha512-pQTe9h3JJM+V/[...]iATVs0gy3aeSA==
 27 notice total files: 28
 28 notice
 29 notice Publishing to https://registry.npmjs.org/ with tag latest and public access
-30 http fetch PUT 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 2072ms
+30 http fetch PUT 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 2546ms
 31 verbose cwd /Users/choi-dong-won/Desktop/devs/super-promt
 32 verbose os Darwin 24.6.0
 33 verbose node v23.11.0

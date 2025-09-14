@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.0.54",
-  "description": "Super Prompt v4.0.48 (MCP Architecture - Production Ready)",
+  "version": "4.0.55",
+  "description": "Super Prompt v4.0.55 (MCP Architecture - Production Ready)",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
@@ -18,7 +18,10 @@
     "dev:init": "./bin/super-prompt super:init",
     "amr:rules": "super-prompt super:init",
     "amr:print": "cat .cursor/rules/*-sdd-*.mdc",
-    "amr:qa": "scripts/codex/prompt-qa.sh"
+    "amr:qa": "scripts/codex/prompt-qa.sh",
+    "sp:init": "super-prompt super:init",
+    "sp:rules": "super-prompt super:init && cat .cursor/rules/*-sdd-*.mdc || true",
+    "sp:mcp": "sp-mcp"
   },
   "keywords": [
     "ai",
@@ -43,9 +46,7 @@
     "url": "https://github.com/cdw0424/super-prompt/issues"
   },
   "homepage": "https://github.com/cdw0424/super-prompt#readme",
-  "engines": {
-    "node": ">=14.0.0"
-  },
+  
   "os": [
     "darwin",
     "linux",

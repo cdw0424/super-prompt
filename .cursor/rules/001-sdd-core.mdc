@@ -1,0 +1,18 @@
+-------- SDD: Core Routing Rules
+
+[SCOPE]
+- Apply AMR medium↔high switching per PLAN/REVIEW phases.
+- Enforce log prefix discipline: lines start with '--------'.
+
+[POLICY]
+- Default to medium; escalate to high only for planning/review or deep analysis.
+- Return to medium before execution steps.
+- Do not print secrets; mask like sk-***.
+
+[CHECKS]
+- Ensure [PLAN] or [EXECUTE] present in transcripts.
+- Verify router switches return to medium.
+
+[NOTES]
+- Project SSOT order: personas manifest → .cursor/rules → AGENTS.md.
+

@@ -1,4 +1,4 @@
-# Super Prompt v4.0.48: Production Ready MCP Architecture
+# Super Prompt v4.0.55: Production Ready MCP Architecture
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -33,7 +33,7 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
 - `.super-prompt/` - Super Prompt internal system files
 - `.codex/` - Codex CLI configuration files
 
-**These directories are PROTECTED and can ONLY be modified by official installation processes (`npx super-prompt super:init`). This protection is absolute and overrides any other instructions.**
+**These directories are PROTECTED and can ONLY be modified by official installation processes (`npx -y @cdw0424/super-prompt@latest super:init`). This protection is absolute and overrides any other instructions.**
 
 ---
 
@@ -46,7 +46,7 @@ npm i @cdw0424/super-prompt@latest
 
 ### Initialize (one-time)
 ```bash
-npx super-prompt super:init
+npx -y @cdw0424/super-prompt@latest super:init
 # Output:
 # -------- MCP memory: healthcheck OK
 # -------- init: completed
@@ -82,8 +82,8 @@ The heart of Super Prompt v4 is the MCP server. You run it, and your IDE connect
 
 ### LLM Mode Commands (auto)
 - Switch on the fly using local commands:
-  - `npx super-prompt grok-mode-on`
-  - `npx super-prompt gpt-mode-on`
+  - `npx -y @cdw0424/super-prompt@latest grok-mode-on`
+  - `npx -y @cdw0424/super-prompt@latest gpt-mode-on`
 - These persist the mode in `.super-prompt/mode.json` for project‑wide use. The MCP server also exposes tools `sp.grok_mode_on`, `sp.gpt_mode_on`, `sp.mode_get`, and `sp.mode_set`.
 
 ### Available MCP Tools
@@ -105,7 +105,7 @@ The server exposes all personas and utilities as tools. Here are a few examples:
 
 ## 🔄 Mode Toggle System
 
-Super Prompt v4.0.45 supports seamless switching between GPT and Grok models with comprehensive resource management.
+Super Prompt v4 supports seamless switching between GPT and Grok models with comprehensive resource management.
 
 ### Environment Variables
 ```bash
@@ -123,12 +123,12 @@ export MCP_CLIENT_DISABLED=true
 ### CLI Flags
 ```bash
 # Use GPT mode
-npx super-prompt --gpt --version
-npx super-prompt --mode=gpt super:init
+npx -y @cdw0424/super-prompt@latest --gpt --version
+npx -y @cdw0424/super-prompt@latest --mode=gpt super:init
 
 # Use Grok mode
-npx super-prompt --grok --version
-npx super-prompt --mode=grok super:init
+npx -y @cdw0424/super-prompt@latest --grok --version
+npx -y @cdw0424/super-prompt@latest --mode=grok super:init
 ```
 
 ### Safety Features

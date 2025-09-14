@@ -6,6 +6,8 @@ memory-bank/
 
 # Python virtual environments (in .super-prompt/venv)
 .super-prompt/venv/
+# Super Prompt local cache/venv (exclude entirely)
+.super-prompt/
 venv/
 .venv/
 __pycache__/

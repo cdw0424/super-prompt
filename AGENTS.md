@@ -8,8 +8,8 @@
 - Personas manifest (SSOT): `packages/cursor-assets/manifests/personas.yaml` (project override: `personas/manifest.yaml`)
 
 ## Build, Test, and Development Commands
-- Initialize project assets: `npx super-prompt super:init`
-- Start MCP server (Cursor/Codex): `npx --yes --package=@cdw0424/super-prompt sp-mcp`
+- Initialize project assets: `npx -y @cdw0424/super-prompt@latest super:init` (or `npm run sp:init`)
+- Start MCP server (Cursor/Codex): `npx --yes --package=@cdw0424/super-prompt sp-mcp` (or `npm run sp:mcp`)
 - Guards: `.codex/router-check.sh` and `scripts/codex/prompt-qa.sh <transcript>`
 
 ## Coding Style & Naming Conventions
@@ -29,6 +29,6 @@
 - Keep diffs minimal and scoped; avoid unrelated refactors.
 
 ## Agent‑Specific Instructions (AMR + SSOT)
-- AMR: start at medium; escalate to high for PLAN/REVIEW or deep root‑cause, then return to medium for EXECUTION.
+- Auto Model Router (AMR): medium ↔ high switching. Start at medium; escalate to high for PLAN/REVIEW or deep root‑cause, then return to medium for EXECUTION.
 - SSOT: personas manifest → `.cursor/rules` → `AGENTS.md`. Avoid drift; prefer materialized overrides via mode toggles.
 - Modes: `/gpt-mode-on` (GPT‑5), `/grok-mode-on` (Grok); mutual exclusivity enforced.

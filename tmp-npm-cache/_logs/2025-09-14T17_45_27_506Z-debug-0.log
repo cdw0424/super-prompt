@@ -7,8 +7,8 @@
 6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
 7 verbose title npm run build
 8 verbose argv "run" "build"
-9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T16_50_56_290Z-
-10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T16_50_56_290Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T17_45_27_506Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T17_45_27_506Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd /Users/choi-dong-won/Desktop/devs/super-promt

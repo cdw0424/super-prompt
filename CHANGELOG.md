@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.0.55 - 2025-09-15
+
+### Changes
+- docs: English-only across docs; removed non-English phrases
+- docs: Update init instructions to use scoped NPX (`npx -y @cdw0424/super-prompt@latest super:init`)
+- chore: Add npm script `sp:mcp` for server startup
+- chore: Add `.cursor` assets placeholders for rules/commands
+- chore: Unify Node engine to `>=18.17`
+- chore: Expand `.gitignore` to exclude `.super-prompt/`
+
 ## v4.0.48 - 2025-09-14
 
 ### 🐛 **Critical Fix: Missing Source Files in Distribution**
@@ -342,7 +352,7 @@ This is a monumental upgrade that refactors the entire `super-prompt` architectu
 - **🧠 Fused Intelligent Memory System**:
     - **EvolKV LLM Optimization**: A new SQLite-backed memory system (`evol_kv_memory.db`) based on the "Evol-Instruct" concept to persist and evolve task-aware KV-cache profiles, optimizing LLM inference performance over time.
     - **Context-Aware Memory**: A simple, persistent SQLite-backed key-value store (`context_memory.db`) to maintain task context (e.g., `current_task_tag`) across sessions, ensuring continuity.
-- **🕵️‍♂️ Confession Mode (더블 체크)**: A unique self-auditing decorator (`@confession_decorator`) has been applied to **all MCP tools**. After every operation, the tool provides an honest assessment of what it knows, what it *doesn't* know (potential side-effects, edge cases), and suggests countermeasures, enhancing reliability and transparency.
+- **🕵️‍♂️ Confession Mode (double‑check)**: A unique self-auditing decorator (`@confession_decorator`) has been applied to **all MCP tools**. After every operation, the tool provides an honest assessment of what it knows, what it *doesn't* know (potential side-effects, edge cases), and suggests countermeasures, enhancing reliability and transparency.
 - **🐍 Encapsulated Python Environment**: The entire Python backend, including the MCP server and all utilities, is now managed as a proper Python package (`packages/core-py`) and runs within a dedicated, self-contained virtual environment (`venv`) created automatically during installation. This eliminates system dependency conflicts.
 - **🧹 Comprehensive Legacy Cleanup**: Removed dozens of legacy files, including old CLI wrappers (`bin/sp`, `bin/codex-*`), redundant Python scripts, and obsolete scaffolding and template assets. The `package.json` has been streamlined to match the new architecture.
 
