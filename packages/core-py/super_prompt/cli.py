@@ -18,28 +18,15 @@ from pathlib import Path
 # e.g., `super-prompt super:init` → `super-prompt init`
 #       `super-prompt mcp:serve`  → `super-prompt mcp-serve`
 _alias_map = {"super:init": "init", "mcp:serve": "mcp-serve"}
-
-# Normalize persona flags: --persona-<name> -> --sp-persona <name>
-_normalized_argv = []
-for a in sys.argv:
-    if a.startswith("--persona-"):
-        _normalized_argv.append("--sp-persona")
-        _normalized_argv.append(a.replace("--persona-", "", 1))
-    else:
-        _normalized_argv.append(_alias_map.get(a, a))
-sys.argv = _normalized_argv
+sys.argv = [_alias_map.get(a, a) for a in sys.argv]
 
 from .engine.execution_pipeline import ExecutionPipeline
+from .context.collector import ContextCollector
+from .sdd.gates import check_implementation_ready
 from .personas.loader import PersonaLoader
 from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
-from . import modes as sp_modes
-from .commands import codex_tools as sp_codex
-from .commands import personas_tools as sp_personas
-from .commands import context_tools as sp_context
-from .commands import validate_tools as sp_validate
-from .commands import amr_tools as sp_amr
-from . import modes as sp_modes
+from .validation.todo_validator import TodoValidator
 
 
 def get_current_version() -> str:
@@ -75,14 +62,6 @@ app = typer.Typer(
     add_completion=False,
 )
 
-
-def _echo_logs(logs):
-    for line in logs:
-        try:
-            typer.echo(line)
-        except Exception:
-            pass
-
 sdd_spec_query: Optional[str] = typer.Option(None, "--sp-sdd-spec", help="Create an SDD specification for a feature.")
 sdd_plan_query: Optional[str] = typer.Option(None, "--sp-sdd-plan", help="Create an SDD plan for a feature.")
 sdd_tasks_query: Optional[str] = typer.Option(None, "--sp-sdd-tasks", help="Create SDD tasks for a feature.")
@@ -98,16 +77,8 @@ def callback(
     sp_sdd_tasks: Optional[str] = typer.Option(None, "--sp-sdd-tasks", help="Create SDD tasks for a feature."),
     sp_sdd_implement: Optional[str] = typer.Option(None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts."),
     sp_high: Optional[str] = typer.Option(None, "--sp-high", help="Execute with GPT-5 high reasoning model."),
-    sp_persona: Optional[str] = typer.Option(None, "--sp-persona", help="Internal: normalized persona flag"),
 ):
     """Super Prompt Core CLI"""
-    # Global memory/AMR hooks: record every invocation
-    try:
-        from .memory.store import MemoryStore
-        store = MemoryStore.open(Path("."))
-        store.append_event("cli_invocation", {"argv": sys.argv[1:]})
-    except Exception:
-        pass
     # Check for execution context file FIRST (before checking subcommands)
     context_file = os.environ.get("SUPER_PROMPT_CONTEXT_FILE")
     execution_context = None
@@ -136,37 +107,6 @@ def callback(
         # Handle enhanced persona execution with system prompt
         handle_enhanced_persona_execution(system_prompt, persona_key, ctx.args)
         return
-
-    # Handle normalized persona flag: ensures AMR+Memory orchestration for all personas
-    if sp_persona:
-        try:
-            # Read stdin as the query if provided
-            try:
-                query = sys.stdin.read()
-            except Exception:
-                query = ""
-            from .commands import amr_repo_tools as sp_amr_repo
-            from .memory.store import MemoryStore
-            # Log event in persistent memory
-            try:
-                store = MemoryStore.open(Path("."))
-                store.append_event("persona_invocation", {"persona": sp_persona, "q_len": len(query or "")})
-            except Exception:
-                pass
-            res = sp_amr_repo.amr_persona_orchestrate(sp_persona, Path("."), query or "")
-            # Minimal, structured output for IDE consumption
-            typer.echo("-------- persona:" + sp_persona)
-            if res.get("task_tag"):
-                typer.echo("-------- task:" + str(res.get("task_tag")))
-            # show brief
-            brief = res.get("brief") or ""
-            if brief:
-                typer.echo(brief)
-            # done
-            raise typer.Exit(0)
-        except Exception as e:
-            typer.echo(f"❌ Persona execution failed: {e}", err=True)
-            raise typer.Exit(1)
 
     # Now check for subcommands
     if ctx.invoked_subcommand is not None:
@@ -383,10 +323,21 @@ def amr_qa(
     file: Path = typer.Argument(..., help="Transcript/text file to check"),
 ):
     """Validate a transcript for AMR/state-machine conformance."""
-    result = sp_amr.amr_qa_file(file)
-    for line in result.get("logs", []):
-        typer.echo(line)
-    raise typer.Exit(0 if result.get("ok") else 1)
+    if not file.exists():
+        typer.echo(f"❌ File not found: {file}"); raise typer.Exit(2)
+    txt = file.read_text()
+    ok = True
+    import re
+    if not re.search(r"^\[INTENT\]", txt, re.M):
+        typer.echo("-------- Missing [INTENT] section"); ok = False
+    if not (re.search(r"^\[PLAN\]", txt, re.M) or re.search(r"^\[EXECUTE\]", txt, re.M)):
+        typer.echo("-------- Missing [PLAN] or [EXECUTE] section"); ok = False
+    if re.search(r"^(router:|run:)", txt, re.M):
+        typer.echo("-------- Found log lines without '--------' prefix"); ok = False
+    if "/model gpt-5 high" in txt and "/model gpt-5 medium" not in txt:
+        typer.echo("-------- High switch found without returning to medium"); ok = False
+    typer.echo("--------qa: OK" if ok else "--------qa: FAIL")
+    raise typer.Exit(0 if ok else 1)
 
 
 @app.command("codex-init")
@@ -396,9 +347,9 @@ def codex_init(
     """Create Codex CLI assets in .codex/"""
     try:
         root = Path(project_root or ".")
-        result = sp_codex.codex_init_assets(root)
-        for line in result.get("logs", []):
-            typer.echo(line)
+        adapter = CodexAdapter()
+        adapter.generate_assets(root)
+        typer.echo("--------codex:init: .codex assets created")
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
@@ -410,8 +361,19 @@ def codex_mode_on(
     """Enable Codex AMR mode by creating .codex/.codex-mode flag."""
     try:
         root = Path(project_root or ".")
-        logs = sp_modes.enable_codex_mode(root)
-        _echo_logs(logs)
+        cursor_dir = root / ".cursor"
+        cursor_dir.mkdir(parents=True, exist_ok=True)
+        flag = cursor_dir / ".codex-mode"
+        flag.write_text("", encoding="utf-8")
+        # Mutual exclusivity: disable Grok mode flag if present
+        grok_flag = root / ".cursor" / ".grok-mode"
+        if grok_flag.exists():
+            try:
+                grok_flag.unlink()
+                typer.echo("-------- Grok mode disabled due to Codex AMR activation")
+            except Exception:
+                pass
+        typer.echo("-------- Codex AMR mode: ENABLED (.codex/.codex-mode)")
     except Exception as e:
         typer.echo(f"❌ Error enabling Codex mode: {e}", err=True); raise typer.Exit(1)
 
@@ -423,8 +385,12 @@ def codex_mode_off(
     """Disable Codex AMR mode by removing .codex/.codex-mode flag."""
     try:
         root = Path(project_root or ".")
-        logs = sp_modes.disable_codex_mode(root)
-        _echo_logs(logs)
+        flag = root / ".cursor" / ".codex-mode"
+        if flag.exists():
+            flag.unlink()
+            typer.echo("-------- Codex AMR mode: DISABLED")
+        else:
+            typer.echo("-------- Codex AMR mode: Already disabled")
     except Exception as e:
         typer.echo(f"❌ Error disabling Codex mode: {e}", err=True); raise typer.Exit(1)
 
@@ -436,8 +402,19 @@ def grok_mode_on(
     """Enable Grok mode by creating .cursor/.grok-mode flag (and disable Codex mode)."""
     try:
         root = Path(project_root or ".")
-        logs = sp_modes.enable_grok_mode(root)
-        _echo_logs(logs)
+        cursor_dir = root / ".cursor"
+        cursor_dir.mkdir(parents=True, exist_ok=True)
+        flag = cursor_dir / ".grok-mode"
+        flag.write_text("", encoding="utf-8")
+        # Mutual exclusivity: disable Codex mode flag if present
+        codex_flag = root / ".codex" / ".codex-mode"
+        if codex_flag.exists():
+            try:
+                codex_flag.unlink()
+                typer.echo("-------- Codex AMR mode disabled due to Grok activation")
+            except Exception:
+                pass
+        typer.echo("-------- Grok mode: ENABLED (.cursor/.grok-mode)")
     except Exception as e:
         typer.echo(f"❌ Error enabling Grok mode: {e}", err=True); raise typer.Exit(1)
 
@@ -449,8 +426,12 @@ def grok_mode_off(
     """Disable Grok mode by removing .cursor/.grok-mode flag."""
     try:
         root = Path(project_root or ".")
-        logs = sp_modes.disable_grok_mode(root)
-        _echo_logs(logs)
+        flag = root / ".cursor" / ".grok-mode"
+        if flag.exists():
+            flag.unlink()
+            typer.echo("-------- Grok mode: DISABLED")
+        else:
+            typer.echo("-------- Grok mode: Already disabled")
     except Exception as e:
         typer.echo(f"❌ Error disabling Grok mode: {e}", err=True); raise typer.Exit(1)
 
@@ -462,9 +443,16 @@ def personas_init(
 ):
     """Copy package personas manifest into project personas/manifest.yaml"""
     try:
-        result = sp_personas.personas_init_copy(Path(project_root or "."), overwrite)
-        for line in result.get("logs", []):
-            typer.echo(line)
+        root = Path(project_root or ".")
+        src = Path(__file__).parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
+        dst_dir = root / "personas"
+        dst = dst_dir / "manifest.yaml"
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        if dst.exists() and not overwrite:
+            typer.echo(f"➡️  personas manifest exists: {dst} (use --overwrite to replace)")
+            return
+        dst.write_text(src.read_text())
+        typer.echo(f"--------personas:init: wrote manifest → {dst}")
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
@@ -475,9 +463,11 @@ def personas_build(
 ):
     """Build personas assets (Cursor commands + rules) in current project"""
     try:
-        result = sp_personas.personas_build_assets(Path(project_root or "."))
-        for line in result.get("logs", []):
-            typer.echo(line)
+        root = Path(project_root or ".")
+        cursor = CursorAdapter()
+        cursor.generate_commands(root)
+        cursor.generate_rules(root)
+        typer.echo("--------personas:build: .cursor commands + rules updated")
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
@@ -572,17 +562,29 @@ def context(
 ):
     """Context collection and management"""
     try:
+        collector = ContextCollector(str(project_root) if project_root else ".")
+
         if action == "collect" and query:
-            res = sp_context.collect(project_root, query, max_tokens)
+            result = collector.collect_context(query, max_tokens=max_tokens)
+            typer.echo(f"📊 Collected context for: {query}")
+            typer.echo(f"   Files: {len(result['files'])}")
+            typer.echo(f"   Tokens: {result['metadata']['context_tokens']}")
+            typer.echo(f"   Time: {result['metadata']['collection_time']:.2f}s")
+
         elif action == "stats":
-            res = sp_context.stats(project_root)
+            stats = collector.get_stats()
+            typer.echo("Context collector stats:")
+            typer.echo(f"   Cache size: {stats['cache_size']}")
+            typer.echo(f"   Gitignore loaded: {stats['gitignore_loaded']}")
+
         elif action == "clear":
-            res = sp_context.clear(project_root)
+            collector.clear_cache()
+            typer.echo("✅ Context cache cleared")
+
         else:
             typer.echo(f"❌ Unknown context action: {action}", err=True)
             raise typer.Exit(1)
-        for line in res.get("logs", []):
-            typer.echo(line)
+
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
         raise typer.Exit(1)
@@ -597,20 +599,54 @@ def validate(
     """Validation and quality checks"""
     try:
         if action == "todo" and target:
-            res = sp_validate.validate_todo(target, project_root)
-            for line in res.get("logs", []):
-                typer.echo(line)
-            if not res.get("ok"):
-                raise typer.Exit(1)
+            validator = TodoValidator()
+            result = validator.validate_task_completion(target)
+
+            if result[0]:  # Success
+                typer.echo(f"✅ Task '{target}' validation passed")
+            else:
+                typer.echo(f"❌ Task '{target}' validation failed: {result[1]}")
+
         elif action == "check":
-            res = sp_validate.validate_check(project_root, target)
-            for line in res.get("logs", []):
-                typer.echo(line)
-            if not res.get("ok"):
+            # Run comprehensive checks
+            checks = [
+                ("SDD gates", lambda: check_implementation_ready(target or "default", str(project_root) if project_root else ".")),
+                ("Context collection", lambda: len(ContextCollector(str(project_root) if project_root else ".").collect_context("test")["files"]) > 0),
+            ]
+
+            typer.echo("Running validation checks:")
+            all_passed = True
+
+            for check_name, check_func in checks:
+                try:
+                    result = check_func()
+                    if hasattr(result, 'ok'):
+                        passed = result.ok
+                        details = f" ({len(result.missing)} issues)" if result.missing else ""
+                    else:
+                        passed = bool(result)
+                        details = ""
+
+                    status = "✅" if passed else "❌"
+                    typer.echo(f"   {status} {check_name}{details}")
+
+                    if not passed:
+                        all_passed = False
+
+                except Exception as e:
+                    typer.echo(f"   ❌ {check_name}: Error - {e}")
+                    all_passed = False
+
+            if all_passed:
+                typer.echo("🎉 All validation checks passed!")
+            else:
+                typer.echo("⚠️  Some validation checks failed")
                 raise typer.Exit(1)
+
         else:
             typer.echo(f"❌ Unknown validate action: {action}", err=True)
             raise typer.Exit(1)
+
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
         raise typer.Exit(1)
@@ -678,14 +714,6 @@ def init(
         cursor_adapter.generate_commands(target_dir)
         cursor_adapter.generate_rules(target_dir)
 
-        # Initialize personas and build all persona commands
-        try:
-            personas_init(project_root=target_dir, overwrite=False)
-            personas_build(project_root=target_dir)
-            typer.echo("✅ Personas initialized and built successfully!")
-        except Exception as e:
-            typer.echo(f"⚠️  Warning: Could not initialize personas: {e}")
-
         # Example SDD scaffold (unchanged)
         sdd_dir = target_dir / "specs" / "example-feature"
         sdd_dir.mkdir(exist_ok=True)
@@ -745,24 +773,22 @@ def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args
         typer.echo(f"-------- System prompt loaded ({len(system_prompt)} chars)")
         typer.echo(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
 
-        # Load persona configuration (SSOT): project personas/manifest.yaml → packages/cursor-assets/manifests/personas.yaml
-        manifest_path = Path.cwd() / "personas" / "manifest.yaml"
-        if not manifest_path.exists():
-            manifest_path = Path(__file__).parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
-        try:
-            if manifest_path.exists():
-                import yaml
-                with open(manifest_path, 'r', encoding='utf-8') as f:
-                    manifest = yaml.safe_load(f) or {}
-                if persona_key in manifest.get('personas', {}):
-                    persona_config = manifest['personas'][persona_key]
-                    typer.echo(f"-------- Loaded persona: {persona_config.get('name', persona_key)}")
-                else:
-                    typer.echo(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
+        # Load persona configuration
+        personas_dir = Path(__file__).parent / "personas"
+        manifest_path = personas_dir / "manifest.yaml"
+
+        if manifest_path.exists():
+            import yaml
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest = yaml.safe_load(f)
+
+            if persona_key in manifest.get('personas', {}):
+                persona_config = manifest['personas'][persona_key]
+                typer.echo(f"-------- Loaded persona: {persona_config.get('name', persona_key)}")
             else:
-                typer.echo("⚠️  Persona manifest not found, proceeding with basic execution")
-        except Exception:
-            typer.echo("⚠️  Could not parse persona manifest; proceeding")
+                typer.echo(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
+        else:
+            typer.echo("⚠️  Persona manifest not found, proceeding with basic execution")
 
         # Here we would integrate with the actual AI processing
         # For now, we'll just display the system prompt and user input
@@ -855,17 +881,15 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         print(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
 
         # Load persona configuration from project
-        # SSOT: project personas/manifest.yaml → packages/cursor-assets/manifests/personas.yaml
-        manifest_path = Path.cwd() / "personas" / "manifest.yaml"
-        if not manifest_path.exists():
-            manifest_path = Path(__file__).parent.parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
+        personas_dir = Path(__file__).parent.parent.parent / "packages" / "cursor-assets" / "manifests"
+        manifest_path = personas_dir / "enhanced_personas.yaml"
 
         persona_name = persona_key
         if manifest_path.exists():
             try:
                 import yaml
                 with open(manifest_path, 'r', encoding='utf-8') as f:
-                    manifest = yaml.safe_load(f) or {}
+                    manifest = yaml.safe_load(f)
 
                 if persona_key in manifest.get('personas', {}):
                     persona_config = manifest['personas'][persona_key]
