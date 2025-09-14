@@ -466,6 +466,36 @@ def personas_build(
         typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
 
+@app.command("mcp:serve")
+def mcp_serve():
+    """Start the Super Prompt FastMCP server."""
+    try:
+        # We construct the path to the server script relative to this CLI script.
+        # This makes the execution path independent of where the user runs the command.
+        server_script_path = Path(__file__).parent / "mcp_srv" / "server.py"
+
+        if not server_script_path.exists():
+            typer.echo(f"❌ Fatal Error: MCP server script not found at {server_script_path}", err=True)
+            typer.echo("   The package installation may be corrupt.", err=True)
+            raise typer.Exit(1)
+
+        typer.echo(f"🚀 Starting FastMCP server from: {server_script_path}")
+        typer.echo("   Press Ctrl+C to exit.")
+
+        # Use sys.executable to ensure we're using the python from the correct venv
+        subprocess.run([sys.executable, str(server_script_path)], check=True)
+
+    except subprocess.CalledProcessError as e:
+        # This will trigger if the server exits with a non-zero code.
+        # We can ignore this for now as a normal shutdown might be non-zero.
+        pass
+    except KeyboardInterrupt:
+        typer.echo("\n🛑 Server stopped by user.")
+    except Exception as e:
+        typer.echo(f"❌ Error starting MCP server: {e}", err=True)
+        raise typer.Exit(1)
+
+
 @app.command()
 def sdd_cli(
     action: str = typer.Argument(..., help="SDD action (spec/plan/tasks/implement)"),
@@ -649,11 +679,20 @@ def init(
 
         target_dir = Path(project_root)
 
-        # Initialize adapters
-        cursor_adapter = CursorAdapter()
-        codex_adapter = CodexAdapter()
+        # --- Legacy cleanup (idempotent) ---
+        legacy_paths = [
+            target_dir / ".cursor" / "commands" / "super-prompt" / "tag-executor.sh",
+            target_dir / ".cursor" / "commands" / "super-prompt" / "re-init.md",
+        ]
+        for p in legacy_paths:
+            try:
+                if p.exists():
+                    p.unlink()
+                    typer.echo(f"🧹 Removed legacy artifact: {p}")
+            except Exception:
+                pass
 
-        # Create necessary directories
+        # Ensure base dirs
         dirs_to_create = [
             target_dir / ".cursor" / "commands" / "super-prompt",
             target_dir / ".cursor" / "rules",
@@ -661,25 +700,17 @@ def init(
             target_dir / "memory" / "constitution",
             target_dir / "memory" / "rules",
         ]
-
         for dir_path in dirs_to_create:
             dir_path.mkdir(parents=True, exist_ok=True)
 
-        # Generate Cursor integration (debug logs only when SUPER_PROMPT_DEBUG=1)
-        __os = __import__("os")
-        _dbg = __os.environ.get("SUPER_PROMPT_DEBUG") == "1"
-        if _dbg:
-            print(f"🔍 DEBUG: About to call cursor_adapter.generate_commands with {target_dir}")
+        # Generate latest Cursor integration (no legacy shell runners)
+        cursor_adapter = CursorAdapter()
         cursor_adapter.generate_commands(target_dir)
-        if _dbg:
-            print(f"🔍 DEBUG: cursor_adapter.generate_commands completed")
         cursor_adapter.generate_rules(target_dir)
 
-        # Generate initial SDD structure
+        # Example SDD scaffold (unchanged)
         sdd_dir = target_dir / "specs" / "example-feature"
         sdd_dir.mkdir(exist_ok=True)
-
-        # Create basic spec template
         spec_file = sdd_dir / "spec.md"
         if not spec_file.exists() or force:
             spec_file.write_text("""# Example Feature Specification
@@ -700,165 +731,6 @@ Brief description of the feature.
 - [ ] Test case 2
 """)
 
-        # Auto-install Python dependencies for Super Prompt core
-        try:
-            import subprocess
-            import sys
-            typer.echo("🐍 Installing Python dependencies for Super Prompt...")
-            # Resolve repo root and core-py path robustly
-            # Fix path resolution - parents[1] gives us core-py directory
-            core_py_path = Path(__file__).resolve().parents[1]
-            pyproject_path = core_py_path / "pyproject.toml"
-
-            if pyproject_path.exists():
-                # Create virtual environment in .super-prompt/venv if it doesn't exist
-                super_prompt_dir = target_dir / ".super-prompt"
-                super_prompt_dir.mkdir(exist_ok=True)
-                venv_path = super_prompt_dir / "venv"
-
-                # Check if venv already exists and has dependencies
-                venv_python = venv_path / "bin" / "python"
-                if not venv_python.exists():
-                    venv_python = venv_path / "Scripts" / "python.exe"  # Windows
-
-                venv_ready = False
-                if venv_python.exists():
-                    # Check if dependencies are already installed
-                    try:
-                        result = subprocess.run([
-                            str(venv_python), "-c",
-                            "import typer, yaml, pathspec; print('Dependencies available')"
-                        ], check=True, capture_output=True, text=True)
-                        if "Dependencies available" in result.stdout:
-                            typer.echo("   ✅ Virtual environment and dependencies already available")
-                            venv_ready = True
-                    except:
-                        pass
-
-                if not venv_ready:
-                    if not venv_path.exists():
-                        typer.echo("   📦 Creating Python virtual environment in .super-prompt/venv...")
-                        subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
-
-                    # Create data directory for SQLite and databases
-                    data_dir = venv_path / "data"
-                    data_dir.mkdir(exist_ok=True)
-
-                    # Install dependencies in virtual environment
-                    pip_path = venv_path / "bin" / "pip"
-                    if not pip_path.exists():
-                        pip_path = venv_path / "Scripts" / "pip"  # Windows
-
-                    typer.echo("   ⚙️ Installing Super Prompt core (editable) + deps...")
-                    try:
-                        subprocess.run([str(pip_path), "install", "-e", str(core_py_path)], check=True)
-                        typer.echo("   ✅ Python dependencies installed successfully")
-                    except Exception as pe:
-                        typer.echo(f"   ⚠️  Editable install failed: {pe}")
-                        # Fallback: install minimal runtime deps into the venv
-                        deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
-                        try:
-                            subprocess.run([str(pip_path), "install", *deps], check=True)
-                            typer.echo("   ✅ Minimal Python dependencies installed in venv")
-                        except Exception as ie:
-                            typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
-            else:
-                # Minimal fallback: install runtime deps into virtual environment
-                typer.echo("⚠️  pyproject.toml not found — installing minimal runtime deps in venv")
-
-                # Ensure venv exists and install deps there
-                super_prompt_dir = target_dir / ".super-prompt"
-                super_prompt_dir.mkdir(exist_ok=True)
-                venv_path = super_prompt_dir / "venv"
-
-                # Check if venv already exists
-                venv_python = venv_path / "bin" / "python"
-                if not venv_python.exists():
-                    venv_python = venv_path / "Scripts" / "python.exe"  # Windows
-
-                if venv_python.exists():
-                    # Install into existing venv
-                    pip_path = venv_path / "bin" / "pip"
-                    if not pip_path.exists():
-                        pip_path = venv_path / "Scripts" / "pip"  # Windows
-
-                    deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
-                    try:
-                        subprocess.run([str(pip_path), "install", *deps], check=True)
-                        typer.echo("   ✅ Minimal Python dependencies installed in venv")
-                    except Exception as ie:
-                        typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
-                else:
-                    typer.echo("   ⚠️  Virtual environment not found, skipping dependency install")
-        except Exception as e:
-            typer.echo(f"⚠️  Skipped Python dependency install: {e}")
-
-        # Best-effort: install local dev dependencies for SQLite LTM helpers (pinned)
-        try:
-            typer.echo("📦 Installing npm dev dependencies for LTM helpers...")
-            pinned = [
-                "better-sqlite3@12.2.0",
-                "ajv@8.17.1",
-                "zod@4.1.8",
-                "ioredis@5.7.0",
-            ]
-            override = __os.environ.get("SUPER_PROMPT_LTM_PKGS")
-            pkgs = override.split() if override else pinned
-            subprocess.run(["npm", "install", "-D", *pkgs], cwd=str(target_dir), check=False)
-        except Exception as e:
-            typer.echo(f"⚠️  Skipped npm dev dependency install: {e}")
-
-        # Add Cursor commands for init-sp and re-init
-        try:
-            commands_dir = target_dir / ".cursor" / "commands" / "super-prompt"
-            commands_dir.mkdir(parents=True, exist_ok=True)
-
-            init_sp = commands_dir / "init-sp.md"
-            init_sp.write_text("""---
-description: Initialize Super Prompt memory (project analysis)
-run: "python3"
-args: [".super-prompt/utils/init/init_sp.py", "--mode", "init"]
----
-
-🧭 Initialize Super Prompt memory with project structure snapshot.
-""")
-
-            reinit = commands_dir / "re-init-sp.md"
-            reinit.write_text("""---
-description: Re-Initialize project analysis (refresh memory)
-run: "python3"
-args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
----
-
-🔄 Refresh project analysis and update memory.
-""")
-        except Exception as e:
-            typer.echo(f"⚠️  Could not write Cursor commands: {e}")
-
-        # Cleanup legacy assets (safe, idempotent)
-        try:
-            legacy_dir = target_dir / "legacy" / f"cleanup-{int(__import__('time').time())}"
-            # 1) Move old Cursor command Python scripts out of .cursor/commands/super-prompt
-            sp_cmd_dir = target_dir / ".cursor" / "commands" / "super-prompt"
-            py_legacy = []
-            if sp_cmd_dir.exists():
-                for p in sp_cmd_dir.glob("*.py"):
-                    py_legacy.append(p)
-            if py_legacy:
-                (legacy_dir / "cursor-commands").mkdir(parents=True, exist_ok=True)
-                for p in py_legacy:
-                    p.rename(legacy_dir / "cursor-commands" / p.name)
-                typer.echo(f"🧹 Moved legacy Cursor command scripts → {legacy_dir / 'cursor-commands'}")
-
-            # 2) Remove deprecated command names (re-init → re-init-sp)
-            deprecated = target_dir / ".cursor" / "commands" / "super-prompt" / "re-init.md"
-            if deprecated.exists():
-                (legacy_dir / "deprecated").mkdir(parents=True, exist_ok=True)
-                deprecated.rename(legacy_dir / "deprecated" / deprecated.name)
-                typer.echo("🧹 Deprecated /re-init removed (use /re-init-sp)")
-        except Exception as e:
-            typer.echo(f"⚠️  Legacy cleanup skipped: {e}")
-
         typer.echo("✅ Super Prompt initialized!")
         typer.echo(f"   Project root: {target_dir.absolute()}")
         typer.echo("   Next steps:")
@@ -869,6 +741,16 @@ args: [".super-prompt/utils/init/init_sp.py", "--mode", "reinit"]
     except Exception as e:
         typer.echo(f"❌ Initialization failed: {e}", err=True)
         raise typer.Exit(1)
+
+
+# Alias: super:init → init
+@app.command("super:init")
+def super_init_alias(
+    project_root: Optional[Path] = typer.Option(".", "--project-root", help="Project root directory"),
+    force: bool = typer.Option(False, "--force", help="Force reinitialization"),
+):
+    """Alias for init to support `super:init`."""
+    return init(project_root=project_root, force=force)
 
 
 def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args: list):
