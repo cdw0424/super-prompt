@@ -123,10 +123,10 @@ resolve_mode() {
 
   # 모드 변경 시 dispose 로깅
   if [ -n "$prev_mode" ] && [ "$prev_mode" != "$mode" ]; then
-    echo "-------- mode: disposed previous provider ($prev_mode)"
+    echo "-------- mode: disposed previous provider ($prev_mode)" >&2
   fi
 
-  echo "-------- mode: resolved to $mode"
+  echo "-------- mode: resolved to $mode" >&2
   export LLM_MODE="$mode"
 }
 
@@ -182,6 +182,12 @@ case "$CMD" in
     ;;
   super:refresh)
     exec node "$APP_HOME/src/mcp-client.js" call sp.refresh "$@"
+    ;;
+  grok-mode-on)
+    exec node "$APP_HOME/src/mode/set.js" grok
+    ;;
+  gpt-mode-on|codex-mode-on)
+    exec node "$APP_HOME/src/mode/set.js" gpt
     ;;
   --version|-v|version)
     exec node "$APP_HOME/src/mcp-client.js" call sp.version

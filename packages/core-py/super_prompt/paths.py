@@ -49,9 +49,11 @@ def project_data_dir() -> Path:
     if wrong.exists() and not correct.exists():
         try:
             wrong.rename(correct)
-            print(f"----- DEBUG: Corrected typo folder: {wrong} -> {correct}")
+            import sys
+            print(f"-------- DEBUG: Corrected typo folder: {wrong} -> {correct}", file=sys.stderr, flush=True)
         except Exception as e:
-            print(f"----- DEBUG: Could not correct typo folder: {e}")
+            import sys
+            print(f"-------- DEBUG: Could not correct typo folder: {e}", file=sys.stderr, flush=True)
 
     return correct
 

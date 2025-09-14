@@ -1,7 +1,7 @@
 ---
 description: gpt-mode-on command
 run: "super-prompt"
-args: ["codex-mode-on"]
+args: ["gpt-mode-on"]
 ---
 
 🤖 GPT Mode On

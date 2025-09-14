@@ -975,3 +975,42 @@ super-prompt super:init --help # ✅ Legacy syntax support
 ### 🛠️ Dev persona flag
 - feat(cli): Add `--sp-dev` and `--dev` flags to `optimize` command.
 - feat(optimizer): Add `dev` persona to PromptOptimizer so `/dev` and flags resolve without unknown-persona errors.
+## 4.0.54
+
+- docs: clarify LLM mode switching precedence (commands persist project mode)
+
+## 4.0.53
+
+- feat: add automatic LLM mode switching commands
+  - CLI: `grok-mode-on`, `gpt-mode-on` persist mode to `.super-prompt/mode.json`
+  - MCP tools: `sp.grok_mode_on`, `sp.gpt_mode_on`, `sp.mode_get`, `sp.mode_set`
+- docs: document LLM mode switching for Cursor and Codex guides
+
+## 4.0.52
+
+- docs: remove API key references; internal MCP tools require no keys
+- templates/init: stop emitting OPENAI/XAI/LLM envs in `.cursor/mcp.json`
+- docs: clarify internal-only operation; keep stdout protocol-only guidance
+
+## 4.0.51
+
+- docs: switch all documentation to English only (README, core README, Cursor MCP guide)
+- docs: use `npx -y @cdw0424/super-prompt sp-mcp` form for broad npx compatibility
+- feat(init): always author `.cursor/mcp.json` on init; no user setup needed
+
+## 4.0.50
+
+- docs: enforce English-only documentation; rewrite Cursor MCP setup guide in English
+- feat(init): author `.cursor/mcp.json` during init even if template is absent
+- docs: clarify that `super:init` auto-configures Cursor MCP; no manual steps required
+
+## 4.0.49
+
+- feat: add `sp-mcp` bin and wire `package.json` bin mapping
+- fix(mcp): route all server logs to stderr; keep stdout protocol-only
+- docs: update README, core-py README, Cursor and Codex MCP guides for `sp-mcp` and `.cursor/mcp.json`
+- feat(templates): update `templates/cursor/mcp.json` to use `npx --yes --package @cdw0424/super-prompt sp-mcp`
+- chore(init): create project `.cursor/mcp.json` with safe defaults
+- fix(install): detect Python >=3.10, prefer 3.12/3.11/3.10; install core-py wheel; search fallback in `packages/core-py/dist`
+- chore(prepack): add script to copy latest core-py wheel into root `dist/` for npm publish
+- chore(mcp_register): register `sp-mcp` in `.cursor/mcp.json` and `~/.codex/config.toml`

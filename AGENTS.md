@@ -8,8 +8,8 @@
 - Personas manifest (SSOT): `packages/cursor-assets/manifests/personas.yaml` (project override: `personas/manifest.yaml`)
 
 ## Build, Test, and Development Commands
-- Initialize project assets: `npx super-prompt init`
-- Start MCP server: `npx super-prompt mcp:serve`
+- Initialize project assets: `npx super-prompt super:init`
+- Start MCP server (Cursor/Codex): `npx --yes --package=@cdw0424/super-prompt sp-mcp`
 - Guards: `.codex/router-check.sh` and `scripts/codex/prompt-qa.sh <transcript>`
 
 ## Coding Style & Naming Conventions

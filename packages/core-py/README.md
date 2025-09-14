@@ -18,7 +18,7 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
     - **EvolKV Optimization**: Persists and evolves task-aware KV-cache profiles to optimize LLM inference performance.
     - **Context-Aware Memory**: Maintains task context across sessions for seamless continuity.
 
-3.  **🕵️‍♂️ Confession Mode (더블 체크)**: Radical transparency for every action. All MCP tools automatically append a self-audit to their output, detailing what is known, what is unknown (potential side-effects, edge cases), and proposing countermeasures to ensure reliability.
+3.  **🕵️‍♂️ Confession Mode (double‑check)**: Radical transparency for every action. All MCP tools automatically append a self-audit to their output, detailing what is known, what is unknown (potential side-effects, edge cases), and proposing countermeasures to ensure reliability.
 
 ---
 
@@ -49,12 +49,12 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
     ```
 
 3.  **Configure and Run the MCP Server in Your IDE**
-    For Super Prompt to work, your IDE (e.g., Cursor) must be configured to run its MCP server. Since `super-prompt` is installed locally, the command should also use `npx`.
+    Configure Cursor to spawn Super Prompt via `npx` using the provided binary `sp-mcp`.
 
-    - **Example Cursor MCP Server Configuration**:
-        - **Name**: `super-prompt (local)`
+    - **Example Cursor MCP Server Configuration (project local)**:
         - **Command**: `npx`
-        - **Arguments**: `["super-prompt", "mcp:serve"]`
+        - **Arguments**: `["--yes", "--package=@cdw0424/super-prompt@latest", "sp-mcp"]`
+        - **Env**: set `SUPER_PROMPT_PROJECT_ROOT=${workspaceFolder}`, optionally API keys
 
 4.  **Use Personas in Your IDE**
     With the server running, you can now use the slash commands in your IDE's chat to invoke the persona tools.
@@ -70,9 +70,9 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
 
 The heart of Super Prompt v4 is the MCP server. You run it, and your IDE connects to it.
 
--   **Start the server**: `super-prompt mcp:serve`
--   **Transport**: The server uses `stdio` for communication, so no network ports are required.
--   **Logs**: All diagnostic logs are sent to `stderr` (prefixed with `-----`), while `stdout` is reserved for clean MCP communication.
+-   **Spawn**: `npx --yes --package @cdw0424/super-prompt sp-mcp` (Cursor/Codex)
+-   **Transport**: stdio; no ports used
+-   **Logs**: All diagnostic logs to `stderr` (prefixed with `--------`). `stdout` is protocol-only.
 
 ### Available MCP Tools
 

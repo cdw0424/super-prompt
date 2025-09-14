@@ -68,7 +68,8 @@ class PersonaLoader:
             return loaded_count
 
         except Exception as e:
-            print(f"Error loading persona manifest: {e}")
+            import sys
+            print(f"-------- Error loading persona manifest: {e}", file=sys.stderr, flush=True)
             return 0
 
     def _create_default_manifest(self):

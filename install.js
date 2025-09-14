@@ -227,7 +227,16 @@ async function setupPythonVenv(superPromptDir) {
 
         // Create virtual environment
         console.log(`${colors.dim}   → Creating virtual environment...${colors.reset}`);
-        const pythonCmd = platform === 'win32' ? 'python' : 'python3';
+        // Prefer Python >=3.10
+        function findPython() {
+          if (platform === 'win32') return 'python';
+          const candidates = ['python3.12', 'python3.11', 'python3.10', 'python3'];
+          for (const c of candidates) {
+            try { execSync(`command -v ${c}`, { stdio: 'ignore' }); return c; } catch (_) {}
+          }
+          return 'python3';
+        }
+        const pythonCmd = findPython();
         execSync(`${pythonCmd} -m venv "${venvDir}"`, { stdio: 'inherit' });
 
         // Determine pip and python paths in venv
@@ -244,30 +253,37 @@ async function setupPythonVenv(superPromptDir) {
             'typer>=0.9.0',      // CLI framework
             'pyyaml>=6.0',       // YAML parsing
             'pathspec>=0.11.0',   // File filtering
-            'mcp>=1.0.0'         // MCP server framework
+            'mcp>=0.4.0'         // MCP server framework (Python >=3.10)
         ];
 
         console.log(`${colors.dim}   → Installing Python dependencies...${colors.reset}`);
         execSync(`"${venvPip}" install ${packages.join(' ')}`, { stdio: 'inherit' });
 
         // Install the built wheel for the core-py package
-        const corePyDistDir = path.join(__dirname, 'dist');
-        if (fs.existsSync(corePyDistDir)) {
-            const wheelFiles = fs.readdirSync(corePyDistDir).filter(f => f.endsWith('.whl'));
-            if (wheelFiles.length > 0) {
-                // Sort by version (newest first) to install the latest wheel
-                wheelFiles.sort((a, b) => {
-                    const versionA = a.match(/super_prompt_core-(\d+\.\d+\.\d+)/)?.[1];
-                    const versionB = b.match(/super_prompt_core-(\d+\.\d+\.\d+)/)?.[1];
-                    if (versionA && versionB) {
-                        return versionB.localeCompare(versionA, undefined, { numeric: true });
-                    }
-                    return b.localeCompare(a); // fallback to alphabetical
-                });
-                const wheelPath = path.join(corePyDistDir, wheelFiles[0]);
-                console.log(`${colors.dim}   → Installing core-py package from ${wheelFiles[0]}...${colors.reset}`);
-                execSync(`"${venvPip}" install "${wheelPath}"`, { stdio: 'inherit' });
-            }
+        const distCandidates = [
+          path.join(__dirname, 'dist'),
+          path.join(__dirname, 'packages', 'core-py', 'dist')
+        ];
+        let installedWheel = false;
+        for (const corePyDistDir of distCandidates) {
+          if (!fs.existsSync(corePyDistDir)) continue;
+          const wheelFiles = fs.readdirSync(corePyDistDir).filter(f => f.endsWith('.whl'));
+          if (wheelFiles.length === 0) continue;
+          // Sort by version (newest first) to install the latest wheel
+          wheelFiles.sort((a, b) => {
+            const versionA = a.match(/super_prompt_core-(\d+\.\d+\.\d+)/)?.[1];
+            const versionB = b.match(/super_prompt_core-(\d+\.\d+\.\d+)/)?.[1];
+            if (versionA && versionB) return versionB.localeCompare(versionA, undefined, { numeric: true });
+            return b.localeCompare(a);
+          });
+          const wheelPath = path.join(corePyDistDir, wheelFiles[0]);
+          console.log(`${colors.dim}   → Installing core-py package from ${wheelFiles[0]}...${colors.reset}`);
+          execSync(`"${venvPip}" install "${wheelPath}"`, { stdio: 'inherit' });
+          installedWheel = true;
+          break;
+        }
+        if (!installedWheel) {
+          console.log(`${colors.yellow}   ⚠ No core-py wheel found in dist/. Skipping wheel install.${colors.reset}`);
         }
 
         // Create data directory for SQLite and other files

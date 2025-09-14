@@ -11,6 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
 from .paths import package_root, project_root, project_data_dir
 from .mcp_register import ensure_cursor_mcp_registered, ensure_codex_mcp_registered
+from .mode_store import get_mode, set_mode
 import shutil, sys
 import time
 import json
@@ -21,9 +22,9 @@ from contextlib import contextmanager
 if __name__ != "__main__":
     # If imported directly (not run as MCP server), block access
     if not os.environ.get("MCP_SERVER_MODE"):
-        print("❌ ERROR: Super Prompt MCP server must be run through MCP protocol only.")
-        print("🔒 Direct Python execution is not allowed.")
-        print("📋 Use MCP client tools: sp.init(), sp.refresh(), sp.list_commands(), etc.")
+        print("-------- ERROR: Super Prompt MCP server must be run through MCP protocol only.", file=sys.stderr, flush=True)
+        print("-------- Direct Python execution is not allowed.", file=sys.stderr, flush=True)
+        print("-------- Use MCP client tools: sp.init(), sp.refresh(), sp.list_commands(), etc.", file=sys.stderr, flush=True)
         sys.exit(1)
 
 # Span 관리 클래스
@@ -45,7 +46,7 @@ class SpanManager:
             'status': 'active'
         }
 
-        print(f"-------- memory: span started {span_id} for {meta.get('commandId', 'unknown')}")
+        print(f"-------- memory: span started {span_id} for {meta.get('commandId', 'unknown')}", file=sys.stderr, flush=True)
         return span_id
 
     def write_event(self, span_id: str, event: Dict[str, Any]) -> None:
@@ -56,7 +57,7 @@ class SpanManager:
                 **event
             }
             self.spans[span_id]['events'].append(event_with_time)
-            print(f"-------- memory: event recorded in {span_id}")
+            print(f"-------- memory: event recorded in {span_id}", file=sys.stderr, flush=True)
 
     def end_span(self, span_id: str, status: str = 'ok', extra: Optional[Dict[str, Any]] = None) -> None:
         """span 종료"""
@@ -68,7 +69,7 @@ class SpanManager:
             if extra:
                 span['extra'] = extra
 
-            print(f"-------- memory: span ended {span_id} status={status} duration={span['duration']:.2f}s")
+            print(f"-------- memory: span ended {span_id} status={status} duration={span['duration']:.2f}s", file=sys.stderr, flush=True)
 
             # 메모리에 유지 (실제로는 파일이나 DB에 저장)
             # TODO: 영구 저장소에 저장
@@ -179,7 +180,7 @@ def init(force: bool = False) -> TextContent:
             'timestamp': time.time()
         })
         span_manager.end_span(health_span, 'ok')
-        print("-------- MCP memory: healthcheck OK")
+        print("-------- MCP memory: healthcheck OK", file=sys.stderr, flush=True)
 
         msg = _init_impl(force=force)
         return TextContent(type="text", text=msg)
@@ -228,7 +229,38 @@ def list_personas() -> TextContent:
         for persona in personas:
             text += f"- {persona['name']}: {persona['description']}\n"
 
-        return TextContent(type="text", text=text)
+    return TextContent(type="text", text=text)
+
+@mcp.tool()  # 도구명: sp.mode_get
+def mode_get() -> TextContent:
+    """Get current LLM mode (gpt|grok)"""
+    with memory_span('sp.mode_get'):
+        mode = get_mode()
+        return TextContent(type="text", text=mode)
+
+@mcp.tool()  # 도구명: sp.mode_set
+def mode_set(mode: str) -> TextContent:
+    """Set LLM mode to 'gpt' or 'grok'"""
+    with memory_span('sp.mode_set'):
+        m = set_mode(mode)
+        print(f"-------- mode: set to {m}", file=sys.stderr, flush=True)
+        return TextContent(type="text", text=f"mode set to {m}")
+
+@mcp.tool()  # 도구명: sp.grok_mode_on
+def grok_mode_on() -> TextContent:
+    """Switch LLM mode to grok"""
+    with memory_span('sp.grok_mode_on'):
+        set_mode('grok')
+        print("-------- mode: set to grok", file=sys.stderr, flush=True)
+        return TextContent(type="text", text="mode set to grok")
+
+@mcp.tool()  # 도구명: sp.gpt_mode_on
+def gpt_mode_on() -> TextContent:
+    """Switch LLM mode to gpt"""
+    with memory_span('sp.gpt_mode_on'):
+        set_mode('gpt')
+        print("-------- mode: set to gpt", file=sys.stderr, flush=True)
+        return TextContent(type="text", text="mode set to gpt")
 
 if __name__ == "__main__":
     mcp.run()  # stdio로 MCP 서버 실행

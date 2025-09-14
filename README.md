@@ -18,7 +18,7 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
     - **EvolKV Optimization**: Persists and evolves task-aware KV-cache profiles to optimize LLM inference performance.
     - **Context-Aware Memory**: Maintains task context across sessions for seamless continuity.
 
-3.  **🕵️‍♂️ Confession Mode (더블 체크)**: Radical transparency for every action. All MCP tools automatically append a self-audit to their output, detailing what is known, what is unknown (potential side-effects, edge cases), and proposing countermeasures to ensure reliability.
+3.  **🕵️‍♂️ Confession Mode (double‑check)**: Radical transparency for every action. All MCP tools automatically append a self-audit to their output, detailing what is known, what is unknown (potential side-effects, edge cases), and proposing countermeasures to ensure reliability.
 
 4.  **🔄 Mode Toggle System**: Seamless switching between GPT and Grok models with environment variables, CLI flags, and automatic resource management.
 
@@ -39,40 +39,35 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
 
 ## ⚡ Quick Start
 
-### 설치
+### Install
 ```bash
 npm i @cdw0424/super-prompt@latest
 ```
 
-### 초기화 (한 번만)
+### Initialize (one-time)
 ```bash
 npx super-prompt super:init
-# 출력:
+# Output:
 # -------- MCP memory: healthcheck OK
 # -------- init: completed
 ```
+This command also auto‑generates `.cursor/mcp.json` so Cursor can spawn Super Prompt via stdio. No manual MCP configuration is required.
 
-### 모드 전환
+### Mode switching
 ```bash
 # GPT
 npx super-prompt --gpt --version
 # Grok
 npx super-prompt --grok --version
-# 전환시
+# On switch (stderr)
 # -------- mode: disposed previous provider
 # -------- mode: resolved to grok
 ```
 
-### 환경변수 (선택)
-```bash
-export LLM_MODE=gpt
-export OPENAI_API_KEY=sk-...
-# 또는 Grok
-export LLM_MODE=grok
-export XAI_API_KEY=...
-```
+Preferred: use `grok-mode-on` / `gpt-mode-on` commands to switch modes; they persist per‑project and take precedence over any `LLM_MODE` environment variable during project sessions.
 
-> 더 이상 `SUPER_PROMPT_ALLOW_INIT=true`는 필요 없습니다 (가드 제거).
+No external API keys are required. All tools run internally within the MCP server.
+The initializer sets `SUPER_PROMPT_ALLOW_INIT=true` automatically for setup tasks.
 
 ---
 
@@ -80,9 +75,16 @@ export XAI_API_KEY=...
 
 The heart of Super Prompt v4 is the MCP server. You run it, and your IDE connects to it.
 
--   **Start the server**: `super-prompt mcp:serve`
--   **Transport**: The server uses `stdio` for communication, so no network ports are required.
--   **Logs**: All diagnostic logs are sent to `stderr` (prefixed with `-----`), while `stdout` is reserved for clean MCP communication.
+-   **Spawn (Cursor)**: via `.cursor/mcp.json` using `npx -y @cdw0424/super-prompt sp-mcp`
+-   **Spawn (Codex)**: via `~/.codex/config.toml` using the same `npx` + `sp-mcp` pattern
+-   **Transport**: stdio only; no TCP ports
+-   **Logs**: All diagnostic logs go to `stderr` (prefixed with `--------`). `stdout` is reserved for JSON‑RPC frames only.
+
+### LLM Mode Commands (auto)
+- Switch on the fly using local commands:
+  - `npx super-prompt grok-mode-on`
+  - `npx super-prompt gpt-mode-on`
+- These persist the mode in `.super-prompt/mode.json` for project‑wide use. The MCP server also exposes tools `sp.grok_mode_on`, `sp.gpt_mode_on`, `sp.mode_get`, and `sp.mode_set`.
 
 ### Available MCP Tools
 
@@ -176,7 +178,7 @@ The new installation script automatically sets up the encapsulated Python virtua
 ## 🛠️ Installation
 
 ### Requirements
-- **Node.js**: v14+
+- **Node.js**: v18.17+
 - **Python**: v3.10+ (A dedicated virtual environment is created and managed automatically).
 
 ### Command (Recommended: Local Install)
@@ -184,6 +186,26 @@ The new installation script automatically sets up the encapsulated Python virtua
 npm install --save-dev @cdw0424/super-prompt@latest
 ```
 The installer handles the creation of a self-contained Python virtual environment and all necessary dependencies within your project's `node_modules`. No manual Python package management or `sudo` is required.
+
+### Cursor mcp.json (reference)
+The initializer writes this for you under `.cursor/mcp.json`:
+
+```
+{
+  "mcpServers": {
+    "super-prompt": {
+      "command": "npx",
+  "args": ["-y", "@cdw0424/super-prompt@latest", "sp-mcp"],
+  "env": {
+    "SUPER_PROMPT_ALLOW_INIT": "true",
+    "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}"
+  }
+    }
+  }
+}
+```
+
+After setup, restart Cursor and check Output → “MCP Logs”. Initialization/handshake logging appears on stderr only.
 
 ---
 

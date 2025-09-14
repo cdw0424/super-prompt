@@ -18,7 +18,7 @@ def ensure_cursor_mcp_registered(project_root: Path,
 
     entry = {
         "command": "npx",
-        "args": ["-y", npm_spec, "super-prompt", "mcp-server"],
+        "args": ["-y", npm_spec, "sp-mcp"],
         "env": {
             # 설치/갱신을 MCP에서 허용(보안상 프로젝트 스코프에서만)
             "SUPER_PROMPT_ALLOW_INIT": "true",
@@ -66,7 +66,7 @@ def ensure_codex_mcp_registered(project_root: Path,
     block = (
         f"[mcp_servers.{server_name}]\n"
         f'command = "npx"\n'
-        f'args = ["-y", "{npm_spec}", "super-prompt", "mcp-server"]\n'
+        f'args = ["-y", "{npm_spec}", "sp-mcp"]\n'
         f'env = {{"SUPER_PROMPT_ALLOW_INIT" = "true", "SUPER_PROMPT_PROJECT_ROOT" = "{str(project_root)}", "PYTHON" = "{os.environ.get("PYTHON","python3")}"}}\n'
     )
 

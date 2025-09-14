@@ -1,0 +1,19 @@
+0 verbose cli /opt/homebrew/Cellar/node/23.11.0/bin/node /opt/homebrew/bin/npm
+1 info using npm@10.9.2
+2 info using node@v23.11.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/choi-dong-won/Desktop/devs/super-promt/.npmrc
+5 silly config load:file:/Users/choi-dong-won/.npmrc
+6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
+7 verbose title npm run build
+8 verbose argv "run" "build"
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T16_54_26_151Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T16_54_26_151Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 verbose cwd /Users/choi-dong-won/Desktop/devs/super-promt
+14 verbose os Darwin 24.6.0
+15 verbose node v23.11.0
+16 verbose npm  v10.9.2
+17 verbose exit 0
+18 info ok

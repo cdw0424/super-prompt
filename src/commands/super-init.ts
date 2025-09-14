@@ -52,6 +52,24 @@ export async function run(_ctx?: any) {
       const dst = path.join(cursorDir, name);
       if (fs.existsSync(src)) copyIfMissing(src, dst);
     }
+    // Fallback: author a default .cursor/mcp.json if template missing
+    const mcpCfg = path.join(cursorDir, 'mcp.json');
+    if (!fs.existsSync(mcpCfg)) {
+      const cfg = {
+        mcpServers: {
+          'super-prompt': {
+            command: 'npx',
+            args: ['-y', '@cdw0424/super-prompt@latest', 'sp-mcp'],
+            env: {
+              SUPER_PROMPT_ALLOW_INIT: 'true',
+              SUPER_PROMPT_PROJECT_ROOT: '${workspaceFolder}'
+            }
+          }
+        }
+      } as any;
+      fs.writeFileSync(mcpCfg, JSON.stringify(cfg, null, 2));
+      console.log(`-------- wrote: ${path.relative(process.cwd(), mcpCfg)}`);
+    }
 
     // 4) 페르소나 기본 템플릿(필요 시)
     const personasDst = path.join(cwd, 'personas');
@@ -63,13 +81,7 @@ export async function run(_ctx?: any) {
     }
 
     // 5) 모드 토큰/모델 안내(검증은 선택: 토큰 없으면 경고만)
-    const mode = (process.env.LLM_MODE || 'gpt').toLowerCase();
-    if (mode === 'gpt' && !process.env.OPENAI_API_KEY) {
-      console.warn('-------- warning: OPENAI_API_KEY is not set (gpt mode)');
-    }
-    if (mode === 'grok' && !process.env.XAI_API_KEY) {
-      console.warn('-------- warning: XAI_API_KEY is not set (grok mode)');
-    }
+    // No external API keys are required for internal MCP tools.
 
     // 6) 메모리 스팬 종료
     await memory.write(span, { type: 'init:done', ts: Date.now() });

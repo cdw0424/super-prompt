@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Lightweight wrapper to launch the MCP server via the main CLI
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$DIR/super-prompt" mcp-server "$@"
+

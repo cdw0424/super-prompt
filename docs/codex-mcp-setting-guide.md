@@ -2,10 +2,10 @@ Model Context Protocol (MCP)
 The Codex CLI can be configured to leverage MCP servers by defining an mcp_servers section in ~/.codex/config.toml. It is intended to mirror how tools such as Claude and Cursor define mcpServers in their respective JSON config files, though the Codex format is slightly different since it uses TOML rather than JSON, e.g.:
 
 # IMPORTANT: the top-level key is `mcp_servers` rather than `mcpServers`.
-[mcp_servers.server-name]
+[mcp_servers.super-prompt]
 command = "npx"
-args = ["-y", "mcp-server"]
-env = { "API_KEY" = "value" }
+args = ["-y", "@cdw0424/super-prompt@latest", "sp-mcp"]
+env = { SUPER_PROMPT_ALLOW_INIT = "true", SUPER_PROMPT_PROJECT_ROOT = "${workspaceFolder}" }
 Using Codex as an MCP Server
 The Codex CLI can also be run as an MCP server via codex mcp. For example, you can use codex mcp to make Codex available as a tool inside of a multi-agent framework like the OpenAI Agents SDK.
 
@@ -46,3 +46,8 @@ prompt: Implement a simple tic-tac-toe game with HTML, Javascript, and CSS. Writ
 sandbox: workspace-write
 
 Click "Run Tool" and you should see a list of events emitted from the Codex MCP server as it builds the game.
+
+LLM Mode Switching (auto)
+- Use local commands in your workspace: `npx super-prompt grok-mode-on` or `npx super-prompt gpt-mode-on`.
+- These commands persist the mode in `.super-prompt/mode.json` so both Codex and Cursor sessions see the same project mode.
+- Alternatively, call MCP tools: `sp.grok_mode_on`, `sp.gpt_mode_on`, `sp.mode_get`, or `sp.mode_set`.
