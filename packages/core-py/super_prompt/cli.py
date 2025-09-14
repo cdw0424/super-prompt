@@ -32,27 +32,33 @@ from .validation.todo_validator import TodoValidator
 def get_current_version() -> str:
     """Get current version from package.json"""
     try:
-        # Find npm package root first
-        def find_npm_package_root_for_version(start_path):
-            current = Path(start_path).resolve()
+        # 1) npm 래퍼가 넘긴 루트 최우선
+        env_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+        if env_root and Path(env_root).exists():
+            print(f"----- DEBUG: Using SUPER_PROMPT_PACKAGE_ROOT: {env_root}")
+            npm_root = Path(env_root)
+        else:
+            # 2) site-packages에서 올라가며 'packages/cursor-assets' 존재 확인
+            print(f"----- DEBUG: Starting version detection from {Path(__file__)}")
+            current = Path(__file__).resolve()
+            npm_root = None
             while current.parent != current:  # Stop at filesystem root
-                if (current / "package.json").exists():
+                if (current / "packages" / "cursor-assets").exists() or (current / "package.json").exists():
                     try:
-                        with open(current / "package.json") as f:
-                            package_data = json.load(f)
-                            if package_data.get("name") == "@cdw0424/super-prompt":
-                                print(f"----- DEBUG: Found npm package root at: {current}")
-                                return current
+                        if (current / "package.json").exists():
+                            with open(current / "package.json") as f:
+                                package_data = json.load(f)
+                                if package_data.get("name") == "@cdw0424/super-prompt":
+                                    print(f"----- DEBUG: Resolved package root by ascent: {current}")
+                                    npm_root = current
+                                    break
                     except Exception as e:
                         print(f"----- DEBUG: Error reading {current}/package.json: {e}")
                         pass
                 print(f"----- DEBUG: Checking for npm package at: {current}")
                 current = current.parent
-            return None
 
-        print(f"----- DEBUG: Starting version detection from {Path(__file__)}")
-        npm_root = find_npm_package_root_for_version(Path(__file__))
-        if npm_root:
+        if npm_root and (npm_root / "package.json").exists():
             package_json = npm_root / "package.json"
             with open(package_json, 'r', encoding='utf-8') as f:
                 data = json.load(f)

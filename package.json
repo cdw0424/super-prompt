@@ -1,12 +1,12 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.0.39",
-  "description": "Super Prompt v4.0.39 (MCP Architecture)",
+  "version": "4.0.40",
+  "description": "Super Prompt v4.0.40 (MCP Architecture)",
   "bin": {
     "super-prompt": "bin/super-prompt"
   },
   "scripts": {
-    "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true",
+    "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
     "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",
     "postinstall": "node install.js",
     "test": "node --test",
@@ -51,7 +51,6 @@
     "bin",
     ".cursor/",
     ".codex/",
-    ".super-prompt/",
     "packages/cursor-assets/",
     "packages/codex-assets/",
     "dist/",

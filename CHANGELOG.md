@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.0.40 - 2025-09-14
+
+### 🔧 Critical CLI Root Resolution Fix
+- **fix(cli)**: CLI now prioritizes `SUPER_PROMPT_PACKAGE_ROOT` environment variable for package root detection
+  - Updated `get_current_version()` function to use env var as first priority over filesystem traversal
+  - Eliminates fallback to default version when proper package root is available
+  - Resolves issue where venv-contained old code couldn't find npm package assets
+- **fix(distribution)**: Removed `.super-prompt/` from package.json files (runtime venv should not be bundled)
+  - Converted to wheel-only distribution model (no more bundled venv)
+  - Ensures npm package == Python code version consistency
+  - Built new wheel with cli root resolution fixes (super_prompt_core-4.0.33)
+
 ## v4.0.39 - 2025-09-14
 
 ### 🔧 Critical Package Distribution Fix

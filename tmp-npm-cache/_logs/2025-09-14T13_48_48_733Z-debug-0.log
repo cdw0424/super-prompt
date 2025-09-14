@@ -1,0 +1,119 @@
+0 verbose cli /opt/homebrew/Cellar/node/23.11.0/bin/node /opt/homebrew/bin/npm
+1 info using npm@10.9.2
+2 info using node@v23.11.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/choi-dong-won/Desktop/devs/super-promt/packages/core-py/.npmrc
+5 silly config load:file:/Users/choi-dong-won/.npmrc
+6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
+7 verbose title npm pack
+8 verbose argv "pack" "--dry-run"
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T13_48_48_733Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T13_48_48_733Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+14 notice
+15 notice 📦  super-prompt-core@4.0.33
+16 notice Tarball Contents
+17 notice 7.9kB README.md
+17 notice 72.1kB dist/packages/core-py/dist/super_prompt_core-4.0.17-py3-none-any.whl
+17 notice 73.4kB dist/packages/core-py/dist/super_prompt_core-4.0.17.tar.gz
+17 notice 73.4kB dist/super_prompt_core-4.0.10-py3-none-any.whl
+17 notice 74.6kB dist/super_prompt_core-4.0.10.tar.gz
+17 notice 73.4kB dist/super_prompt_core-4.0.11-py3-none-any.whl
+17 notice 74.6kB dist/super_prompt_core-4.0.11.tar.gz
+17 notice 73.4kB dist/super_prompt_core-4.0.12-py3-none-any.whl
+17 notice 74.6kB dist/super_prompt_core-4.0.12.tar.gz
+17 notice 72.1kB dist/super_prompt_core-4.0.13-py3-none-any.whl
+17 notice 73.4kB dist/super_prompt_core-4.0.13.tar.gz
+17 notice 72.1kB dist/super_prompt_core-4.0.16-py3-none-any.whl
+17 notice 73.4kB dist/super_prompt_core-4.0.16.tar.gz
+17 notice 72.1kB dist/super_prompt_core-4.0.19-py3-none-any.whl
+17 notice 73.4kB dist/super_prompt_core-4.0.19.tar.gz
+17 notice 82.9kB dist/super_prompt_core-4.0.21-py3-none-any.whl
+17 notice 79.4kB dist/super_prompt_core-4.0.22-py3-none-any.whl
+17 notice 79.7kB dist/super_prompt_core-4.0.23-py3-none-any.whl
+17 notice 79.8kB dist/super_prompt_core-4.0.24-py3-none-any.whl
+17 notice 80.1kB dist/super_prompt_core-4.0.25-py3-none-any.whl
+17 notice 78.7kB dist/super_prompt_core-4.0.26-py3-none-any.whl
+17 notice 76.6kB dist/super_prompt_core-4.0.26.tar.gz
+17 notice 79.7kB dist/super_prompt_core-4.0.27-py3-none-any.whl
+17 notice 77.6kB dist/super_prompt_core-4.0.27.tar.gz
+17 notice 79.7kB dist/super_prompt_core-4.0.28-py3-none-any.whl
+17 notice 77.6kB dist/super_prompt_core-4.0.28.tar.gz
+17 notice 79.7kB dist/super_prompt_core-4.0.29-py3-none-any.whl
+17 notice 77.6kB dist/super_prompt_core-4.0.29.tar.gz
+17 notice 79.7kB dist/super_prompt_core-4.0.30-py3-none-any.whl
+17 notice 77.6kB dist/super_prompt_core-4.0.30.tar.gz
+17 notice 80.0kB dist/super_prompt_core-4.0.31-py3-none-any.whl
+17 notice 77.9kB dist/super_prompt_core-4.0.31.tar.gz
+17 notice 80.2kB dist/super_prompt_core-4.0.32-py3-none-any.whl
+17 notice 78.2kB dist/super_prompt_core-4.0.32.tar.gz
+17 notice 81.0kB dist/super_prompt_core-4.0.33-py3-none-any.whl
+17 notice 76B package.json
+17 notice 3.8kB pyproject.toml
+17 notice 614B pytest.ini
+17 notice 217B super_prompt/__init__.py
+17 notice 180B super_prompt/adapters/__init__.py
+17 notice 6.5kB super_prompt/adapters/codex_adapter.py
+17 notice 89B super_prompt/adapters/codex.py
+17 notice 15.8kB super_prompt/adapters/cursor_adapter.py
+17 notice 105B super_prompt/adapters/cursor.py
+17 notice 49.1kB super_prompt/cli.py
+17 notice 48B super_prompt/commands/__init__.py
+17 notice 7.3kB super_prompt/commands/amr_repo_tools.py
+17 notice 1.1kB super_prompt/commands/amr_tools.py
+17 notice 415B super_prompt/commands/codex_tools.py
+17 notice 1.4kB super_prompt/commands/context_tools.py
+17 notice 1.4kB super_prompt/commands/personas_tools.py
+17 notice 3.7kB super_prompt/commands/service_planning_tools.py
+17 notice 2.0kB super_prompt/commands/validate_tools.py
+17 notice 142B super_prompt/context/__init__.py
+17 notice 5.6kB super_prompt/context/cache.py
+17 notice 16.1kB super_prompt/context/collector.py
+17 notice 3.6kB super_prompt/context/tokenizer.py
+17 notice 255B super_prompt/engine/__init__.py
+17 notice 5.8kB super_prompt/engine/amr_router.py
+17 notice 1.2kB super_prompt/engine/amr.py
+17 notice 8.4kB super_prompt/engine/execution_pipeline.py
+17 notice 3.3kB super_prompt/engine/state_machine.py
+17 notice 4.4kB super_prompt/memory/store.py
+17 notice 14.0kB super_prompt/modes.py
+17 notice 185B super_prompt/personas/__init__.py
+17 notice 4.9kB super_prompt/personas/loader.py
+17 notice 463B super_prompt/sdd/__init__.py
+17 notice 14.1kB super_prompt/sdd/gates.py
+17 notice 1.0kB super_prompt/sdd/plan_processor.py
+17 notice 33.8kB super_prompt/sdd/scaffolding.py
+17 notice 4.5kB super_prompt/sdd/spec_processor.py
+17 notice 14.7kB super_prompt/sdd/specify_processor.py
+17 notice 1.2kB super_prompt/sdd/tasks_processor.py
+17 notice 191B super_prompt/validation/__init__.py
+17 notice 7.6kB super_prompt/validation/quality_checker.py
+17 notice 8.4kB super_prompt/validation/todo_validator.py
+17 notice 296B super_prompt/validation/todo.py
+17 notice 2.5kB tests/conftest.py
+17 notice 9.7kB tests/test_context/test_collector.py
+17 notice 7.1kB tests/test_engine/test_amr_router.py
+17 notice 7.4kB tests/test_engine/test_state_machine.py
+17 notice 12.2kB tests/test_integration/test_end_to_end.py
+17 notice 8.9kB tests/test_performance.py
+17 notice 7.6kB tests/unit/test_amr_router.py
+17 notice 8.8kB tests/unit/test_context_collector.py
+17 notice 5.1kB tests/unit/test_state_machine.py
+18 notice Tarball Details
+19 notice name: super-prompt-core
+20 notice version: 4.0.33
+21 notice filename: super-prompt-core-4.0.33.tgz
+22 notice package size: 2.6 MB
+23 notice unpacked size: 2.9 MB
+24 notice shasum: 49bf41963e1ec6c0a5d52ca5b680c67e7f88f396
+25 notice integrity: sha512-FKxvkaxfhQKTe[...]KfLY8MsAnctAw==
+26 notice total files: 86
+27 notice
+28 verbose cwd /Users/choi-dong-won/Desktop/devs/super-promt/packages/core-py
+29 verbose os Darwin 24.6.0
+30 verbose node v23.11.0
+31 verbose npm  v10.9.2
+32 verbose exit 0
+33 info ok

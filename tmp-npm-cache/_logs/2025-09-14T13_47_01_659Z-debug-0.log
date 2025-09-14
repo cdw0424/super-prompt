@@ -7,12 +7,12 @@
 6 silly config load:file:/Users/choi-dong-won/.local/etc/npmrc
 7 verbose title npm pack
 8 verbose argv "pack" "--dry-run"
-9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T13_34_41_303Z-
-10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T13_34_41_303Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T13_47_01_659Z-
+10 verbose logfile /Users/choi-dong-won/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-14T13_47_01_659Z-debug-0.log
 11 silly logfile done cleaning log files
 12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
 13 notice
-14 notice 📦  @cdw0424/super-prompt@4.0.38
+14 notice 📦  @cdw0424/super-prompt@4.0.39
 15 notice Tarball Contents
 16 notice 3.4kB .codex/agents.md
 16 notice 1.1kB .codex/bootstrap_prompt_en.txt
@@ -64,7 +64,7 @@
 16 notice 15.4kB .super-prompt/personas.yaml
 16 notice 1.1kB .super-prompt/read_ltm_db.py
 16 notice 3.8kB .super-prompt/unified_cli.py
-16 notice 42.9kB CHANGELOG.md
+16 notice 43.7kB CHANGELOG.md
 16 notice 1.1kB LICENSE
 16 notice 7.9kB README.md
 16 notice 2.7kB bin/super-prompt
@@ -79,12 +79,12 @@
 16 notice 29.8kB packages/cursor-assets/manifests/personas.yaml
 17 notice Tarball Details
 18 notice name: @cdw0424/super-prompt
-19 notice version: 4.0.38
-20 notice filename: cdw0424-super-prompt-4.0.38.tgz
-21 notice package size: 437.4 kB
-22 notice unpacked size: 588.5 kB
-23 notice shasum: b309aa2b6c28c55e9cd35c0b4d81ef3fcda91aba
-24 notice integrity: sha512-oBHgbAYpXaXfZ[...]Zinr+O8YFU3Yg==
+19 notice version: 4.0.39
+20 notice filename: cdw0424-super-prompt-4.0.39.tgz
+21 notice package size: 437.6 kB
+22 notice unpacked size: 589.3 kB
+23 notice shasum: f0c5ed9d3473c7cb87b63f526b6e5468d3127d05
+24 notice integrity: sha512-2sT7QlDbMA46y[...]4WThJx2EsfusA==
 25 notice total files: 63
 26 notice
 27 verbose cwd /Users/choi-dong-won/Desktop/devs/super-promt
