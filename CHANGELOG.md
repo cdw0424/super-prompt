@@ -1,5 +1,31 @@
 # Changelog
 
+## v4.0.46 - 2025-09-14
+
+### 🛠️ **Maintenance & Optimization**
+- **packaging**: Enhanced distribution automation for developer workflow
+  - Streamlined prepack process with automatic cleanup
+  - Optimized package contents with comprehensive `.npmignore`
+  - Improved build pipeline reliability
+- **docs**: Updated documentation for latest features
+  - Enhanced README with mode toggle and MCP memory system details
+  - Improved installation and configuration guides
+  - Updated version references across all documentation
+- **ci**: Strengthened pre-deployment validation
+  - Automated quality checks with `audit-all.mjs`
+  - Consistent packaging verification
+  - Enhanced deployment reliability
+
+### 📦 **Distribution Improvements**
+- **build**: Refined build and packaging process
+  - Automated Python cache cleanup on package creation
+  - Consistent file inclusion/exclusion policies
+  - Optimized package size and structure
+- **publish**: Streamlined release process
+  - Automated pre-publish validation
+  - Consistent versioning across all components
+  - Enhanced deployment workflow
+
 ## v4.0.45 - 2025-09-14
 
 ### 🚀 **Deployment & Build Automation Complete**

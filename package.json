@@ -1,13 +1,12 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.0.45",
-  "description": "Super Prompt v4.0.45 (MCP Architecture - Production Ready)",
+  "version": "4.0.46",
+  "description": "Super Prompt v4.0.46 (MCP Architecture - Production Ready)",
   "bin": {
     "super-prompt": "bin/super-prompt"
   },
   "scripts": {
-    "clean:py": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
-    "clean": "rm -rf dist || true && npm run clean:py",
+    "clean": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
     "build": "echo 'Build complete - JavaScript project'",
     "prepack": "npm run clean && npm run build",
     "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",

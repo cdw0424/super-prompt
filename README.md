@@ -1,4 +1,4 @@
-# Super Prompt v4.0.45: Production Ready MCP Architecture
+# Super Prompt v4.0.46: Production Ready MCP Architecture
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
