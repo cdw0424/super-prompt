@@ -1,4 +1,4 @@
-# Super Prompt v4.0.46: Production Ready MCP Architecture
+# Super Prompt v4.0.48: Production Ready MCP Architecture
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -39,34 +39,40 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
 
 ## ⚡ Quick Start
 
-1.  **Install as a Dev Dependency (Recommended)**
-    This is the modern, recommended way to use CLI tools. It installs `super-prompt` locally into your project, avoiding all permission issues.
-    ```bash
-    cd your-project
-    npm install --save-dev @cdw0424/super-prompt@latest
-    ```
+### 설치
+```bash
+npm i @cdw0424/super-prompt@latest
+```
 
-2.  **Initialize Your Project**
-    Use `npx` to run the locally installed `super-prompt`. This command generates the necessary `.cursor/` files for IDE integration.
-    ```bash
-    npx super-prompt super:init
-    ```
+### 초기화 (한 번만)
+```bash
+npx super-prompt super:init
+# 출력:
+# -------- MCP memory: healthcheck OK
+# -------- init: completed
+```
 
-3.  **Configure and Run the MCP Server in Your IDE**
-    For Super Prompt to work, your IDE (e.g., Cursor) must be configured to run its MCP server. Since `super-prompt` is installed locally, the command should also use `npx`.
+### 모드 전환
+```bash
+# GPT
+npx super-prompt --gpt --version
+# Grok
+npx super-prompt --grok --version
+# 전환시
+# -------- mode: disposed previous provider
+# -------- mode: resolved to grok
+```
 
-    - **Example Cursor MCP Server Configuration**:
-        - **Name**: `super-prompt (local)`
-        - **Command**: `npx`
-        - **Arguments**: `["super-prompt", "mcp:serve"]`
+### 환경변수 (선택)
+```bash
+export LLM_MODE=gpt
+export OPENAI_API_KEY=sk-...
+# 또는 Grok
+export LLM_MODE=grok
+export XAI_API_KEY=...
+```
 
-4.  **Use Personas in Your IDE**
-    With the server running, you can now use the slash commands in your IDE's chat to invoke the persona tools.
-    ```
-    /frontend "Build a responsive login form using React and Tailwind CSS."
-    /architect "Design a scalable microservices architecture for an e-commerce platform."
-    /backend "Write a NodeJS endpoint to handle user registration."
-    ```
+> 더 이상 `SUPER_PROMPT_ALLOW_INIT=true`는 필요 없습니다 (가드 제거).
 
 ---
 

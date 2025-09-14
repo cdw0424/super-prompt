@@ -1,0 +1,9 @@
+{
+  "tools": {
+    "super-prompt": {
+      "command": "npx",
+      "args": ["super-prompt", "super:init"],
+      "description": "Initialize Super Prompt in the current project"
+    }
+  }
+}

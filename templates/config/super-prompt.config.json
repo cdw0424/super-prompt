@@ -1,0 +1,20 @@
+{
+  "createdAt": "${createdAt}",
+  "mode": "${mode}",
+  "version": "4.0.46",
+  "mcp": {
+    "enabled": true,
+    "endpoint": null,
+    "apiKey": null
+  },
+  "providers": {
+    "openai": {
+      "apiKey": "${OPENAI_API_KEY}",
+      "model": "gpt-4o-mini"
+    },
+    "grok": {
+      "apiKey": "${XAI_API_KEY}",
+      "model": "grok-2-mini"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "super-prompt": {
+      "command": "npx",
+      "args": ["super-prompt", "mcp-server"],
+      "env": {
+        "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}"
+      }
+    }
+  }
+}
