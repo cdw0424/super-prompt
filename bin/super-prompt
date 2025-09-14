@@ -81,4 +81,4 @@ fi
 # The python package is installed via the .whl file in install.js.
 
 # Execute the CLI as an installed module.
-exec "$VENV_PYTHON" -m super_prompt.main "$@"
+exec "$VENV_PYTHON" -m super_prompt.cli "$@"

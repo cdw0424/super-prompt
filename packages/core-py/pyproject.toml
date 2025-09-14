@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "4.0.12"
+version = "4.0.13"
 description = "Core library for Super Prompt - Modular prompt engineering and development workflow management"
 readme = "../../README.md"
 license = {text = "MIT"}
@@ -61,7 +61,7 @@ Issues = "https://github.com/cdw0424/super-prompt/issues"
 Changelog = "https://github.com/cdw0424/super-prompt/blob/main/CHANGELOG.md"
 
 [project.scripts]
-super-prompt-core = "super_prompt.cli:main"
+super-prompt = "super_prompt.cli:app"
 
 [tool.hatch.build.targets.wheel]
 include = ["/super_prompt"]
