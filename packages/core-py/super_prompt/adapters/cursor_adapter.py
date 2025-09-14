@@ -4,6 +4,7 @@ Cursor IDE Adapter - Generate Cursor-specific integrations
 
 from pathlib import Path
 from typing import Dict, Any, List
+import os
 import json
 import yaml
 
@@ -12,8 +13,17 @@ class CursorAdapter:
     """Adapter for Cursor IDE integration"""
 
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent.parent
+        # Fix: Go up 4 levels from this file to get to package root
+        self.project_root = Path(__file__).parent.parent.parent.parent.parent
         self.assets_root = self.project_root / "packages" / "cursor-assets"
+
+    def log(self, message: str) -> None:
+        """Uniform adapter log output with required prefix."""
+        try:
+            print(f"-------- {message}")
+        except Exception:
+            # Best-effort logging; never break flow due to logging
+            pass
 
     def load_personas_manifest(self) -> Dict[str, Any]:
         """Load personas from data-driven manifest"""
@@ -25,19 +35,31 @@ class CursorAdapter:
 
     def generate_commands(self, project_root: Path) -> None:
         """Generate Cursor slash commands from manifests and copy existing templates"""
+        debug = __import__("os").environ.get("SUPER_PROMPT_DEBUG") == "1"
+        def d(msg: str) -> None:
+            if debug:
+                print(msg)
+
+        d(f"🔍 DEBUG: CursorAdapter called with project_root={project_root}")
         commands_dir = project_root / ".cursor" / "commands" / "super-prompt"
         commands_dir.mkdir(parents=True, exist_ok=True)
 
-        # First, copy all existing .md command files from the package
-        source_commands_dir = self.project_root / ".cursor" / "commands" / "super-prompt"
+        # First, copy all existing .md command files from templates
+        templates_dir = self.assets_root / "templates"
 
-        if source_commands_dir.exists():
+        if templates_dir.exists():
             import shutil
-            for md_file in source_commands_dir.glob("*.md"):
+            # Copy all .md files from templates
+            for md_file in templates_dir.glob("*.md"):
                 shutil.copy2(md_file, commands_dir / md_file.name)
 
-            # Also copy the tag-executor.sh script
-            tag_executor = source_commands_dir / "tag-executor.sh"
+            # Copy other template files
+            for template_file in templates_dir.glob("*"):
+                if template_file.name.endswith(('.json', '.txt', '.md')) and not template_file.name.endswith('.sh'):
+                    shutil.copy2(template_file, commands_dir / template_file.name)
+
+            # Also copy the tag-executor.sh script from templates (advanced version)
+            tag_executor = self.assets_root / "templates" / "tag-executor.sh"
             if tag_executor.exists():
                 shutil.copy2(tag_executor, commands_dir / "tag-executor.sh")
                 # Make it executable
@@ -45,17 +67,32 @@ class CursorAdapter:
                 os.chmod(commands_dir / "tag-executor.sh", 0o755)
 
         # Auto-generate .md commands for ALL .py processors that don't have .md files
-        processors_dir = self.project_root / ".super-prompt" / "utils" / "cursor-processors"
+        # Look for processors in the target project's .super-prompt directory
+        processors_dir = project_root / ".super-prompt" / "utils" / "cursor-processors"
+        d(f"🔍 DEBUG: Looking for processors in {processors_dir}")
         if processors_dir.exists():
+            processor_count = 0
+            generated_count = 0
             for py_file in processors_dir.glob("*.py"):
                 processor_name = py_file.stem
+                processor_count += 1
+                d(f"🔍 DEBUG: Found processor {processor_name}")
+
                 # Only skip Python module files, generate commands for ALL processors
                 if processor_name in ["__init__"]:
+                    d(f"🔍 DEBUG: Skipping {processor_name}")
                     continue
 
                 md_file = commands_dir / f"{processor_name}.md"
                 if not md_file.exists():
+                    d(f"🔍 DEBUG: Generating command for {processor_name}")
                     self._generate_processor_command(commands_dir, processor_name)
+                    generated_count += 1
+                else:
+                    d(f"🔍 DEBUG: Command exists for {processor_name}")
+            d(f"🔍 DEBUG: Processed {processor_count} processors, generated {generated_count} new commands")
+        else:
+            d(f"❌ DEBUG: Processors directory not found: {processors_dir}")
 
         # Load personas from manifest
         manifest = self.load_personas_manifest()
@@ -70,8 +107,17 @@ class CursorAdapter:
         self._generate_sdd_commands(commands_dir)
 
     def _generate_persona_command(self, commands_dir: Path, persona: str, persona_config: Dict[str, Any]) -> None:
-        """Generate a persona command file from manifest data"""
+        """Generate a persona command file from manifest data or template"""
         command_file = commands_dir / f"{persona}.md"
+
+        # Try to use template from packages/cursor-assets/templates first
+        template_file = self.assets_root / "templates" / f"{persona}.md"
+        if template_file.exists():
+            import shutil
+            shutil.copy2(str(template_file), str(command_file))
+            return
+
+        # Fallback: Generate from manifest data
         name = persona_config.get("name", persona.title())
         icon = persona_config.get("icon", "🤖")
         description = persona_config.get("description", f"{name} persona")
@@ -87,10 +133,17 @@ args: ["${{input}} /{persona}"]
         command_file.write_text(content)
 
     def _generate_processor_command(self, commands_dir: Path, processor_name: str) -> None:
-        """Generate a .md command file for a processor"""
+        """Generate a .md command file for a processor using template if available"""
         command_file = commands_dir / f"{processor_name}.md"
 
-        # Create human-readable name from processor name
+        # Try to use template from packages/cursor-assets/templates first
+        template_file = self.assets_root / "templates" / f"{processor_name}.md"
+        if template_file.exists():
+            import shutil
+            shutil.copy2(str(template_file), str(command_file))
+            return
+
+        # Fallback: Create human-readable name from processor name
         display_name = processor_name.replace("-", " ").replace("_", " ").title()
         icon = self._get_processor_icon(processor_name)
 
@@ -145,7 +198,7 @@ args: ["${{input}} /{processor_name}"]
         return icon_map.get(processor_name, "🤖")
 
     def _generate_sdd_commands(self, commands_dir: Path) -> None:
-        """Generate SDD workflow commands"""
+        """Generate SDD workflow commands using templates if available"""
         sdd_commands = {
             "specify": "Create Feature Specification",
             "plan": "Create Implementation Plan",
@@ -154,45 +207,44 @@ args: ["${{input}} /{processor_name}"]
         }
 
         for cmd_name, description in sdd_commands.items():
-            command_file = commands_dir / f"{cmd_name}.py"
+            command_file = commands_dir / f"{cmd_name}.md"
 
-            content = f'''#!/usr/bin/env python3
-"""
-{cmd_name.title()} Command - {description}
-SDD workflow integration
-"""
+            # Try to use template first
+            template_file = self.assets_root / "templates" / f"{cmd_name}.md"
+            if template_file.exists():
+                import shutil
+                shutil.copy2(str(template_file), str(command_file))
+                continue
 
-import subprocess
-import sys
-import os
+            # Fallback: Generate basic content
+            content = f'''---
+description: {cmd_name} command
+run: "./.cursor/commands/super-prompt/tag-executor.sh"
+args: ["${{input}} /{cmd_name}"]
+---
 
-def main():
-    # Path to the SDD processor
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.join(script_dir, '..', '..', '..')
-    processor_path = os.path.join(project_root, '.super-prompt', 'utils', 'sdd', '{cmd_name}_processor.py')
-
-    # Execute the SDD processor
-    subprocess.run([
-        'python3', processor_path
-    ] + sys.argv[1:], check=False)
-
-if __name__ == "__main__":
-    main()
-'''
+📋 {cmd_name.title()}\\n{description}.'''
 
             command_file.write_text(content)
 
     def generate_rules(self, project_root: Path) -> None:
-        """Generate Cursor rules files"""
+        """Generate Cursor rules files from templates"""
         rules_dir = project_root / ".cursor" / "rules"
         rules_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate SDD rules
-        self._generate_sdd_rules(rules_dir)
+        # Copy rules from templates instead of generating
+        templates_dir = self.assets_root / "templates"
 
-        # Generate persona rules
-        self._generate_persona_rules(rules_dir)
+        if templates_dir.exists():
+            import shutil
+            # Copy all .mdc files from templates to rules directory
+            for mdc_file in templates_dir.glob("*.mdc"):
+                shutil.copy2(mdc_file, rules_dir / mdc_file.name)
+                self.log(f"Copied rule file: {mdc_file.name}")
+        else:
+            # Fallback to generating if templates don't exist
+            self._generate_sdd_rules(rules_dir)
+            self._generate_persona_rules(rules_dir)
 
     def _generate_sdd_rules(self, rules_dir: Path) -> None:
         """Generate SDD-related rules"""

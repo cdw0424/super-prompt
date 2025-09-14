@@ -1,0 +1,59 @@
+---
+description: "Auto Model Router (AMR) policy and state machine"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Auto Model Router (medium ↔ high)
+- Default: gpt-5, reasoning=medium.
+- Task classes: L0 (light), L1 (moderate), H (heavy reasoning).
+- H: switch to high for PLAN/REVIEW, then back to medium for EXECUTION.
+- Router switch lines (copy-run if needed):
+  - `/model gpt-5 high` → `--------router: switch to high (reason=deep_planning)`
+  - `/model gpt-5 medium` → `--------router: back to medium (reason=execution)`
+
+# Output Discipline
+- Language: English. Logs start with `--------`.
+- Keep diffs minimal; provide exact macOS zsh commands.
+
+# Fixed State Machine
+[INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
+
+# Templates (use as needed)
+T1 Switch High:
+```
+/model gpt-5 high
+--------router: switch to high (reason=deep_planning)
+```
+T1 Back Medium:
+```
+/model gpt-5 medium
+--------router: back to medium (reason=execution)
+```
+T2 PLAN:
+```
+[Goal]
+- …
+[Plan]
+- …
+[Risk/Trade‑offs]
+- …
+[Test/Verify]
+- …
+[Rollback]
+- …
+```
+T3 EXECUTE:
+```
+[Diffs]
+```diff
+--- a/file
++++ b/file
+@@
+- old
++ new
+```
+[Commands]
+```bash
+--------run: npm test -- --watchAll=false
+```
+```

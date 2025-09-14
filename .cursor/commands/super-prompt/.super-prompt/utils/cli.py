@@ -70,7 +70,64 @@ except ImportError:
         def process_todos(self, todos):
             return todos
 
-VERSION = "2.9.1"
+def _detect_version() -> str:
+    """Detect the installed package version dynamically.
+
+    Priority:
+    1) SUPER_PROMPT_VERSION env var (explicit override)
+    2) Walk up from this file to find nearest package.json and read its version
+    3) Fallback to UNKNOWN when not found
+    """
+    try:
+        # 1) Environment override
+        env_ver = os.environ.get("SUPER_PROMPT_VERSION")
+        if env_ver:
+            return env_ver
+
+        # 2) Walk up to find package.json (pkg root: .../@cdw0424/super-prompt)
+        here = os.path.abspath(os.path.dirname(__file__))
+        cur = here
+        for _ in range(8):  # up to 8 levels should cover this layout
+            pkg_json = os.path.join(cur, "package.json")
+            if os.path.isfile(pkg_json):
+                try:
+                    with open(pkg_json, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        ver = data.get("version")
+                        if isinstance(ver, str) and ver.strip():
+                            return ver.strip()
+                except Exception:
+                    pass
+            parent = os.path.dirname(cur)
+            if parent == cur:
+                break
+            cur = parent
+    except Exception:
+        pass
+    return "UNKNOWN"
+
+VERSION = _detect_version()
+
+def _find_templates_dir() -> Optional[str]:
+    """Locate the packaged templates directory for rules/commands.
+    Walk up from this file to the nearest package.json and then append
+    packages/cursor-assets/templates.
+    """
+    try:
+        here = os.path.abspath(os.path.dirname(__file__))
+        cur = here
+        for _ in range(12):
+            pkg_json = os.path.join(cur, "package.json")
+            if os.path.isfile(pkg_json):
+                templates = os.path.join(cur, "packages", "cursor-assets", "templates")
+                return templates if os.path.isdir(templates) else None
+            parent = os.path.dirname(cur)
+            if parent == cur:
+                break
+            cur = parent
+    except Exception:
+        pass
+    return None
 
 def log(msg: str): 
     print(f"-------- {msg}")
@@ -389,6 +446,61 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
             'desc': 'Single-model internal debate (Positive vs Critical selves)',
             'cli': 'codex',
             'prompt': ''
+        },
+        'doc-master': {
+            'desc': 'Documentation Master',
+            'cli': 'codex',
+            'prompt': """**[Persona Identity]**
+You are a documentation master who consolidates and improves technical docs.
+
+**[Guidelines]**
+- Audit existing docs; identify gaps and inconsistencies.
+- Propose structure (TOC), rewrite sections for clarity, add examples.
+- Ensure terminology/style consistency and link references.
+
+**[Output Format]**
+1) Audit findings (gaps, inconsistencies)
+2) Proposed structure (TOC)
+3) Rewritten/added sections
+4) Follow-ups (owners, next steps)
+"""
+        },
+        'tr': {
+            'desc': 'Troubleshooter',
+            'cli': 'codex',
+            'prompt': """**[Persona Identity]**
+You are a methodical troubleshooter focused on rapid issue resolution.
+
+**[Guidelines]**
+- Define the symptom, scope, and impact quickly.
+- Generate 2–3 hypotheses with quick checks.
+- Propose minimal repro and logs/metrics to collect.
+- Deliver a small, testable fix with rollback plan.
+
+**[Output Format]**
+1) Triage summary
+2) Hypotheses + quick validations
+3) Fix plan (small steps)
+4) Verification & rollback
+"""
+        },
+        'dev': {
+            'desc': 'Development Assistant',
+            'cli': 'codex',
+            'prompt': """**[Persona Identity]**
+You are a pragmatic feature development specialist focused on fast, high-quality delivery.
+
+**[Guidelines]**
+- Clarify acceptance criteria and dependencies.
+- Keep diffs small; include tests and validation steps.
+- Follow existing project patterns; avoid unrelated refactors.
+
+**[Output Format]**
+1) Plan (small steps)
+2) Changes (files, diffs or code blocks)
+3) Tests & Validation
+4) Rollback/Follow-ups
+"""
         },
         'performance': {
             'desc': 'Optimization Specialist & Bottleneck Elimination Expert',
@@ -729,144 +841,52 @@ def get_builtin_personas():
 
 # Main CLI functionality
 def generate_sdd_rules_files(out_dir=".cursor/rules", dry=False):
-    """Generate SDD rule files in Cursor rules directory"""
-    import datetime
-    
-    sdd_context = get_project_sdd_context()
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+    """Install rule files by copying from packaged templates (authoritative source).
+    Falls back to no-op if templates are not found.
+    """
     os.makedirs(out_dir, exist_ok=True)
-    
-    # 00-organization.mdc
-    org_content = f"""---
-description: "Organization guardrails — generated {now}"
-globs: ["**/*"]
-alwaysApply: true
----
-# Organization Guardrails
-- Language: English only in documentation and rules.
-- All debug/console lines MUST use the '--------' prefix.
-- Secrets/tokens/PII MUST be masked in prompts, code, and logs.
-- Keep prompts/personas focused on task goals and constraints.
-- Avoid irrelevant technology choices; follow existing project conventions first.
-- Add meaningful tests for critical paths where applicable.
-"""
-    
-    # 10-sdd-core.mdc
-    sdd_content = f"""---
-description: "SDD core & self-check — generated {now}"
-globs: ["**/*"]
-alwaysApply: true
----
-# Spec-Driven Development (SDD)
-1) No implementation before SPEC and PLAN are approved.
-2) SPEC: goals/user value/success criteria/scope boundaries — avoid premature stack choices.
-3) PLAN: architecture/constraints/NFR/risks/security/data design.
-4) TASKS: small, testable units with tracking IDs.
-5) Implementation must pass the Acceptance Self‑Check before PR.
-
-## Current SDD Status
-- **SPEC Files Found**: {len(sdd_context['spec_files'])} files
-- **PLAN Files Found**: {len(sdd_context['plan_files'])} files
-- **SDD Compliance**: {'✅ Compliant' if sdd_context['sdd_compliance'] else '❌ Missing SPEC/PLAN files'}
-
-## Acceptance Self‑Check (auto‑draft)
-- ✅ Validate success criteria from SPEC
-- ✅ Verify agreed non‑functional constraints (performance/security as applicable)
-- ✅ Ensure safe logging (no secrets/PII) and consistent output
-- ✅ Add regression tests for new functionality
-- ✅ Update documentation
-
-## Framework Context
-- **Detected Frameworks**: {sdd_context['frameworks']}
-- **Project Structure**: SDD-compliant organization required
-"""
-
-    # 20-frontend.mdc
-    frontend_content = f"""---
-description: "Frontend conventions — generated {now}"
-globs: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js", "**/*.dart"]
-alwaysApply: false
----
-# Frontend Rules (SDD-Compliant)
-- Small, reusable components; single responsibility per file.
-- Framework-specific patterns: {sdd_context['frameworks']}
-- Routing: Follow framework conventions; guard access control.
-- Separate networking layer (services/hooks), define DTO/validation schema.
-- UI copy: English only; centralize strings.
-- Performance and accessibility: measure and improve user‑perceived responsiveness.
-- All debug logs: use '--------' prefix.
-"""
-
-    # 30-backend.mdc  
-    backend_content = f"""---
-description: "Backend conventions — generated {now}"
-globs: ["**/*.java", "**/*.py", "**/*.js", "**/*.go", "**/*.sql"]
-alwaysApply: false
----
-# Backend Rules (SDD-Compliant)
-- Layers: Controller → Service → Repository. Business logic in Services.
-- Logging: '--------' prefix + correlation ID; never log sensitive data.
-- Follow framework conventions already used in the project.
-- SDD Traceability: SPEC-ID ↔ PLAN-ID ↔ TASK-ID ↔ PR-ID.
-"""
-    # Write files
-    # Write files
-    write_text(os.path.join(out_dir, "00-organization.mdc"), org_content, dry)
-    write_text(os.path.join(out_dir, "10-sdd-core.mdc"), sdd_content, dry)
-    write_text(os.path.join(out_dir, "20-frontend.mdc"), frontend_content, dry)
-    write_text(os.path.join(out_dir, "30-backend.mdc"), backend_content, dry)
-    
-    log(f"SDD rules generated in {out_dir}")
-    return out_dir
+    templates = _find_templates_dir()
+    if templates and os.path.isdir(templates):
+        try:
+            for fname in os.listdir(templates):
+                if fname.endswith('.mdc'):
+                    src = os.path.join(templates, fname)
+                    dst = os.path.join(out_dir, fname)
+                    if dry:
+                        log(f"[DRY] copy → {dst}")
+                    else:
+                        import shutil
+                        shutil.copy2(src, dst)
+                        log(f"copy → {dst}")
+            log(f"SDD rules copied from templates to {out_dir}")
+            return out_dir
+        except Exception as e:
+            log(f"Failed to copy rules from templates: {e}")
+            return out_dir
+    else:
+        log("Templates directory not found; skipping rules copy")
+        return out_dir
 
 def generate_amr_rules_file(out_dir: str = ".cursor/rules", dry: bool = False) -> str:
-    """Generate a minimal AMR rule file for Cursor to enforce router policy/state machine."""
+    """Install AMR rule file by copying 05-amr.mdc from templates if available."""
     os.makedirs(out_dir, exist_ok=True)
-    amr_path = os.path.join(out_dir, "05-amr.mdc")
-    content = """---
-description: "Auto Model Router (AMR) policy and state machine"
-globs: ["**/*"]
-alwaysApply: true
----
-# Auto Model Router (medium ↔ high)
-- Default: gpt-5, reasoning=medium.
-- Task classes: L0 (light), L1 (moderate), H (heavy reasoning).
-- H: switch to high for PLAN/REVIEW, then back to medium for EXECUTION.
-- Router switch lines (copy-run if needed):
-  - `/model gpt-5 high` → `--------router: switch to high (reason=deep_planning)`
-  - `/model gpt-5 medium` → `--------router: back to medium (reason=execution)`
-
-# Output Discipline
-- Language: English. Logs start with `--------`.
-- Keep diffs minimal; provide exact macOS zsh commands.
-
-# Fixed State Machine
-[INTENT] → [TASK_CLASSIFY] → [PLAN] → [EXECUTE] → [VERIFY] → [REPORT]
-
-# Templates (use as needed)
-T1 Switch High:
-```
-/model gpt-5 high
---------router: switch to high (reason=deep_planning)
-```
-T1 Back Medium:
-```
-/model gpt-5 medium
---------router: back to medium (reason=execution)
-```
-T2 PLAN:
-```
-[Goal]\n- …\n[Plan]\n- …\n[Risk/Trade‑offs]\n- …\n[Test/Verify]\n- …\n[Rollback]\n- …
-```
-T3 EXECUTE:
-```
-[Diffs]\n```diff\n--- a/file\n+++ b/file\n@@\n- old\n+ new\n```\n[Commands]\n```bash\n--------run: npm test -- --watchAll=false\n```
-```
-"""
-    write_text(amr_path, content, dry)
-    log(f"AMR rules generated in {out_dir}")
-    return amr_path
+    templates = _find_templates_dir()
+    if templates:
+        src = os.path.join(templates, '05-amr.mdc')
+        dst = os.path.join(out_dir, '05-amr.mdc')
+        if os.path.isfile(src):
+            if dry:
+                log(f"[DRY] copy → {dst}")
+            else:
+                import shutil
+                shutil.copy2(src, dst)
+                log(f"copy → {dst}")
+            return dst
+    # Fallback: no template found; create a minimal placeholder
+    placeholder = "---\ndescription: \"AMR policy\"\nglobs: [\"**/*\"]\n---\n# AMR policy placeholder (templates not found)\n"
+    dst = os.path.join(out_dir, '05-amr.mdc')
+    write_text(dst, placeholder, dry)
+    return dst
 
 def install_cursor_commands_in_project(dry=False):
     """Install Cursor slash commands in the current project.
@@ -876,15 +896,28 @@ def install_cursor_commands_in_project(dry=False):
     base = os.path.join('.cursor', 'commands', 'super-prompt')
     os.makedirs(base, exist_ok=True)
 
-    # tag-executor.sh wrapper
-    tag_sh = """#!/usr/bin/env bash
-set -euo pipefail
-if command -v super-prompt >/dev/null 2>&1; then
-  exec super-prompt optimize "$@"
-else
-  exec npx @cdw0424/super-prompt optimize "$@"
-fi
-"""
+    # tag-executor.sh wrapper (canonical, kept in templates as well)
+    tag_sh = "\n".join([
+        "#!/usr/bin/env bash",
+        "set -euo pipefail",
+        "",
+        "# Prefer project-local Python CLI to work without global super-prompt",
+        "if [ -f \".super-prompt/cli.py\" ]; then",
+        "  if [ -x \".super-prompt/venv/bin/python\" ]; then",
+        "    PY=\".super-prompt/venv/bin/python\"",
+        "  else",
+        "    PY=\"python3\"",
+        "  fi",
+        "  exec \"$PY\" \".super-prompt/cli.py\" optimize \"$@\"",
+        "fi",
+        "",
+        "# Fallbacks: global or npx",
+        "if command -v super-prompt >/dev/null 2>&1; then",
+        "  exec super-prompt optimize \"$@\"",
+        "else",
+        "  exec npx @cdw0424/super-prompt optimize \"$@\"",
+        "fi",
+    ])
     write_text(os.path.join(base, 'tag-executor.sh'), tag_sh, dry)
     try:
         if not dry:
@@ -1452,11 +1485,14 @@ def main():
     p_optimize.add_argument("--sp-seq", action="store_true", help="Sequential thinking (5 iterations)")
     p_optimize.add_argument("--sp-seq-ultra", action="store_true", help="Advanced sequential (10 iterations)")
     p_optimize.add_argument("--sp-debate", action="store_true", help="Single-model internal debate")
+    p_optimize.add_argument("--sp-dev", action="store_true", help="Development assistant")
     p_optimize.add_argument("--sp-performance", action="store_true", help="Optimization & bottleneck elimination")
     p_optimize.add_argument("--sp-security", action="store_true", help="Threat modeling & vulnerability assessment")
     p_optimize.add_argument("--sp-task", action="store_true", help="Task management & workflow execution")
     p_optimize.add_argument("--sp-wave", action="store_true", help="Multi-stage execution orchestration")
     p_optimize.add_argument("--sp-ultracompressed", action="store_true", help="Token efficiency (30-50% reduction)")
+    p_optimize.add_argument("--sp-doc-master", action="store_true", help="Documentation master")
+    p_optimize.add_argument("--sp-tr", action="store_true", help="Troubleshooter")
 
     # AMR commands
     p_amr_rules = sub.add_parser("amr:rules", help="Generate AMR rule file (05-amr.mdc)")
@@ -1560,6 +1596,18 @@ def main():
             print("\033[36m📦 Creating .codex agent and helpers...\033[0m")
             write_codex_agent_assets(args.dry_run)
             print(f"\033[32m✓\033[0m \033[1mStep 4:\033[0m Codex agent configured → .codex/")
+
+            # Install flag-only shell handler so "--sp-*" works without a command prefix
+            try:
+                print("\033[36m🔧 Enabling flag-only mode (sp-setup-shell) ...\033[0m")
+                # Try direct binary first
+                r = subprocess.run(["sp-setup-shell"], check=False)
+                if r.returncode != 0:
+                    # Fallback to npx without global install
+                    subprocess.run(["npx", "-y", "@cdw0424/super-prompt", "sp-setup-shell"], check=False)
+                print("\033[32m✓\033[0m \033[1mFlag-only mode enabled\033[0m → try: \033[33m--sp-analyzer \"...\"\033[0m")
+            except Exception as e:
+                print(f"\033[33m⚠️  Could not enable flag-only mode automatically ({e}). You can run: sp-setup-shell\033[0m")
         else:
             print("\033[2mSkipping Codex CLI extension (set SUPER_PROMPT_INIT_CODEX=1 to auto-enable)\033[0m")
         
@@ -1638,11 +1686,14 @@ def main():
                 ('sp_seq_ultra','seq-ultra'),
                 ('sp_seq','seq'),
                 ('sp_debate','debate'),
+                ('sp_dev','dev'),
                 ('sp_performance','performance'),
                 ('sp_security','security'),
                 ('sp_task','task'),
                 ('sp_wave','wave'),
                 ('sp_ultracompressed','ultracompressed'),
+                ('sp_doc_master','doc-master'),
+                ('sp_tr','tr'),
             ]:
                 if getattr(args, flag.replace('-', '_'), False):
                     query_text += f" /{tag}"
@@ -1661,12 +1712,15 @@ def main():
                     ('seq_ultra','seq-ultra'),
                     ('seq','seq'),
                     ('debate','debate'),
+                    ('dev','dev'),
                     # Enhanced personas
                     ('performance','performance'),
                     ('security','security'),
                     ('task','task'),
                     ('wave','wave'),
                     ('ultracompressed','ultracompressed'),
+                    ('doc_master','doc-master'),
+                    ('tr','tr'),
                 ]:
                     if getattr(args, flag, False):
                         query_text += f" /{tag}"

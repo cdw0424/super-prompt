@@ -1,3 +1,22 @@
-#!/usr/bin/env zsh
-# Launch Codex with medium reasoning (convenience wrapper)
-exec codex --model gpt-5 -c model_reasoning_effort="medium" "$@"
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Codex CLI medium-reasoning wrapper (gpt-5 medium)
+# - Exports SP_CODEX_MODE=1 when project .codex/.codex-mode flag exists
+
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+
+# Prefer new location (.cursor), support legacy (.codex) for compatibility
+if [ -f "$PROJECT_ROOT/.cursor/.codex-mode" ] || [ -f "$PROJECT_ROOT/.codex/.codex-mode" ]; then
+  export SP_CODEX_MODE=1
+  echo "-------- 🧭 CODEX AMR MODE: ACTIVE (SP_CODEX_MODE=1)" >&2
+fi
+
+if ! command -v codex >/dev/null 2>&1; then
+  echo "-------- Codex CLI not found. Install @openai/codex and login:" >&2
+  echo "   npm install -g @openai/codex@latest" >&2
+  echo "   codex login" >&2
+  exit 1
+fi
+
+exec codex --model gpt-5 -c model_reasoning_effort=medium "$@"

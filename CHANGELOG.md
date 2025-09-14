@@ -1,5 +1,140 @@
 # Changelog
 
+## v3.1.73 - 2025-09-14
+
+### 🔄 Enhanced Exclusive Mode Switching
+- feat(mode): Support both short and long mode command variants (`/grok-on` + `/grok-mode-on`, `/codex-on` + `/codex-mode-on`)
+- feat(mode): Support both short and long mode off commands (`/grok-off` + `/grok-mode-off`, `/codex-off` + `/codex-mode-off`)
+- fix(mode): Ensure all grok/codex mode commands trigger exclusive switching
+- docs: Updated to reflect comprehensive mode command support
+
+## v3.1.72 - 2025-09-14
+
+### 🔄 Exclusive Mode Switching
+- feat(mode): Implement exclusive grok/codex mode switching - enabling one automatically disables the other
+- feat(tag-executor): Enhanced tag-executor.sh with mode management for automatic file-based state switching
+- fix(mode): grok-mode-on now removes .codex-mode and creates .grok-mode
+- fix(mode): codex-mode-on now removes .grok-mode and creates .codex-mode
+- docs: Updated mode commands to reflect exclusive behavior
+
+## v3.1.71 - 2025-09-14
+
+### 🔧 Codex AMR Mode Toggle System
+- feat(mode): Add codex mode toggle commands (`codex-mode-on`, `codex-mode-off`, `codex`)
+- feat(mode): Create `.codex-mode` flag file for mode state tracking
+- feat(mode): Implement codex-amr mode system similar to grok mode
+- docs: Update command descriptions for codex AMR auto model routing
+
+## v3.1.65 - 2025-09-14
+
+### 🏷️ Flag-only mode (no prefix required)
+- feat(cli): New `sp` ultra-minimal wrapper to run `--sp-*` flags directly.
+- feat(cli): New `sp-setup-shell` to enable shell-level handler so that commands starting with `--sp-*` are automatically routed to `sp`. Example: `--sp-analyzer "..."`.
+
+## v3.1.64 - 2025-09-14
+
+### 🧰 No-global fallback (works without super-prompt)
+- feat(tag-executor): Prefer project-local Python CLI `.super-prompt/cli.py` (venv if present) so commands work without a global `super-prompt` binary or network access. Fallbacks remain: global binary → npx.
+
+## v3.1.63 - 2025-09-14
+
+### 🧪 Persona flag reliability (--sp-*)
+- fix(bin): When using `--sp-<persona>` (e.g., `--sp-analyzer`), the wrapper now ensures PyYAML is available before executing the enhanced persona processor. Resolves failures on systems without preinstalled PyYAML.
+
+## v3.1.62 - 2025-09-14
+
+### 🧵 Exact tag-executor byte match
+- fix(init): Write tag-executor.sh via line-joined string (no trailing newline) so it exactly matches the template copied by installer.
+
+## v3.1.61 - 2025-09-14
+
+### 📦 Rules from templates + package fix
+- fix(rules): `super:init` copies all `.mdc` rules from packaged templates (`packages/cursor-assets/templates`) to ensure identical content across environments.
+- fix(amr): `amr:rules` also copies `05-amr.mdc` from templates (fallback writes a minimal placeholder only if templates missing).
+- chore(pkg): Ran `npm pkg fix` to normalize `bin` paths and tidy package metadata.
+
+## v3.1.60 - 2025-09-14
+
+### 🧩 Canonical tag-executor everywhere
+- fix(init): super:init writer now emits the exact same canonical tag-executor.sh as the installer/templates (comments + trailing newline), eliminating byte-level drift.
+- chore(docs): README updated to reflect v3.1.60 verification.
+
+## v3.1.59 - 2025-09-14
+
+### 🛠️ Canonical tag executor & drift fix
+- fix(templates): Replace tag-executor.sh with canonical minimal wrapper that delegates to `super-prompt optimize` (or `npx` fallback).
+- fix(install): Ensure install.js copies the same canonical tag-executor to `.cursor/commands/super-prompt/` with clear logging.
+- fix(cursor-adapter): Generation path now pulls the same template, guaranteeing identical assets across install and `super:init`.
+- docs: Update README to reflect v3.1.59 and drift fix.
+
+## v3.1.56 - 2025-09-14
+
+### 🚀 **COMPLETE .super-prompt DIRECTORY SYNCHRONIZATION**
+
+- **🎯 EXTENDED TEMPLATE SYSTEM**: Solved the broader problem of .super-prompt directory inconsistency between development environment and user installations
+- **📁 FORCE COPY ADVANCED .super-prompt UTILITIES**: All .super-prompt files now use templates as the single source of truth, eliminating version drift
+- **🔧 ENHANCED install.js**: Updated installation script to force-copy entire .super-prompt directory from templates instead of using potentially outdated local files
+- **📦 COMPREHENSIVE ASSET MIGRATION**: Migrated ALL .super-prompt files including:
+  - **CLI utilities**: cli.py, enhanced_persona_processor.py, context_injector.py, etc.
+  - **Configuration files**: config.json, personas.yaml, execution_context.json
+  - **Processor scripts**: All cursor-processor files with enhanced functionality
+  - **Utility modules**: quality_enhancer.py, fallback_memory.py, sdd modules
+  - **Template assets**: prisma templates, simple_cli.py, etc.
+- **✅ PERFECT CONSISTENCY**: Every file in .super-prompt directory now matches exactly between development environment and all user projects
+- **📦 PACKAGES SYNCHRONIZATION ADDED**: Extended template system to include complete packages/ directory
+  - **core-py**: Complete Python core library with all modules and dependencies
+  - **cli-node**: Node.js CLI wrapper with executable scripts and configurations
+  - **cursor-assets**: All Cursor IDE assets, manifests, and enhanced templates
+- **🔧 ENHANCED INSTALLATION**: Updated install.js to force-copy entire packages suite alongside .super-prompt
+- **📦 PACKAGES DIRECTORY FULLY SYNCHRONIZED**: Added complete packages/ directory synchronization including:
+  - **core-py**: Full Python core library with all modules and dependencies
+  - **cli-node**: Complete Node.js CLI wrapper with all scripts and configurations
+  - **cursor-assets**: All Cursor IDE assets, manifests, and enhanced templates
+- **🔄 FUTURE-PROOF**: Template system now prevents any future version drift issues across ALL project files
+- **📊 DYNAMIC VERSION DISPLAY**: Added automatic version detection from package.json for accurate version display in CLI
+- **🔍 ENHANCED ANALYZER COMMAND**: Improved analyzer command description with more detailed capabilities and expertise areas
+
+## v3.1.58 - 2025-09-14
+- **🐛 FIXED**: `super-prompt init` now correctly displays the latest dynamic version instead of the outdated `v2.9.1`.
+- **🛠️ REFACTORED**: Unified all CLI command executions to a single, consistent entry point (`.super-prompt/cli.py`), eliminating architectural debt from legacy files.
+- **🧹 CLEANED**: Removed obsolete legacy `cli.py` and redundant `cursor_adapter.py` copy logic from the installation process for a cleaner and more reliable package.
+
+## v3.1.48 - 2025-09-14
+
+### 🚀 **FORCED ADVANCED TAG-EXECUTOR.SH IMPLEMENTATION**
+
+- **🎯 ROOT CAUSE RESOLVED**: Critical issue where `super-prompt super:init` was generating 7-line basic version instead of 599-line advanced tag-executor.sh
+- **💪 FORCE IMPLEMENTATION**: 
+  - **install.js**: Added forced copy of advanced tag-executor.sh during installation
+  - **project_scaffold.py**: Enhanced to always prioritize advanced version from multiple possible locations
+  - **Multi-path Search**: Implemented fallback system searching multiple locations for advanced version
+- **🔧 TECHNICAL FIXES**:
+  - Modified installation script to guarantee advanced version deployment
+  - Enhanced project scaffold to detect and use advanced tag-executor.sh
+  - Added comprehensive error handling and logging for debugging
+- **✅ RESULT**: All new installations now get the full-featured 599-line advanced tag-executor.sh
+- **🎉 IMPACT**: Users get consistent advanced functionality across all environments
+
+## v3.1.46 - 2025-09-14
+
+### 🔧 **COMPREHENSIVE CONSISTENCY FIX**: Development vs Generated File Synchronization
+
+- **🎯 ROOT CAUSE IDENTIFIED**: Critical inconsistency discovered between development environment files and files generated during `super-prompt super:init` initialization. This affected all command templates, icons, descriptions, and supporting files.
+
+- **📦 SOLUTION IMPLEMENTED**: Complete template system overhaul:
+  - **Template Migration**: Moved all current project `.md` command files, `README.md`, `health-report.json`, and other assets to `packages/cursor-assets/templates/`
+  - **Adapter Refactoring**: Updated `cursor_adapter.py` to use templates as the primary source instead of generating from scratch
+  - **Consistency Guarantee**: All files now match exactly between development environment and user installations
+  - **Fallback System**: Maintained robust fallback generation for edge cases
+
+- **🔄 FILES SYNCHRONIZED**:
+  - All 35+ `.md` command files with correct icons and descriptions
+  - `tag-executor.sh` (advanced 599-line version)
+  - `README.md` and `health-report.json`
+  - SDD workflow command files
+
+- **✅ IMPACT**: Users installing v3.1.46+ will get identical experience to the development environment, eliminating confusion and ensuring feature parity.
+
 ## v3.1.39 - 2025-09-14
 
 ### 🐛 **CRITICAL FIX**: Complete Command Installation
@@ -473,3 +608,8 @@ super-prompt super:init --help # ✅ Legacy syntax support
 ### ✨ New Features
 
 - **README Update**: Added guidance on optimal model selection for Cursor IDE, recommending Gemini Flash and Grok Code Fast with maximized context windows for enhanced performance.
+## v3.1.66 - 2025-09-14
+
+### 🛠️ Dev persona flag
+- feat(cli): Add `--sp-dev` and `--dev` flags to `optimize` command.
+- feat(optimizer): Add `dev` persona to PromptOptimizer so `/dev` and flags resolve without unknown-persona errors.

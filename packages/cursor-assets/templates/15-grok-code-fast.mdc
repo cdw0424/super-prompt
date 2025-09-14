@@ -1,0 +1,57 @@
+---
+description: "Grok Code Fast 1 optimization rules for Cursor"
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Grok Code Fast 1 (Cursor)
+- Target model: `grok-code-fast-1` inside Cursor (no API keys needed).
+- Optimize for fast, tool-heavy agentic coding with stable prompts.
+
+# Core Practices
+- Provide necessary context explicitly: reference exact file paths and only the relevant snippets.
+- Set explicit goals and constraints before execution; avoid vague requests.
+- Iterate quickly: deliver a first pass, then refine based on concrete failures.
+- Assign agentic tasks: prefer multiple small tool/calls over one large leap.
+- Use native tool-calling (no XML wrappers); keep calls minimal and focused.
+- Keep logs consistent; start terminal/log lines with `--------`.
+
+# Context Structure (recommended)
+Use clear Markdown sections to help the model route context efficiently:
+```
+## GOALS
+- ...
+
+## CONTEXT
+- repo: <path>
+- files: <path1>, <path2>
+- dependencies: <brief>
+
+## PLAN
+- step 1 …
+- step 2 …
+
+## EXECUTE
+- command/code changes …
+
+## VERIFY
+- how to run/validate …
+```
+
+# Refinement Loop
+- If an attempt fails, respond with: the failure, root cause guess, and a minimal next adjustment.
+- Prefer patch-sized diffs and reversible changes.
+
+# Caching Discipline
+- Keep prompt headers and section names stable across turns to maximize cache hits.
+- Don’t restate unchanged context verbosely; reference prior sections by name.
+
+# Manual Model Switch (optional in Cursor)
+- If your Cursor supports it, you can use:
+  - `/model grok-code-fast-1 medium` → `--------router: grok set to medium`
+  - `/model grok-code-fast-1 high` → `--------router: grok set to high (planning)`
+
+# Output Discipline
+- English-only in prompts/docs; never print secrets (mask like `sk-***`).
+- Provide exact zsh/macOS commands where relevant.
+

@@ -6,41 +6,69 @@
 
 **Production-ready prompt engineering toolkit** supporting both **Cursor IDE** and **Codex CLI** with **Spec-Driven Development (SDD)** workflow and **Auto Model Router (AMR)** for intelligent reasoning optimization.
 
-- [x] **Latest**: v3.1.38 - Fixed initialization display to show all 35+ available commands instead of only 8 commands.
-- [ ] **Next**: v3.1.39 - Critical fix for packaging, ensuring all 35+ commands are correctly installed.
+- [x] **Latest**: v3.1.65 - Flag-only mode + minimal `sp`.
+- [ ] **Next**: v3.1.66 - Enhanced error handling and user experience improvements.
 
 <br>
 
-## 🚀 **Latest Release: v3.1.39**
-- **CRITICAL FIX**: Resolved a major packaging bug where `npm install` would not install the complete set of 35+ commands. The `package.json` "files" entry was corrected to include the `.cursor` directory, and the main `bin/super-prompt` script was updated to correctly execute the full initialization process. All commands should now be installed correctly.
-- **Robust Initialization**: The `super-prompt super:init` command is now more reliable and directly calls the correct Python script responsible for scaffolding the complete command suite.
----
+## v3.1.60 - Canonical tag executor across all paths
+- Fixed: `super:init` now writes the same canonical tag-executor wrapper as templates/installer (no newline/comment drift).
+- Verified: Generated command files point to the canonical wrapper consistently.
+
+## v3.1.61 - Rules from templates + pkg fix
+- Fixed: All rule files under `.cursor/rules` are now copied from packaged templates for perfect consistency; no more dynamic drift in `super:init`.
+- Chore: Ran `npm pkg fix` to normalize `bin` entries and tidy package metadata.
+
+## v3.1.62 - Exact tag-executor byte match
+- Fixed: `super:init` now writes `tag-executor.sh` without a trailing newline to exactly match the shipped template (byte-for-byte).
+
+## v3.1.63 - Persona flag reliability
+- Fixed: `--sp-<persona>` flags (e.g., `--sp-analyzer`) now work on clean systems by auto‑ensuring PyYAML before executing the enhanced persona processor.
+
+## v3.1.64 - Works without global super-prompt
+- Feature: Cursor tag executor prefers project-local Python CLI (`.super-prompt/cli.py`), then falls back to global binary or `npx`. This enables fully offline, no-global install usage.
+
+## v3.1.59 - CANONICAL TAG EXECUTOR & DRIFT FIX
+- Fixed: Eliminated file drift between published package and project-generated assets (Cursor tag-executor).
+- Fixed: `install.js` and `super:init` now install the same canonical tag executor wrapper.
+- Refactor: Simplified `tag-executor.sh` to delegate to `super-prompt optimize` (or `npx` fallback) to avoid future divergence.
+
+## v3.1.58 - UNIFIED CLI EXECUTOR & VERSION FIX
+- **🐛 FIXED**: `super-prompt init` now correctly displays the latest dynamic version instead of the outdated `v2.9.1`.
+- **🛠️ REFACTORED**: Unified all CLI command executions to a single, consistent entry point, eliminating architectural debt and preventing future version drift.
+- **🧹 CLEANED**: Removed obsolete legacy files and redundant code from the installation process, resulting in a cleaner and more reliable package.
+
+## v3.1.56 - DYNAMIC VERSION DISPLAY & ENHANCED ANALYZER COMMAND
+- **📊 DYNAMIC VERSION DISPLAY**: Added automatic version detection from package.json for accurate version display in CLI
+- **🔍 ENHANCED ANALYZER COMMAND**: Improved analyzer command description with more detailed capabilities and expertise areas
+
 ## 📜 Overview
 
-## ⚡ Quick Start
+## ⚡ Quick Start (No global install required)
 
 ```bash
-# Install globally (always use @latest for automatic updates)
-npm install -g @cdw0424/super-prompt@latest
-
-# Go to your project directory and initialize
+# 1) Initialize in your project (recommended, no global install)
 cd your-project
-super-prompt super:init
+npx -y @cdw0424/super-prompt@latest super:init
 
-# Analyze project and activate memory mode (recommended)
-super-prompt init-sp
+# Optional: initialize Codex CLI assets (AGENTS.md, bootstrap, wrappers)
+npm run codex:init
 
-# Use with Cursor IDE
-# 💡 Optional: For best results with Cursor IDE, use the most economically efficient mode
-# To enable grok-on: Go to Cursor Settings → Beta → Enable "grok-on" feature
-/grok-on
-
+# 2) Use Cursor IDE slash commands
+/grok-on (or /grok-mode-on)
+/codex-on (or /codex-mode-on)
 /architect "design user authentication system"
 /frontend "create responsive dashboard"
 
-# Use with CLI flags
-super-prompt --sp-architect "design microservices architecture"
-super-prompt --sp-frontend "optimize React performance"
+# 3) CLI flags (optional)
+# After init, tag executor prefers the project-local Python CLI automatically
+super-prompt --sp-architect "design microservices architecture" || \
+  npx @cdw0424/super-prompt --sp-architect "design microservices architecture"
+
+# 4) Codex CLI pairing (optional)
+# Plan at high effort, execute at medium
+npm run codex:plan -- "Plan complex refactor across modules"
+npm run codex:exec -- "Apply patch and run tests"
 ```
 
 ## ✨ Key Features
@@ -59,6 +87,11 @@ super-prompt --sp-frontend "optimize React performance"
 
 🤖 **Grok-Optimized**: Specially optimized for [grok-code-fast-1 MAX mode] in Cursor IDE
 
+🔧 **Codex AMR Mode**: Toggle codex-amr mode for intelligent task classification and reasoning level switching
+
+🔄 **Exclusive Mode Switching**: Grok and Codex modes are mutually exclusive - enabling one automatically disables the other
+🧭 **Codex CLI Integration**: Scaffold `.codex/` assets (AGENTS.md, bootstrap prompt, router checks) and wrappers for high/medium execution
+
 ## 🎭 Popular Personas
 
 | Persona | Description | Use Case |
@@ -68,6 +101,7 @@ super-prompt --sp-frontend "optimize React performance"
 | **`/backend`** | Reliability engineer, API specialist | Server-side development, APIs |
 | **`/security`** | Threat modeler, vulnerability specialist | Security audits, threat analysis |
 | **`/analyzer`** | Root cause specialist | Debugging, investigation |
+| **`/doc-master`** | Documentation specialist | Comprehensive documentation creation |
 | **`/qa`** | Quality advocate, testing specialist | Test strategies, quality assurance |
 
 ## 🚀 Quick Examples
@@ -84,6 +118,7 @@ super-prompt --sp-frontend "optimize React performance"
 
 # Quality & Analysis
 /analyzer "investigate performance bottleneck"
+/doc-master "create comprehensive API documentation"
 /security "audit authentication implementation"
 ```
 
@@ -95,8 +130,26 @@ super-prompt --sp-frontend "optimize React performance"
 --sp-sdd-implement "authentication system"
 
 # Direct persona consultation
+# Preferred minimal command for Codex: just use flags with `sp`
+sp --sp-architect "design microservices architecture"
+sp --sp-doc-master "create comprehensive project documentation"
+sp --sp-security  "review API security"
+sp --sp-tr         "triage failing CI job and propose fix"
+
+# Also works with global/local super-prompt
 super-prompt --sp-architect "design microservices architecture"
-super-prompt --sp-security "review API security"
+super-prompt --sp-doc-master "create comprehensive project documentation"
+super-prompt --sp-security  "review API security"
+
+# Codex CLI helpers
+npm run codex:init   # writes .codex/AGENTS.md, bootstrap prompt, router-check
+npm run codex:plan -- "deep planning (high)"
+npm run codex:exec -- "execute steps (medium)"
+
+# Flag‑only mode (no 'sp' or 'super-prompt' prefix)
+# This makes "--sp-analyzer \"...\"" work as a command in your shell
+sp-setup-shell   # run once, then restart your terminal (bash/zsh)
+--sp-analyzer "investigate CPU usage spikes in logs"
 ```
 
 ## 🏗️ SDD Workflow
@@ -125,22 +178,24 @@ super-prompt --sp-sdd-implement "feature description"
 
 ### Installation
 ```bash
-# Install globally (always use @latest for automatic updates)
-npm install -g @cdw0424/super-prompt@latest
-
-# Go to YOUR PROJECT directory and initialize (creates .super-prompt folder only)
+# Option A (recommended): No global install
 cd your-project
-super-prompt super:init
+npx -y @cdw0424/super-prompt@latest super:init
 
-# Verify installation
-super-prompt --help
+# Option B: Local devDependency
+npm install -D @cdw0424/super-prompt@latest
+./node_modules/.bin/super-prompt super:init
+
+# Option C: Global install (optional)
+npm install -g @cdw0424/super-prompt@latest
+super-prompt super:init
 ```
 
 ### What gets installed?
-- **Global**: Only the `super-prompt` CLI command
 - **Project**: All files go into `.super-prompt/` folder only
 - **Python**: Isolated virtual environment in `.super-prompt/venv/`
 - **Databases**: SQLite and data files in `.super-prompt/venv/data/`
+- **Global (optional)**: The `super-prompt` CLI command
 
 ### ⚠️ Important: Run in Your Project Directory
 **Always run `super-prompt super:init` in your project's root directory** where you want to add Super Prompt integration.
@@ -197,6 +252,22 @@ npm install @cdw0424/super-prompt@latest
 ./node_modules/.bin/super-prompt super:init
 ```
 
+**npm EEXIST/EACCES during global install (cache permission):**
+```bash
+# Best: Avoid global install — use npx or local devDependency (see above)
+
+# If you still want global install, set a user cache and retry
+npm config set cache "$HOME/.npm-cache" --global
+npm cache clean --force
+npm install -g @cdw0424/super-prompt@latest
+
+# One‑shot alternative
+npm_config_cache="$HOME/.npm-cache" npm install -g @cdw0424/super-prompt@latest
+
+# If /tmp/.npm-cache is corrupted and you have permissions
+rm -rf /tmp/.npm-cache
+```
+
 **Python dependencies & environment issues:**
 ```bash
 # Super Prompt automatically creates virtual environment
@@ -225,11 +296,11 @@ pip install typer>=0.9.0 pyyaml>=6.0 pathspec>=0.11.0
 
 ## 📚 Documentation
 
-📖 **[Complete Documentation](https://github.com/cdw0424/super-promt/blob/main/ARCHITECTURE.md)** - Detailed architecture and advanced usage
+📖 **[Complete Documentation](https://github.com/cdw0424/super-prompt/blob/main/ARCHITECTURE.md)** - Detailed architecture and advanced usage
 
-📋 **[Changelog](https://github.com/cdw0424/super-promt/blob/main/CHANGELOG.md)** - Version history and updates
+📋 **[Changelog](https://github.com/cdw0424/super-prompt/blob/main/CHANGELOG.md)** - Version history and updates
 
-🐛 **[Issues & Support](https://github.com/cdw0424/super-promt/issues)** - Bug reports and feature requests
+🐛 **[Issues & Support](https://github.com/cdw0424/super-prompt/issues)** - Bug reports and feature requests
 
 ## 📄 License
 
@@ -241,6 +312,6 @@ MIT © [Daniel Choi](https://github.com/cdw0424)
 
 **🚀 Ready to supercharge your development workflow?**
 
-[Install Now](#-installation--setup) • [View Documentation](https://github.com/cdw0424/super-promt/blob/main/ARCHITECTURE.md) • [Report Issues](https://github.com/cdw0424/super-promt/issues)
+[Install Now](#-installation--setup) • [View Documentation](https://github.com/cdw0424/super-prompt/blob/main/ARCHITECTURE.md) • [Report Issues](https://github.com/cdw0424/super-prompt/issues)
 
 </div>

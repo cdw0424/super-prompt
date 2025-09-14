@@ -22,6 +22,34 @@ from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
 
+
+def get_current_version() -> str:
+    """Get current version from package.json"""
+    try:
+        # Try to find package.json in parent directories (for development)
+        current_dir = Path(__file__).resolve()
+        print(f"----- DEBUG: Starting version detection from {current_dir}")
+        for i in range(5):  # Check up to 5 levels up
+            package_json = current_dir / "package.json"
+            print(f"----- DEBUG: Checking {package_json}")
+            if package_json.exists():
+                with open(package_json, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    version = data.get('version', '3.1.56')
+                    print(f"----- DEBUG: Found version {version} in {package_json}")
+                    return version
+            current_dir = current_dir.parent
+            print(f"----- DEBUG: Moving up to {current_dir}")
+
+        # Fallback: try to read from environment or use default
+        env_version = os.environ.get('SUPER_PROMPT_VERSION', '3.1.56')
+        print(f"----- DEBUG: Using environment/default version {env_version}")
+        return env_version
+    except Exception as e:
+        print(f"----- DEBUG: Exception in version detection: {e}")
+        return '3.1.56'
+
+
 app = typer.Typer(
     name="super-prompt-core",
     help="Super Prompt v3 - Modular prompt engineering toolkit",
@@ -320,6 +348,88 @@ def codex_init(
         typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
 
 
+@app.command("codex-mode-on")
+def codex_mode_on(
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Enable Codex AMR mode by creating .codex/.codex-mode flag."""
+    try:
+        root = Path(project_root or ".")
+        cursor_dir = root / ".cursor"
+        cursor_dir.mkdir(parents=True, exist_ok=True)
+        flag = cursor_dir / ".codex-mode"
+        flag.write_text("", encoding="utf-8")
+        # Mutual exclusivity: disable Grok mode flag if present
+        grok_flag = root / ".cursor" / ".grok-mode"
+        if grok_flag.exists():
+            try:
+                grok_flag.unlink()
+                typer.echo("-------- Grok mode disabled due to Codex AMR activation")
+            except Exception:
+                pass
+        typer.echo("-------- Codex AMR mode: ENABLED (.codex/.codex-mode)")
+    except Exception as e:
+        typer.echo(f"❌ Error enabling Codex mode: {e}", err=True); raise typer.Exit(1)
+
+
+@app.command("codex-mode-off")
+def codex_mode_off(
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Disable Codex AMR mode by removing .codex/.codex-mode flag."""
+    try:
+        root = Path(project_root or ".")
+        flag = root / ".cursor" / ".codex-mode"
+        if flag.exists():
+            flag.unlink()
+            typer.echo("-------- Codex AMR mode: DISABLED")
+        else:
+            typer.echo("-------- Codex AMR mode: Already disabled")
+    except Exception as e:
+        typer.echo(f"❌ Error disabling Codex mode: {e}", err=True); raise typer.Exit(1)
+
+
+@app.command("grok-mode-on")
+def grok_mode_on(
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Enable Grok mode by creating .cursor/.grok-mode flag (and disable Codex mode)."""
+    try:
+        root = Path(project_root or ".")
+        cursor_dir = root / ".cursor"
+        cursor_dir.mkdir(parents=True, exist_ok=True)
+        flag = cursor_dir / ".grok-mode"
+        flag.write_text("", encoding="utf-8")
+        # Mutual exclusivity: disable Codex mode flag if present
+        codex_flag = root / ".codex" / ".codex-mode"
+        if codex_flag.exists():
+            try:
+                codex_flag.unlink()
+                typer.echo("-------- Codex AMR mode disabled due to Grok activation")
+            except Exception:
+                pass
+        typer.echo("-------- Grok mode: ENABLED (.cursor/.grok-mode)")
+    except Exception as e:
+        typer.echo(f"❌ Error enabling Grok mode: {e}", err=True); raise typer.Exit(1)
+
+
+@app.command("grok-mode-off")
+def grok_mode_off(
+    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+):
+    """Disable Grok mode by removing .cursor/.grok-mode flag."""
+    try:
+        root = Path(project_root or ".")
+        flag = root / ".cursor" / ".grok-mode"
+        if flag.exists():
+            flag.unlink()
+            typer.echo("-------- Grok mode: DISABLED")
+        else:
+            typer.echo("-------- Grok mode: Already disabled")
+    except Exception as e:
+        typer.echo(f"❌ Error disabling Grok mode: {e}", err=True); raise typer.Exit(1)
+
+
 @app.command("personas-init")
 def personas_init(
     overwrite: bool = typer.Option(False, "--overwrite", help="Overwrite if exists"),
@@ -531,7 +641,7 @@ def init(
    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝
 \033[0m
 \033[2m              Dual IDE Prompt Engineering Toolkit\033[0m
-\033[2m                     v3.1.34 | @cdw0424/super-prompt\033[0m
+\033[2m                     {get_current_version()} | @cdw0424/super-prompt\033[0m
 \033[2m                          Made by \033[0m\033[35mDaniel Choi from Korea\033[0m
 """
         typer.echo(logo)
@@ -555,8 +665,14 @@ def init(
         for dir_path in dirs_to_create:
             dir_path.mkdir(parents=True, exist_ok=True)
 
-        # Generate Cursor integration
+        # Generate Cursor integration (debug logs only when SUPER_PROMPT_DEBUG=1)
+        __os = __import__("os")
+        _dbg = __os.environ.get("SUPER_PROMPT_DEBUG") == "1"
+        if _dbg:
+            print(f"🔍 DEBUG: About to call cursor_adapter.generate_commands with {target_dir}")
         cursor_adapter.generate_commands(target_dir)
+        if _dbg:
+            print(f"🔍 DEBUG: cursor_adapter.generate_commands completed")
         cursor_adapter.generate_rules(target_dir)
 
         # Generate initial SDD structure
@@ -647,14 +763,33 @@ Brief description of the feature.
                         except Exception as ie:
                             typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
             else:
-                # Minimal fallback: install runtime deps directly into current interpreter
-                typer.echo("⚠️  pyproject.toml not found — installing minimal runtime deps globally")
-                deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
-                try:
-                    subprocess.run([sys.executable, "-m", "pip", "install", *deps], check=True)
-                    typer.echo("   ✅ Minimal Python dependencies installed")
-                except Exception as ie:
-                    typer.echo(f"   ⚠️  Could not install minimal deps: {ie}")
+                # Minimal fallback: install runtime deps into virtual environment
+                typer.echo("⚠️  pyproject.toml not found — installing minimal runtime deps in venv")
+
+                # Ensure venv exists and install deps there
+                super_prompt_dir = target_dir / ".super-prompt"
+                super_prompt_dir.mkdir(exist_ok=True)
+                venv_path = super_prompt_dir / "venv"
+
+                # Check if venv already exists
+                venv_python = venv_path / "bin" / "python"
+                if not venv_python.exists():
+                    venv_python = venv_path / "Scripts" / "python.exe"  # Windows
+
+                if venv_python.exists():
+                    # Install into existing venv
+                    pip_path = venv_path / "bin" / "pip"
+                    if not pip_path.exists():
+                        pip_path = venv_path / "Scripts" / "pip"  # Windows
+
+                    deps = ["typer>=0.9.0", "pyyaml>=6.0", "pathspec>=0.11.0"]
+                    try:
+                        subprocess.run([str(pip_path), "install", *deps], check=True)
+                        typer.echo("   ✅ Minimal Python dependencies installed in venv")
+                    except Exception as ie:
+                        typer.echo(f"   ⚠️  Could not install minimal deps into venv: {ie}")
+                else:
+                    typer.echo("   ⚠️  Virtual environment not found, skipping dependency install")
         except Exception as e:
             typer.echo(f"⚠️  Skipped Python dependency install: {e}")
 
@@ -667,7 +802,7 @@ Brief description of the feature.
                 "zod@4.1.8",
                 "ioredis@5.7.0",
             ]
-            override = os.environ.get("SUPER_PROMPT_LTM_PKGS")
+            override = __os.environ.get("SUPER_PROMPT_LTM_PKGS")
             pkgs = override.split() if override else pinned
             subprocess.run(["npm", "install", "-D", *pkgs], cwd=str(target_dir), check=False)
         except Exception as e:

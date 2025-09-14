@@ -11,7 +11,21 @@ class CodexAdapter:
     """Adapter for Codex CLI integration"""
 
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent.parent
+        # Resolve project root robustly whether running from repo packages/core-py
+        # or bundled under .super-prompt/packages/core-py
+        here = Path(__file__).resolve()
+        self.project_root = here
+        # Search upwards for a directory that contains packages/codex-assets/manifests/agents.yaml
+        marker_rel = Path("packages") / "codex-assets" / "manifests" / "agents.yaml"
+        for p in [here.parent, *here.parents]:
+            candidate = p
+            if (candidate / marker_rel).exists():
+                self.project_root = candidate
+                break
+        else:
+            # Fallback to historical 4-level assumption
+            self.project_root = Path(__file__).parent.parent.parent.parent
+
         self.assets_root = self.project_root / "packages" / "codex-assets"
 
     def load_agents_manifest(self) -> Dict[str, Any]:

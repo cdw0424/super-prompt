@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Install shell hook so that lines starting with --sp-* or mode toggles execute via `sp`
+set -euo pipefail
+
+SHELL_NAME="${SHELL##*/}"
+
+append_if_missing() {
+  local file="$1"; shift
+  local marker="$1"; shift
+  local content="$1"; shift || true
+  mkdir -p "$(dirname "$file")"
+  touch "$file"
+  if ! grep -q "$marker" "$file" 2>/dev/null; then
+    printf "\n# %s\n%s\n" "$marker" "$content" >> "$file"
+    echo "-------- Installed flag-only handler in $file"
+  else
+    echo "-------- Handler already present in $file (skipped)"
+  fi
+}
+
+case "$SHELL_NAME" in
+  bash)
+    RC_FILE="$HOME/.bashrc"
+    MARKER="SP_FLAG_ONLY_HANDLER"
+    read -r -d '' SNIPPET <<'BASH'
+# SP_FLAG_ONLY_HANDLER
+command_not_found_handle() {
+  case "$1" in
+    --sp-*|--grok-mode-on|--grok-mode-off|--codex-mode-on|--codex-mode-off)
+      command sp "$@"; return $? ;;
+  esac
+  echo "bash: $1: command not found" 1>&2
+  return 127
+}
+BASH
+    append_if_missing "$RC_FILE" "$MARKER" "$SNIPPET"
+    echo "-------- Done. Restart your terminal or 'source $RC_FILE'"
+    ;;
+  zsh)
+    RC_FILE="$HOME/.zshrc"
+    MARKER="SP_FLAG_ONLY_HANDLER"
+    read -r -d '' SNIPPET <<'ZSH'
+# SP_FLAG_ONLY_HANDLER
+function command_not_found_handler() {
+  if [[ "$1" == --sp-* || "$1" == --grok-mode-on || "$1" == --grok-mode-off || "$1" == --codex-mode-on || "$1" == --codex-mode-off ]]; then
+    command sp "$@"
+    return $?
+  fi
+  return 127
+}
+ZSH
+    append_if_missing "$RC_FILE" "$MARKER" "$SNIPPET"
+    echo "-------- Done. Restart your terminal or 'source $RC_FILE'"
+    ;;
+  *)
+    echo "-------- Unsupported shell: $SHELL_NAME"
+    echo "-------- Please add a command-not-found handler to forward --sp-* to 'sp' manually."
+    exit 1
+    ;;
+esac

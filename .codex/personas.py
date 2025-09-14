@@ -1,11 +1,11 @@
+
 #!/usr/bin/env python3
 # Codex Personas Helper — programmatic prompt builders (English only).
 from textwrap import dedent
 
 def build_debate_prompt(topic: str, rounds: int = 8) -> str:
     rounds = max(2, min(int(rounds or 8), 20))
-    return dedent(f'''\
-    You are a single model simulating a structured internal debate with two clearly separated selves:
+    return dedent(f'''    You are a single model simulating a structured internal debate with two clearly separated selves:
     - Positive Self (Builder): constructive, solution-focused.
     - Critical Self (Skeptic): risk-driven, assumption-testing.
 
@@ -37,5 +37,11 @@ def build_debate_prompt(topic: str, rounds: int = 8) -> str:
 
 def build_persona_prompt(name: str, query: str, context: str = "") -> str:
     # Return a minimal persona-wrapped prompt.
-    header = f"**[Persona]** {name}\n\n"
-    return header + (context or "") + f"\n\n**[User's Request]**\n{query}\n"
+    header = f"**[Persona]** {name}
+
+"
+    return header + (context or "") + f"
+
+**[User's Request]**
+{query}
+"

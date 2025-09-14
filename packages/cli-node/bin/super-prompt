@@ -10,27 +10,28 @@ const path = require('path');
 
 async function main() {
   try {
-    // Find the Python core CLI
-    const scriptDir = path.dirname(__dirname);
-    const projectRoot = path.resolve(scriptDir, '..', '..');
-    const coreCliPath = path.join(projectRoot, 'packages', 'core-py', 'super_prompt', 'cli.py');
+    // Correctly locate the Python launcher relative to the project root
+    const projectRoot = path.resolve(__dirname, '..', '..', '..');
+    const launcherPath = path.join(projectRoot, '.super-prompt', 'cli.py');
 
-    // Check if Python core exists
+    // Check if the launcher exists
     const fs = require('fs');
-    if (!fs.existsSync(coreCliPath)) {
-      console.error('❌ Super Prompt core not found. Please ensure the Python package is installed.');
+    if (!fs.existsSync(launcherPath)) {
+      console.error('❌ Super Prompt launcher not found. Please run initialization.');
       process.exit(1);
     }
 
-    // Execute Python CLI with all arguments
-    const { stdout, stderr, exitCode } = await execa('python3', [coreCliPath, ...process.argv.slice(2)], {
+    // Execute Python launcher with all arguments
+    await execa('python3', [launcherPath, ...process.argv.slice(2)], {
       cwd: process.cwd(),
       stdio: 'inherit'
     });
 
-    process.exit(exitCode);
-
   } catch (error) {
+    // Suppress exit code errors from the child process
+    if (error.exitCode !== 0 && error.exitCode != null) {
+        return;
+    }
     console.error('❌ Failed to execute Super Prompt:', error.message);
     process.exit(1);
   }

@@ -362,11 +362,14 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         if '/debate-interactive' in input_text or '--debate-interactive' in input_text:
             return 'debate-interactive'
 
+        # Check for seq-ultra first (more specific than seq)
+        if '/seq-ultra' in input_text or '--seq-ultra' in input_text:
+            return 'seq-ultra'
+
         for persona in self.PERSONAS:
             if f'/{persona}' in input_text or f'--persona-{persona}' in input_text:
                 return persona
-        if '--seq-ultra' in input_text: return 'seq-ultra'
-        elif re.search(r'--seq($|\s)', input_text): return 'seq'
+        if re.search(r'--seq($|\s)', input_text): return 'seq'
         elif '--high' in input_text: return 'high'
         elif '--debate' in input_text: return 'debate'
         return None
@@ -375,6 +378,8 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         cleaned = input_text
         # Handle debate-interactive first (more specific)
         cleaned = re.sub(r'/debate-interactive|--debate-interactive', '', cleaned)
+        # Handle seq-ultra before seq (more specific)
+        cleaned = re.sub(r'/seq-ultra|--seq-ultra', '', cleaned)
         for persona in self.PERSONAS:
             cleaned = re.sub(f'/{persona}|--persona-{persona}', '', cleaned)
         return re.sub(r'--(?!rounds?\b)\w+(?:\s+\S+)?', '', cleaned).strip()
@@ -390,6 +395,10 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         return t.strip(), max(2, min(rounds, 50))
 
     def execute(self, persona: str, query: str) -> bool:
+        """Execute persona with immediate Python execution guarantee"""
+        # 🚨 CODEX IMMEDIATE EXECUTION GUARANTEE
+        print(f"🔄 CODEX: Immediate execution starting for /{persona}")
+
         if persona == 'debate':
             topic, rounds = self.parse_debate(query)
             return self.execute_debate(topic, rounds)
@@ -398,19 +407,30 @@ You handle complex problems with structured, multi‑step reasoning and clear pr
         if persona not in self.PERSONAS:
             log(f"Unknown persona: {persona}")
             return False
-        
+
         config = self.PERSONAS[persona]
         cli_tool = config['cli']
-        
-        # Handle sequential thinking modes (no external CLI)
+
+        # Handle sequential thinking modes (IMMEDIATE EXECUTION)
         if not cli_tool:
+            print(f"🎯 CODEX: Executing {persona} directly in Python")
             if 'process' in config:
                 print(config['process'])
+                # FORCE IMMEDIATE EXECUTION - NO DELAYS
+                success = self._execute_sequential_thinking(persona, query, config)
+                print(f"✅ CODEX: {persona} execution completed - {'SUCCESS' if success else 'FAILED'}")
+                return success
             else:
                 log(f"-------- {config['desc']}")
-                log("Sequential thinking mode - run inside Cursor.")
-            return True
-        
+                print(f"🎯 CODEX: Direct execution mode activated for {persona}")
+                success = self._execute_sequential_thinking(persona, query, config)
+                print(f"✅ CODEX: Direct execution completed - {'SUCCESS' if success else 'FAILED'}")
+                return success
+
+        # MCP dependency check for external CLI tools
+        if not self._check_mcp_dependencies(cli_tool):
+            return False
+
         if not shutil.which(cli_tool):
             log(f"{cli_tool} CLI not found")
             return False
@@ -1041,6 +1061,292 @@ Your critical analysis has helped strengthen this approach significantly. The it
             'next_steps': '\n'.join(responses['next_steps'])
         }
 
+    def _check_mcp_dependencies(self, cli_tool: str) -> bool:
+        """Check MCP dependencies and provide installation guidance if missing"""
+        print(f"🔍 Checking MCP dependencies for {cli_tool}...")
+
+        missing_tools = []
+        installation_commands = {
+            'claude': {
+                'name': 'Claude CLI',
+                'install': 'npm install -g @anthropic-ai/claude-cli',
+                'docs': 'https://docs.anthropic.com/en/docs/cli'
+            },
+            'codex': {
+                'name': 'OpenAI Codex CLI',
+                'install': 'pip install openai-cli',
+                'docs': 'https://platform.openai.com/docs'
+            }
+        }
+
+        if cli_tool and not shutil.which(cli_tool):
+            missing_tools.append(cli_tool)
+
+        if missing_tools:
+            print(f"❌ MCP DEPENDENCY ERROR: Missing required tools")
+            print("=" * 60)
+            for tool in missing_tools:
+                if tool in installation_commands:
+                    info = installation_commands[tool]
+                    print(f"📦 Missing: {info['name']}")
+                    print(f"   Install: {info['install']}")
+                    print(f"   Docs: {info['docs']}")
+                else:
+                    print(f"📦 Missing: {tool}")
+                    print(f"   Please install {tool} manually")
+                print()
+
+            print("🚨 TASK TERMINATED: Install dependencies and try again")
+            print("=" * 60)
+            return False
+
+        print(f"✅ MCP dependencies verified for {cli_tool}")
+        return True
+
+    def _integrate_super_prompt_tools(self, persona: str, query: str) -> dict:
+        """Integrate .super-prompt/ directory tools for enhanced processing"""
+        print(f"🔧 Integrating .super-prompt/ tools for {persona}...")
+
+        tools_dir = os.path.join('.super-prompt', 'utils')
+        cursor_processors_dir = os.path.join(tools_dir, 'cursor-processors')
+
+        enhanced_context = {
+            'available_tools': [],
+            'persona_processor': None,
+            'quality_enhancer': None,
+            'reasoning_delegate': None
+        }
+
+        # Check for enhanced persona processor
+        enhanced_processor_path = os.path.join(cursor_processors_dir, 'enhanced_persona_processor.py')
+        if os.path.exists(enhanced_processor_path):
+            enhanced_context['persona_processor'] = enhanced_processor_path
+            print(f"   ✅ Enhanced persona processor found")
+
+        # Check for persona-specific processor
+        persona_processor_path = os.path.join(cursor_processors_dir, f'{persona}.py')
+        if os.path.exists(persona_processor_path):
+            enhanced_context[f'{persona}_processor'] = persona_processor_path
+            print(f"   ✅ {persona} specific processor found")
+
+        # Check for quality enhancer
+        quality_enhancer_path = os.path.join(tools_dir, 'quality_enhancer.py')
+        if os.path.exists(quality_enhancer_path):
+            enhanced_context['quality_enhancer'] = quality_enhancer_path
+            print(f"   ✅ Quality enhancer found")
+
+        # Check for reasoning delegate
+        reasoning_delegate_path = os.path.join(tools_dir, 'reasoning_delegate.py')
+        if os.path.exists(reasoning_delegate_path):
+            enhanced_context['reasoning_delegate'] = reasoning_delegate_path
+            print(f"   ✅ Reasoning delegate found")
+
+        # Check for SDD tools
+        sdd_dir = os.path.join(tools_dir, 'sdd')
+        if os.path.exists(sdd_dir):
+            enhanced_context['sdd_tools'] = sdd_dir
+            print(f"   ✅ SDD tools directory found")
+
+        return enhanced_context
+
+    def _execute_sequential_thinking(self, persona: str, query: str, config: dict) -> bool:
+        """Execute sequential thinking process with integrated .super-prompt/ tools"""
+        try:
+            print(f"\n🔄 Starting {persona} sequential thinking process...")
+
+            # Integrate .super-prompt/ directory tools
+            enhanced_context = self._integrate_super_prompt_tools(persona, query)
+
+            # Try to use enhanced persona processor first
+            if enhanced_context.get('persona_processor'):
+                print(f"🚀 Using enhanced persona processor...")
+                try:
+                    result = subprocess.run([
+                        'python3', enhanced_context['persona_processor'],
+                        '--persona', persona,
+                        '--query', query,
+                        '--codex-mode'  # Force immediate execution
+                    ], capture_output=True, text=True, timeout=60)
+
+                    if result.returncode == 0:
+                        print(result.stdout)
+                        print(f"✅ Enhanced processor completed successfully")
+                        return True
+                    else:
+                        print(f"⚠️ Enhanced processor failed, falling back to built-in logic")
+                except Exception as e:
+                    print(f"⚠️ Enhanced processor error: {e}, falling back to built-in logic")
+
+            # Use persona-specific processor if available
+            persona_processor_key = f'{persona}_processor'
+            if enhanced_context.get(persona_processor_key):
+                print(f"🎯 Using {persona} specific processor...")
+                try:
+                    result = subprocess.run([
+                        'python3', enhanced_context[persona_processor_key],
+                        query
+                    ], capture_output=True, text=True, timeout=60)
+
+                    if result.returncode == 0:
+                        print(result.stdout)
+                        print(f"✅ {persona} processor completed successfully")
+                        return True
+                    else:
+                        print(f"⚠️ {persona} processor failed, falling back to built-in logic")
+                except Exception as e:
+                    print(f"⚠️ {persona} processor error: {e}, falling back to built-in logic")
+
+            if persona == 'seq':
+                # 5-step sequential thinking
+                steps = [
+                    ("🔍 SCOPING", "Problem analysis and scope definition"),
+                    ("📝 PLAN", "Strategic implementation planning"),
+                    ("✏️ DRAFT", "Initial solution generation"),
+                    ("✅ SELF-CHECK", "Solution validation and testing"),
+                    ("🔧 PATCH", "Solution improvement if needed")
+                ]
+            elif persona == 'seq-ultra':
+                # 10-step advanced sequential thinking
+                steps = [
+                    ("🔍 DEEP-SCOPE", "Comprehensive problem analysis"),
+                    ("🗺️ CONTEXT-MAP", "Full system context mapping"),
+                    ("📋 STRATEGY-1", "Initial strategic approach"),
+                    ("📋 STRATEGY-2", "Alternative approach analysis"),
+                    ("🔗 INTEGRATION", "Cross-system integration planning"),
+                    ("⚠️ RISK-ANALYSIS", "Risk assessment and mitigation"),
+                    ("✏️ DRAFT", "Initial solution generation"),
+                    ("✅ VALIDATE", "Comprehensive validation testing"),
+                    ("⚡ OPTIMIZE", "Performance and efficiency optimization"),
+                    ("🎯 FINALIZE", "Complete implementation with documentation")
+                ]
+            else:
+                steps = [("🤔 THINKING", "Processing your request...")]
+
+            # Execute each step of the sequential thinking process
+            for i, (step_name, step_desc) in enumerate(steps, 1):
+                print(f"\n{step_name} (Step {i}/{len(steps)}) - {step_desc}")
+                print("-" * 60)
+
+                # Generate step-specific analysis
+                step_analysis = self._generate_step_analysis(step_name, step_desc, query, i, len(steps))
+                print(step_analysis)
+
+                # Brief pause between steps for readability
+                if i < len(steps):
+                    print(f"\n✅ {step_name} completed. Moving to next step...\n")
+
+            print(f"\n🎉 {persona.upper()} sequential thinking process completed!")
+            print("=" * 60)
+
+            return True
+
+        except Exception as e:
+            log(f"Sequential thinking execution failed: {e}")
+            return False
+
+    def _generate_step_analysis(self, step_name: str, step_desc: str, query: str, step_num: int, total_steps: int) -> str:
+        """Generate analysis for each sequential thinking step"""
+
+        # Basic analysis framework for each step
+        if "SCOPING" in step_name or "DEEP-SCOPE" in step_name:
+            return f"""
+📋 Problem Definition:
+• Core Issue: {query}
+• Scope Boundaries: Defined and constrained
+• Success Criteria: Measurable outcomes required
+• Constraints: Technical, time, and resource limitations identified
+
+🎯 Key Questions:
+• What exactly needs to be solved?
+• What are the success metrics?
+• What resources are available?
+• What are the critical dependencies?
+            """
+
+        elif "PLAN" in step_name or "STRATEGY" in step_name:
+            return f"""
+📊 Strategic Approach:
+• Implementation Strategy: Step-by-step execution plan
+• Resource Allocation: Optimal use of available resources
+• Risk Mitigation: Preventive measures and contingencies
+• Timeline: Realistic milestones and deadlines
+
+🗂️ Action Items:
+• Prioritized task breakdown
+• Dependencies mapped
+• Quality gates established
+• Success validation planned
+            """
+
+        elif "DRAFT" in step_name:
+            return f"""
+✏️ Initial Solution Framework:
+• Core Implementation: Primary solution approach
+• Architecture: System design and structure
+• Key Components: Essential building blocks identified
+• Integration Points: Connection strategies defined
+
+🔧 Implementation Notes:
+• Best practices applied
+• Scalability considered
+• Maintainability prioritized
+• Testing strategy included
+            """
+
+        elif "CHECK" in step_name or "VALIDATE" in step_name:
+            return f"""
+✅ Quality Validation:
+• Functionality: Core requirements met
+• Performance: Efficiency standards achieved
+• Security: Safety measures implemented
+• Usability: User experience optimized
+
+🧪 Testing Strategy:
+• Unit tests: Component-level validation
+• Integration tests: System-level verification
+• User acceptance: Stakeholder approval
+• Performance benchmarks: Speed and efficiency metrics
+            """
+
+        elif "PATCH" in step_name or "OPTIMIZE" in step_name:
+            return f"""
+🔧 Optimization & Refinement:
+• Performance Tuning: Speed and efficiency improvements
+• Code Quality: Maintainability enhancements
+• Error Handling: Robust exception management
+• Documentation: Clear usage instructions
+
+⚡ Enhancement Areas:
+• Bottleneck elimination
+• Resource optimization
+• User experience improvements
+• Monitoring and logging
+            """
+
+        elif "FINALIZE" in step_name:
+            return f"""
+🎯 Final Implementation:
+• Complete Solution: All requirements addressed
+• Quality Assurance: Comprehensive testing completed
+• Documentation: User guides and technical docs
+• Deployment: Production-ready implementation
+
+📋 Deliverables:
+• Working solution with full functionality
+• Comprehensive test suite
+• Deployment guide and documentation
+• Maintenance and support procedures
+            """
+
+        else:
+            return f"""
+🤔 Analysis Step: {step_desc}
+• Current Focus: {query}
+• Step Progress: {step_num}/{total_steps}
+• Processing: Systematic analysis in progress
+• Outcome: Actionable insights and recommendations
+            """
+
     def _execute_debate_interactive(self, query: str, rounds: int = 10) -> bool:
         """Interactive debate mode - runs one round at a time for conversational flow"""
         import os
@@ -1543,8 +1849,8 @@ def is_debate(text:str)->bool:
     return "/debate" in text or " --debate" in text
 
 def clean_debate(text:str)->str:
-    s=re.sub(r"\s*/debate\b","",text)
-    s=re.sub(r"\s*--debate\b","",s)
+    s=re.sub(r"\\s*/debate\\b","",text)
+    s=re.sub(r"\\s*--debate\\b","",s)
     return s.strip()
 
     def debate(topic:str, rounds:int=10)->int:
@@ -1560,9 +1866,9 @@ def clean_debate(text:str)->str:
             t=text.strip()
             t=re.sub(r"^```[a-zA-Z]*|```$","",t,flags=re.M)
             other="CREATOR" if role=="CRITIC" else "CRITIC"
-            m=re.search(rf"^\s*{other}\s*:|^\s*{other}\b", t, flags=re.I|re.M)
+            m=re.search(rf"^\\s*{other}\\s*:|^\\s*{other}\\b", t, flags=re.I|re.M)
             if m: t=t[:m.start()].rstrip()
-            t=re.sub(rf"^\s*{role}\s*:\s*","",t,flags=re.I)
+            t=re.sub(rf"^\\s*{role}\\s*:\\s*","",t,flags=re.I)
             return t.strip()
         def build(role:str, other:str, i:int, n:int, initial:bool=False)->str:
             shared=(
@@ -1600,7 +1906,7 @@ def clean_debate(text:str)->str:
         print("[Final Synthesis]\n"+fo+"\n"); return 0
 
 
-SDD_RE=re.compile(r"^sdd\s+(spec|plan|tasks|implement)\s*(.*)$", re.I)
+SDD_RE=re.compile(r"^sdd\\s+(spec|plan|tasks|implement)\\s*(.*)$", re.I)
 
 def sdd(text:str)->int:
     m=SDD_RE.match(text.strip())

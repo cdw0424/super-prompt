@@ -22,27 +22,10 @@ resolve_app_home() {
 
 APP_HOME="$(resolve_app_home)"
 
-# Initialization command must be handled specially to ensure the correct script is run.
-# This block intercepts the init command and routes it to the full-featured Python
-# script that contains the logic to install all 35+ commands.
-if [ "${1-}" = "super:init" ] || [ "${1-}" = "init" ]; then
-  echo "-------- Running initialization..." >&2
-  
-  # The REAL init script with all the logic is deeply nested within the package.
-  INIT_SCRIPT_PY="$APP_HOME/.cursor/commands/super-prompt/.super-prompt/utils/cli.py"
-  
-  if [ -f "$INIT_SCRIPT_PY" ]; then
-    echo "-------- Found main init script: $INIT_SCRIPT_PY" >&2
-    # The python script's command is named "super:init". We shift off the shell
-    # command ('init' or 'super:init') and pass the rest of the args to the script.
-    shift
-    exec python3 "$INIT_SCRIPT_PY" "super:init" "$@"
-  else
-    echo "❌ FATAL: Main initialization script not found." >&2
-    echo "   Looked for: $INIT_SCRIPT_PY" >&2
-    echo "   This might indicate a broken installation." >&2
-    exit 1
-  fi
+# Route 'super:init' to the main Python CLI with CursorAdapter fix
+if [ "${1-}" = "super:init" ]; then
+  shift
+  set -- init "$@"
 fi
 
 # Route 'codex-amr' subcommand to Node CLI without affecting legacy behavior
@@ -73,6 +56,54 @@ resolve_project_root() {
 }
 
 PROJECT_ROOT="$(resolve_project_root)"
+
+# Handle mode toggle flags early (mutually exclusive)
+handle_mode_toggle_flags() {
+  local i
+  for i in "$@"; do
+    case "$i" in
+      --sp-grok-mode-on|--grok-mode-on)
+        mkdir -p "$PROJECT_ROOT/.cursor" 2>/dev/null || true
+        : > "$PROJECT_ROOT/.cursor/.grok-mode"
+        if [ -f "$PROJECT_ROOT/.cursor/.codex-mode" ]; then
+          rm -f "$PROJECT_ROOT/.cursor/.codex-mode" 2>/dev/null || true
+          echo "-------- Disabled Codex AMR mode due to Grok activation" >&2
+        fi
+        echo "-------- Grok mode: ENABLED (.cursor/.grok-mode)" >&2
+        return 0 ;;
+      --sp-grok-mode-off|--grok-mode-off)
+        if [ -f "$PROJECT_ROOT/.cursor/.grok-mode" ]; then
+          rm -f "$PROJECT_ROOT/.cursor/.grok-mode" 2>/dev/null || true
+          echo "-------- Grok mode: DISABLED" >&2
+        else
+          echo "-------- Grok mode: Already disabled" >&2
+        fi
+        return 0 ;;
+      --sp-codex-mode-on|--codex-mode-on|--sp-codec-mode-on)
+        mkdir -p "$PROJECT_ROOT/.cursor" 2>/dev/null || true
+        : > "$PROJECT_ROOT/.cursor/.codex-mode"
+        if [ -f "$PROJECT_ROOT/.cursor/.grok-mode" ]; then
+          rm -f "$PROJECT_ROOT/.cursor/.grok-mode" 2>/dev/null || true
+          echo "-------- Disabled Grok mode due to Codex AMR activation" >&2
+        fi
+        echo "-------- Codex AMR mode: ENABLED (.cursor/.codex-mode)" >&2
+        return 0 ;;
+      --sp-codex-mode-off|--codex-mode-off|--sp-codec-mode-off)
+        if [ -f "$PROJECT_ROOT/.cursor/.codex-mode" ]; then
+          rm -f "$PROJECT_ROOT/.cursor/.codex-mode" 2>/dev/null || true
+          echo "-------- Codex AMR mode: DISABLED" >&2
+        else
+          echo "-------- Codex AMR mode: Already disabled" >&2
+        fi
+        return 0 ;;
+    esac
+  done
+  return 1
+}
+
+if handle_mode_toggle_flags "$@"; then
+  exit 0
+fi
 
 # Detect persona flags: --sp-<persona>
 detect_sp_persona() {
@@ -109,6 +140,27 @@ if persona_slug="$(detect_sp_persona "$@" 2>/dev/null)"; then
     echo "-------- ERROR: Enhanced persona processor not found" >&2
     exit 1
   fi
+
+  # Inject mode envs from flag files (mutually exclusive)
+  if [ -f "$PROJECT_ROOT/.cursor/.codex-mode" ]; then
+    export SP_CODEX_MODE=1
+    unset SP_GROK_MODE || true
+  elif [ -f "$PROJECT_ROOT/.cursor/.grok-mode" ]; then
+    export SP_GROK_MODE=1
+    unset SP_CODEX_MODE || true
+  fi
+
+  # Ensure minimal Python dependencies for enhanced processor (PyYAML)
+  python3 - <<'PY' >/dev/null 2>&1 || true
+import sys, subprocess
+try:
+    import yaml  # type: ignore
+except Exception:
+    try:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyyaml>=6.0'], check=False)
+    except Exception:
+        pass
+PY
 
   exec python3 "$PROCESSOR_PATH" --persona "$persona_slug" $USER_INPUT
 fi

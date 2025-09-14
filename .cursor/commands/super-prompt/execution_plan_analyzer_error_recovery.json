@@ -1,0 +1,6 @@
+{
+  "persona": "analyzer_error_recovery",
+  "timestamp": "2025-09-13T21:55:33.434297",
+  "plan": "🚨 EXECUTION ERROR - Recovery Plan Required\n\n📊 Error Details:\n- Persona: analyzer\n- Return Code: 2\n- Error Output: Usage: python -m super_prompt.cli [OPTIONS] COMMAND [ARGS]...\nTry 'python -m super_prompt.cli --help' for help.\n╭─ Error ──────────────────────────────────────────────────────────────────────╮\n│ No such command '프로젝트 구조 분석'.                                        │\n╰──────────────────────────────────────────────────────────────────────────────╯\n\n\n🎯 Recovery Steps:\n1. 🔍 Analyze error messages and logs\n2. 🐛 Identify root cause of the failure\n3. 🛠️ Implement appropriate fixes\n4. ✅ Test the fix thoroughly\n5. 📋 Document the resolution\n\n💡 Recommended Cursor Actions:\n/debug - Debug the error\n/fix - Apply fixes\n/test - Validate fixes work\n/docs - Document the issue and resolution\n",
+  "status": "ready_for_cursor"
+}

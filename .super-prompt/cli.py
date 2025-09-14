@@ -30,16 +30,26 @@ def _ensure_core_py_on_path() -> None:
 
 
 def main() -> None:
-    _ensure_core_py_on_path()
-    try:
-        from super_prompt.cli import main as super_prompt_main  # type: ignore
-    except Exception as e:
-        print(f"-------- Failed to import super_prompt.cli: {e}")
-        print("-------- Ensure 'packages/core-py' exists and is a valid package")
-        sys.exit(1)
+    """Main entry point - now delegates to unified CLI"""
+    # Use the unified CLI for consistent behavior
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    unified_cli = os.path.join(script_dir, "unified_cli.py")
 
-    # Delegate to the real CLI
-    super_prompt_main()
+    if os.path.exists(unified_cli):
+        print("🔄 Routing to unified CLI...")
+        os.execv(sys.executable, [sys.executable, unified_cli] + sys.argv[1:])
+    else:
+        # Fallback to original behavior if unified CLI not found
+        _ensure_core_py_on_path()
+        try:
+            from super_prompt.cli import main as super_prompt_main  # type: ignore
+        except Exception as e:
+            print(f"-------- Failed to import super_prompt.cli: {e}")
+            print("-------- Ensure 'packages/core-py' exists and is a valid package")
+            sys.exit(1)
+
+        # Delegate to the real CLI
+        super_prompt_main()
 
 
 if __name__ == "__main__":

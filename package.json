@@ -1,21 +1,25 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "3.1.40",
-  "description": "Production-ready prompt engineering toolkit with modular architecture, AMR, SDD workflow, and dual IDE support",
-  "main": "index.js",
+  "version": "3.1.73",
+  "description": "Super Prompt v3 (Enhanced)",
+  "main": ".super-prompt/cli.py",
   "bin": {
-    "super-prompt": "./bin/super-prompt",
-    "codex-amr": "./bin/codex-amr.js",
-    "sp-init": "./bin/sp-init",
-    "sp-reinit": "./bin/sp-reinit",
-    "sp-reinit-sp": "./bin/sp-reinit-sp"
+    "super-prompt": "bin/super-prompt",
+    "codex-amr": "bin/codex-amr.js",
+    "sp": "bin/sp",
+    "sp-setup-shell": "bin/sp-setup-shell",
+    "sp-init": "bin/sp-init",
+    "sp-reinit": "bin/sp-reinit",
+    "sp-reinit-sp": "bin/sp-reinit-sp"
   },
   "scripts": {
     "prepack": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true",
+    "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",
     "postinstall": "node install.js",
     "test": "node --test",
     "dev": "./bin/super-prompt",
     "dev:init": "./bin/super-prompt super:init",
+    "codex:init": "super-prompt codex-init || node ./bin/codex-amr.js init --target .codex",
     "codex:plan": "bin/codex-high",
     "codex:exec": "bin/codex-medium",
     "amr:rules": "super-prompt amr:rules || npx codex-amr init --target .",
@@ -42,9 +46,9 @@
     "url": "git+https://github.com/cdw0424/super-prompt.git"
   },
   "bugs": {
-    "url": "https://github.com/cdw0424/super-promt/issues"
+    "url": "https://github.com/cdw0424/super-prompt/issues"
   },
-  "homepage": "https://github.com/cdw0424/super-promt#readme",
+  "homepage": "https://github.com/cdw0424/super-prompt#readme",
   "engines": {
     "node": ">=14.0.0"
   },
@@ -56,6 +60,8 @@
   "files": [
     "bin",
     "src",
+    "packages",
+    "scripts",
     ".super-prompt",
     "install.js",
     "README.md",
@@ -64,6 +70,9 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "pack": {
+    "destination": "builds/"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

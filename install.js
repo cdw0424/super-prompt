@@ -3,8 +3,34 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const pkg = require('./package.json');
+
+// Handle npm cache permission issues proactively
+function ensureNpmCachePermissions() {
+  try {
+    const cacheDir = process.env.NPM_CONFIG_CACHE || '/tmp/.npm-cache';
+
+    // Create cache directory if it doesn't exist
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true, mode: 0o755 });
+      console.log(`✅ Created npm cache directory: ${cacheDir}`);
+    }
+
+    // Fix permissions on cache directory
+    try {
+      execSync(`chmod -R 755 "${cacheDir}"`, { stdio: 'ignore' });
+      console.log('✅ Fixed npm cache permissions');
+    } catch (permError) {
+      console.log('⚠️  Cache permission fix skipped (non-critical)');
+    }
+  } catch (error) {
+    console.log('⚠️  Cache setup skipped:', error.message);
+  }
+}
+
+// Run cache permission fix first
+ensureNpmCachePermissions();
 
 // ASCII Art and styled installation
 const colors = {
@@ -303,6 +329,60 @@ async function migrateLegacyInstallation() {
     }
 }
 
+function ensureFlagOnlyShellHook() {
+  try {
+    const skip = String(process.env.SP_SKIP_FLAG_ONLY_HOOK || '').toLowerCase();
+    if (skip === '1' || skip === 'true' || skip === 'yes') {
+      console.log(`${colors.dim}Skipping flag-only shell hook (SP_SKIP_FLAG_ONLY_HOOK=1)${colors.reset}`);
+      return;
+    }
+
+    const shellPath = process.env.SHELL || '';
+    const shell = shellPath.split('/').pop();
+    const home = os.homedir();
+
+    const marker = 'SP_FLAG_ONLY_HANDLER';
+    let rcFile = '';
+    let snippet = '';
+
+    if (shell === 'bash') {
+      rcFile = path.join(home, '.bashrc');
+      snippet = `\n# ${marker}\n` +
+        `command_not_found_handle() {\n` +
+        `  case "$1" in\n` +
+        `    --sp-*|--grok-mode-on|--grok-mode-off|--codex-mode-on|--codex-mode-off|--sp-grok-mode-on|--sp-grok-mode-off|--sp-codex-mode-on|--sp-codex-mode-off|--sp-codec-mode-on|--sp-codec-mode-off)\n` +
+        `      command sp \"$@\"; return $? ;;\n` +
+        `  esac\n` +
+        `  echo \"bash: $1: command not found\" 1>&2\n` +
+        `  return 127\n` +
+        `}`;
+    } else {
+      // Default to zsh (macOS default)
+      rcFile = path.join(home, '.zshrc');
+      snippet = `\n# ${marker}\n` +
+        `function command_not_found_handler() {\n` +
+        `  if [[ \"$1\" == --sp-* || \"$1\" == --grok-mode-on || \"$1\" == --grok-mode-off || \"$1\" == --codex-mode-on || \"$1\" == --codex-mode-off || \"$1\" == --sp-grok-mode-on || \"$1\" == --sp-grok-mode-off || \"$1\" == --sp-codex-mode-on || \"$1\" == --sp-codex-mode-off || \"$1\" == --sp-codec-mode-on || \"$1\" == --sp-codec-mode-off ]]; then\n` +
+        `    command sp \"$@\"\n` +
+        `    return $?\n` +
+        `  fi\n` +
+        `  return 127\n` +
+        `}`;
+    }
+
+    // Idempotent append
+    let current = '';
+    try { current = fs.readFileSync(rcFile, 'utf8'); } catch (_) {}
+    if (!current.includes(marker)) {
+      fs.appendFileSync(rcFile, `\n${snippet}\n`, 'utf8');
+      console.log(`-------- Installed flag-only handler in ${rcFile}`);
+    } else {
+      console.log(`-------- Flag-only handler already present in ${rcFile}`);
+    }
+  } catch (e) {
+    console.log(`${colors.dim}Flag-only shell hook skipped: ${e && e.message}${colors.reset}`);
+  }
+}
+
 async function animatedInstall() {
     try {
         // Step 0: Diagnose npm cache path to avoid repo-local .npm-cache churn
@@ -386,11 +466,114 @@ async function animatedInstall() {
 
         if (!globalInstall) {
             const superPromptDir = path.join(projectRoot, '.super-prompt');
-            copyDirectory(
-                path.join(__dirname, '.super-prompt'),
-                superPromptDir,
-                'Super Prompt utility suite'
-            );
+
+            // FORCE COPY ADVANCED .super-prompt utilities from templates
+            // This ensures all projects get the latest version regardless of installation time
+            const templateSuperPromptDir = path.join(__dirname, 'packages', 'cursor-assets', 'templates');
+
+            try {
+                if (fs.existsSync(templateSuperPromptDir)) {
+                    copyDirectory(
+                        templateSuperPromptDir,
+                        superPromptDir,
+                        'Super Prompt utility suite (advanced version)'
+                    );
+                    console.log(`   ${colors.dim}→ Using advanced .super-prompt utilities from templates${colors.reset}`);
+                } else {
+                    // Try alternative paths
+                    const altPaths = [
+                        path.join(__dirname, 'packages', 'cursor-assets', 'templates'),
+                        path.join(__dirname, '..', 'packages', 'cursor-assets', 'templates'),
+                        path.join(__dirname, 'templates')
+                    ];
+
+                    let copied = false;
+                    for (const altPath of altPaths) {
+                        if (fs.existsSync(altPath)) {
+                            copyDirectory(
+                                altPath,
+                                superPromptDir,
+                                'Super Prompt utility suite (advanced version)'
+                            );
+                            console.log(`   ${colors.dim}→ Using advanced .super-prompt utilities from ${altPath}${colors.reset}`);
+                            copied = true;
+                            break;
+                        }
+                    }
+
+                    if (!copied) {
+                        console.log(`   ${colors.dim}→ Templates not found, skipping .super-prompt setup${colors.reset}`);
+                    }
+                }
+            } catch (error) {
+                console.log(`   ${colors.dim}→ Error copying .super-prompt utilities: ${error.message}${colors.reset}`);
+            }
+
+            // FORCE COPY ADVANCED PACKAGES (core-py, cli-node, cursor-assets)
+            console.log(`${colors.cyan}📦 Installing packages utilities...${colors.reset}`);
+            const packagesDir = path.join(projectRoot, 'packages');
+            const templatePackagesDir = path.join(__dirname, 'packages', 'cursor-assets', 'templates', 'packages');
+
+            console.log(`   ${colors.dim}→ DEBUG: __dirname: ${__dirname}${colors.reset}`);
+            console.log(`   ${colors.dim}→ DEBUG: templatePackagesDir: ${templatePackagesDir}${colors.reset}`);
+            console.log(`   ${colors.dim}→ DEBUG: templatePackagesDir exists: ${fs.existsSync(templatePackagesDir)}${colors.reset}`);
+
+            try {
+                if (fs.existsSync(templatePackagesDir)) {
+                    console.log(`   ${colors.dim}→ DEBUG: Starting packages copy from ${templatePackagesDir} to ${packagesDir}${colors.reset}`);
+                    copyDirectory(
+                        templatePackagesDir,
+                        packagesDir,
+                        'Super Prompt packages suite (advanced version)'
+                    );
+                    console.log(`   ${colors.dim}→ Using advanced packages utilities from templates${colors.reset}`);
+                } else {
+                    console.log(`   ${colors.dim}→ Templates not found, skipping packages setup${colors.reset}`);
+                    console.log(`   ${colors.dim}→ DEBUG: Looking for alternative paths...${colors.reset}`);
+
+                    // Try alternative paths
+                    const altPaths = [
+                        path.join(__dirname, 'packages', 'cursor-assets', 'templates'),
+                        path.join(__dirname, '..', 'packages', 'cursor-assets', 'templates', 'packages'),
+                        path.join(__dirname, 'templates', 'packages')
+                    ];
+
+                    let copied = false;
+                    for (const altPath of altPaths) {
+                        console.log(`   ${colors.dim}→ DEBUG: Trying alternative path: ${altPath} (exists: ${fs.existsSync(altPath)})${colors.reset}`);
+                        if (fs.existsSync(altPath)) {
+                            copyDirectory(
+                                altPath,
+                                packagesDir,
+                                'Super Prompt packages suite (alternative path)'
+                            );
+                            console.log(`   ${colors.dim}→ Using advanced packages utilities from ${altPath}${colors.reset}`);
+                            copied = true;
+                            break;
+                        }
+                    }
+
+                    if (!copied) {
+                        console.log(`   ${colors.dim}→ No packages templates found, skipping setup${colors.reset}`);
+                    }
+                }
+            } catch (error) {
+                console.log(`   ${colors.dim}→ Error copying packages utilities: ${error.message}${colors.reset}`);
+            }
+
+            // Install canonical tag-executor.sh (kept minimal to avoid drift)
+            const advancedTagSrc = path.join(__dirname, 'packages', 'cursor-assets', 'templates', 'tag-executor.sh');
+            const cursorCommandsDir = path.join(projectRoot, '.cursor', 'commands', 'super-prompt');
+            ensureDir(cursorCommandsDir);
+            const advancedTagDest = path.join(cursorCommandsDir, 'tag-executor.sh');
+
+            if (fs.existsSync(advancedTagSrc)) {
+                fs.copyFileSync(advancedTagSrc, advancedTagDest);
+                fs.chmodSync(advancedTagDest, '755');
+                console.log(`   ${colors.dim}→ tag-executor.sh installed (canonical wrapper with Python fallback)${colors.reset}`);
+            } else {
+                console.log(`   ${colors.dim}→ Warning: tag-executor.sh not found at ${advancedTagSrc}${colors.reset}`);
+            }
 
             // Create Python virtual environment in .super-prompt
             await setupPythonVenv(superPromptDir);
@@ -499,6 +682,10 @@ async function animatedInstall() {
         console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
         await sleep(300);
         completedStep(5, 'Project integration ready')
+
+        // Install flag-only shell hook automatically (optional)
+        console.log(`${colors.cyan}🪝 Installing flag-only shell handler (--sp-*, mode toggles)...${colors.reset}`);
+        ensureFlagOnlyShellHook();
 
         // Installation complete
         console.log(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);

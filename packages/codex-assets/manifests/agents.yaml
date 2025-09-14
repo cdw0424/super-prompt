@@ -1,0 +1,185 @@
+agents:
+  core_development:
+    architect:
+      name: Architect
+      description: Systems architecture and scalability specialist
+      flags: ["--architect", "--sp-architect"]
+    dev:
+      name: Dev
+      description: Feature development specialist (minimal, testable diffs)
+      flags: ["--dev", "--sp-dev"]
+    backend:
+      name: Backend
+      description: Server-side development and API specialist
+      flags: ["--backend", "--sp-backend"]
+    frontend:
+      name: Frontend
+      description: UI/UX and accessibility-focused development
+      flags: ["--frontend", "--sp-frontend"]
+    frontend-ultra:
+      name: Frontend Ultra
+      description: Elite UX/UI architect and design systems specialist
+      flags: ["--frontend-ultra", "--sp-frontend-ultra"]
+    refactorer:
+      name: Refactorer
+      description: Code quality improvement and technical debt reduction
+      flags: ["--refactorer", "--sp-refactorer"]
+    implement:
+      name: Implement
+      description: Implementation specialist (SDD-aligned execution)
+      flags: ["--implement", "--sp-implement"]
+    review:
+      name: Review
+      description: Code review against SPEC/PLAN and best practices
+      flags: ["--review", "--sp-review"]
+    devops:
+      name: DevOps
+      description: CI/CD, IaC, reliability and observability
+      flags: ["--devops", "--sp-devops"]
+
+  analysis_quality:
+    analyzer:
+      name: Analyzer
+      description: Root cause analysis and systematic investigation
+      flags: ["--analyzer", "--sp-analyzer"]
+    qa:
+      name: QA
+      description: Comprehensive quality assurance and testing
+      flags: ["--qa", "--sp-qa"]
+    performance:
+      name: Performance
+      description: Performance optimization and bottleneck analysis
+      flags: ["--performance", "--sp-performance"]
+    security:
+      name: Security
+      description: Threat modeling and security audits
+      flags: ["--security", "--sp-security"]
+    high:
+      name: High
+      description: Deep reasoning specialist (plan/review at high effort)
+      flags: ["--high", "--sp-high"]
+
+  knowledge_guidance:
+    mentor:
+      name: Mentor
+      description: Educational guidance and knowledge transfer
+      flags: ["--mentor", "--sp-mentor"]
+    scribe:
+      name: Scribe
+      description: Technical scribe for decisions and processes
+      flags: ["--scribe", "--sp-scribe"]
+    doc-master:
+      name: Doc Master
+      description: Documentation architecture, writing, and verification
+      flags: ["--doc-master", "--sp-doc-master"]
+    docs-refector:
+      name: Docs Refector
+      description: Documentation consolidation and refactoring
+      flags: ["--docs-refector", "--sp-docs-refector"]
+
+  sdd_workflow:
+    spec:
+      name: Spec
+      description: Specification writer (SDD)
+      flags: ["--spec", "--sp-spec"]
+    specify:
+      name: Specify
+      description: Specification writer (alias of spec)
+      flags: ["--specify", "--sp-specify"]
+    plan:
+      name: Plan
+      description: Implementation planning (SDD)
+      flags: ["--plan", "--sp-plan"]
+    tasks:
+      name: Tasks
+      description: Task breakdown specialist (SDD)
+      flags: ["--tasks", "--sp-tasks"]
+    task:
+      name: Task
+      description: Task breakdown assistant (single)
+      flags: ["--task", "--sp-task"]
+
+  database:
+    db-expert:
+      name: DB Expert
+      description: Database expert (Prisma + 3NF)
+      flags: ["--db-expert", "--sp-db-expert"]
+
+  utilities:
+    optimize:
+      name: Optimize
+      description: Generic optimizer (aggregator entry point)
+      flags: ["--optimize", "--sp-optimize"]
+    tr:
+      name: Translator
+      description: Translator & transformer (lang/format)
+      flags: ["--tr", "--sp-tr"]
+    wave:
+      name: Wave
+      description: Wave planning (phased delivery)
+      flags: ["--wave", "--sp-wave"]
+    ultracompressed:
+      name: UltraCompressed
+      description: Ultra-compressed output (token saving)
+      flags: ["--ultracompressed", "--sp-ultracompressed"]
+
+  sequences:
+    seq:
+      name: Seq
+      description: Sequential thinking (5 iterations)
+      flags: ["--seq", "--sp-seq"]
+    seq-ultra:
+      name: Seq Ultra
+      description: Advanced sequential thinking (10 iterations)
+      flags: ["--seq-ultra", "--sp-seq-ultra"]
+
+  experimental:
+    debate:
+      name: Debate
+      description: Single-model internal debate (positive vs critical)
+      flags: ["--debate", "--sp-debate"]
+    grok:
+      name: Grok (session)
+      description: Session-only Grok optimization (Cursor-oriented)
+      flags: ["--grok", "--sp-grok"]
+
+  mode_toggles:
+    grok-mode-on:
+      name: Grok Mode On
+      description: Enable Grok mode (disables Codex AMR)
+      flags: ["--grok-mode-on"]
+    grok-mode-off:
+      name: Grok Mode Off
+      description: Disable Grok mode
+      flags: ["--grok-mode-off"]
+    codex-mode-on:
+      name: Codex Mode On
+      description: Enable Codex AMR mode (disables Grok)
+      flags: ["--codex-mode-on"]
+    codex-mode-off:
+      name: Codex Mode Off
+      description: Disable Codex AMR mode
+      flags: ["--codex-mode-off"]
+
+workflows:
+  sdd:
+    spec:
+      example: |
+        ```bash
+        super-prompt --sp-sdd-spec "User authentication"
+        ```
+    plan:
+      example: |
+        ```bash
+        super-prompt --sp-sdd-plan "User registration workflow"
+        ```
+    tasks:
+      example: |
+        ```bash
+        super-prompt --sp-sdd-tasks "Authentication system"
+        ```
+    implement:
+      example: |
+        ```bash
+        super-prompt --sp-sdd-implement "Authentication system"
+        ```
