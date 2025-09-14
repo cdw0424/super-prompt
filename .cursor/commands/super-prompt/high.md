@@ -1,7 +1,8 @@
 ---
 description: high command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /high"]
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-high'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
 
-🧠 Deep Reasoning Specialist\nStrategic problem solving and system design expert.
+🧠 High Reasoning
+Deep reasoning and strategic problem solving with GPT-5 high model

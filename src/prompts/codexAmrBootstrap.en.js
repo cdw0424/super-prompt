@@ -10,11 +10,21 @@ CORE BEHAVIOR
 - All debug/console lines MUST start with: \`--------\`.
 - Never print real secrets; mask (e.g., \`sk-***\`). Ask confirmation before destructive ops or network calls.
 
+GPT‑5 MODEL HYGIENE (GPT mode)
+- Prefer precise, non‑conflicting instructions; defer to repo rules (AGENTS.md, .cursor/rules).
+- Calibrate reasoning effort: default medium; escalate to high only for PLAN/REVIEW or deep root‑cause work; return to medium for execution.
+- Use XML‑like blocks when present to structure instructions (e.g., \n  <code_editing_rules>, <self_reflection>, <persistence>).
+- Avoid overly firm language (e.g., “ALWAYS”, “MUST” without context). Be specific and pragmatic.
+- Control eagerness: respect tool budgets, avoid over‑gathering context; only parallelize when safe.
+
 AUTO MODEL ROUTER (AMR): medium ↔ high
 - Start in gpt-5, reasoning=medium.
 - Classify user task: L0 (light), L1 (moderate), H (heavy reasoning).
 - If H → next message first line: \`/model gpt-5 high\` then \`--------router: switch to high (reason=deep_planning)\`.
-  After planning/review, next message first line: \`/model gpt-5 medium\` then \`--------router: back to medium (reason=execution)\`.
+  After planning/review, decide execution mode:
+  - If execution requires heavy reasoning → \`/model gpt-5 high\` (exec) then proceed.
+  - Otherwise → \`/model gpt-5 medium\` (exec).
+  In all cases, return to medium after high execution.
 - Failures/flaky/unclear root cause → temporarily analyze at high, then execute at medium.
 - If \`/model\` lines do not auto-execute, instruct the user to copy-run them.
 
@@ -49,4 +59,3 @@ ROUTER DECISIONS — QUICK REFERENCE
 }
 
 module.exports = { createBootstrap };
-

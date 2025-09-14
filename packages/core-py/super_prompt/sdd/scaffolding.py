@@ -190,8 +190,7 @@ class SDDScaffolder:
     def _create_scripts(self, result: Dict[str, any], force: bool) -> None:
         """Create SDD scripts"""
         script_files = [
-            'scripts/sdd/acceptance_self_check.py',
-            'packages/core-py/super_prompt/sdd/prompt_optimizer.py'
+            'scripts/sdd/acceptance_self_check.py'
         ]
 
         for script_path in script_files:
@@ -563,14 +562,14 @@ As a developer using Super Prompt, I want to use structured development workflow
 - [ ] /plan command generates implementation plans with constitution compliance
 - [ ] /tasks command creates testable task breakdowns
 - [ ] SDD gates prevent advancement without proper validation
-- [ ] Prompt optimizer combines spec+plan+constitution correctly
+- [ ] AMR handoff brief summarizes spec+plan+constitution correctly
 
 ## Scope & Boundaries
 ### In Scope
 - Spec Kit folder structure and templates
 - /specify, /plan, /tasks slash commands
 - Enhanced SDD gates with constitution validation
-- Prompt optimizer for structured prompts
+- AMR handoff brief generation via MCP tools
 - Acceptance self-check automation
 
 ### Out of Scope
@@ -785,8 +784,9 @@ SDD-enabled project using Spec Kit v0.0.20 - Complete Spec-Driven Development wo
 # Break down into tasks
 /tasks
 
-# Generate optimized prompts
-python3 packages/core-py/super_prompt/sdd/prompt_optimizer.py optimize -o .prompts
+# Generate AMR handoff brief (MCP)
+# 1) Start MCP: npx super-prompt mcp:serve
+# 2) Call tool: amr_handoff_brief(project_root, query)
 ```
 
 ### 3. Development Workflow
@@ -858,12 +858,11 @@ This project follows strict constitution requirements:
 - `/specify [description]` - Create feature specification
 - `/plan [context]` - Generate implementation plan
 - `/tasks [focus]` - Break down into actionable tasks
-- `python3 packages/core-py/super_prompt/sdd/prompt_optimizer.py optimize` - Generate structured prompts
+- Use MCP tools to assist AMR handoff: `amr_repo_overview`, `amr_handoff_brief`
 
 ## Scripts
 
 - `scripts/sdd/acceptance_self_check.py` - Automated quality validation
-- `packages/core-py/super_prompt/sdd/prompt_optimizer.py` - Prompt generation
 - `packages/core-py/super_prompt/sdd/scaffolding.py` - Project initialization
 
 ---
@@ -991,7 +990,6 @@ assert result.ok, f"Implementation issues: {result.missing}"
 - `/tasks` - Break down work items
 
 ### Python Scripts
-- `prompt_optimizer.py` - Generate structured prompts
 - `acceptance_self_check.py` - Automated validation
 - `gates.py` - Quality gate checking
 
@@ -1000,8 +998,8 @@ assert result.ok, f"Implementation issues: {result.missing}"
 # Full validation
 python3 scripts/sdd/acceptance_self_check.py
 
-# Prompt generation
-python3 packages/core-py/super_prompt/sdd/prompt_optimizer.py optimize -o .prompts
+# Handoff brief (MCP)
+# Start MCP then call amr_handoff_brief(project_root, query)
 
 # Gate checking
 python3 -c "from packages.core_py.super_prompt.sdd.gates import *; print(check_implementation_ready())"
@@ -1110,7 +1108,7 @@ def main():
             print("Next steps:")
             print("1. Review the generated constitution.md")
             print("2. Try /specify 'Create a sample feature'")
-            print("3. Run the prompt optimizer to generate structured prompts")
+            print("3. Start MCP and call amr_handoff_brief to generate a concise brief")
             print()
             print("Happy SDD development! 🚀")
         else:

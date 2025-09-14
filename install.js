@@ -241,23 +241,40 @@ async function setupPythonVenv(superPromptDir) {
 
         // Install required Python packages (minimal set)
         const packages = [
-            'typer>=0.9.0',      // CLI framework
-            'pyyaml>=6.0',       // YAML parsing
+            'typer>=0.9.0',       // CLI framework
+            'pyyaml>=6.0',        // YAML parsing
             'pathspec>=0.11.0',   // File filtering
-            'mcp>=1.0.0'         // MCP server framework
+            'fastmcp>=0.1.0',     // Fast MCP server runtime
+            'mcp>=1.0.0'          // MCP compatibility
         ];
 
         console.log(`${colors.dim}   → Installing Python dependencies...${colors.reset}`);
         execSync(`"${venvPip}" install ${packages.join(' ')}`, { stdio: 'inherit' });
 
-        // Install the built wheel for the core-py package
-        const corePyDistDir = path.join(superPromptDir, '..', 'packages', 'core-py', 'dist');
-        if (fs.existsSync(corePyDistDir)) {
-            const wheelFiles = fs.readdirSync(corePyDistDir).filter(f => f.endsWith('.whl'));
-            if (wheelFiles.length > 0) {
-                const wheelPath = path.join(corePyDistDir, wheelFiles[0]);
-                console.log(`${colors.dim}   → Installing core-py package from ${wheelFiles[0]}...${colors.reset}`);
-                execSync(`"${venvPip}" install "${wheelPath}"`, { stdio: 'inherit' });
+        // Install the core-py package (prefer wheel if present, fallback to source)
+        const corePyDir = path.join(superPromptDir, '..', 'packages', 'core-py');
+        const corePyDistDir = path.join(corePyDir, 'dist');
+        let installedCore = false;
+        try {
+            if (fs.existsSync(corePyDistDir)) {
+                const wheelFiles = fs.readdirSync(corePyDistDir).filter(f => f.endsWith('.whl'));
+                if (wheelFiles.length > 0) {
+                    const wheelPath = path.join(corePyDistDir, wheelFiles[0]);
+                    console.log(`${colors.dim}   → Installing core-py package from ${wheelFiles[0]}...${colors.reset}`);
+                    execSync(`"${venvPip}" install "${wheelPath}"`, { stdio: 'inherit' });
+                    installedCore = true;
+                }
+            }
+        } catch (e) {
+            console.log(`${colors.yellow}   ⚠ Wheel install failed, will try source fallback${colors.reset}`);
+        }
+        if (!installedCore) {
+            try {
+                console.log(`${colors.dim}   → Installing core-py from source...${colors.reset}`);
+                execSync(`"${venvPip}" install "${corePyDir}"`, { stdio: 'inherit' });
+                installedCore = true;
+            } catch (e) {
+                console.log(`${colors.red}   ❌ Could not install core-py from source: ${e.message}${colors.reset}`);
             }
         }
 

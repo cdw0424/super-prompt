@@ -1,9 +1,0 @@
----
-description: "Organization guardrails — generated 2025-09-14 16:20:08"
-globs: ["**/*"]
-alwaysApply: true
----
-# Organization Guardrails
-- Language: English only in documentation and rules.
-- All debug/console lines MUST use the '--------' prefix.
-- Secrets/tokens/PII MUST be masked in prompts, code, and logs.

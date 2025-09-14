@@ -1,4 +1,8 @@
 ---
-description: "Run super-prompt mentor persona"
-run: "super-prompt mcp tool mentor --query '$_prompt_'"
+description: mentor command
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-mentor'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
+
+🎓 Mentor
+Educational guidance and knowledge transfer

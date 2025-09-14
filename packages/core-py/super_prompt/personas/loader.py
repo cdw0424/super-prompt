@@ -70,48 +70,24 @@ class PersonaLoader:
             return 0
 
     def _create_default_manifest(self):
-        """Create a default persona manifest"""
-        default_personas = [
-            {
-                "name": "architect",
-                "role_type": "technical_lead",
-                "expertise_level": "expert",
-                "goal_orientation": "system_design",
-                "interaction_style": "structured",
-                "specializations": ["system_design", "scalability", "architecture"],
-                "auto_activate_patterns": ["architect", "design", "system", "scale"],
-                "description": "Senior System Architect specializing in large-scale distributed systems"
-            },
-            {
-                "name": "frontend",
-                "role_type": "ui_engineer",
-                "expertise_level": "senior",
-                "goal_orientation": "user_experience",
-                "interaction_style": "collaborative",
-                "specializations": ["react", "ui", "ux", "accessibility"],
-                "auto_activate_patterns": ["frontend", "ui", "component", "react"],
-                "description": "Senior Frontend Engineer specializing in modern web development"
-            },
-            {
-                "name": "backend",
-                "role_type": "server_engineer",
-                "expertise_level": "senior",
-                "goal_orientation": "reliability",
-                "interaction_style": "pragmatic",
-                "specializations": ["api", "database", "performance", "security"],
-                "auto_activate_patterns": ["backend", "api", "database", "server"],
-                "description": "Senior Backend Engineer specializing in scalable server systems"
-            }
-        ]
-
-        manifest_data = {
-            "version": "1.0",
-            "personas": default_personas
-        }
-
-        self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.manifest_path, 'w', encoding='utf-8') as f:
-            yaml.dump(manifest_data, f, default_flow_style=False, sort_keys=False)
+        """Create a default persona manifest by copying the canonical SSOT manifest."""
+        # SSOT: copy from packages/cursor-assets/manifests/personas.yaml if available
+        try:
+            canonical = Path(__file__).parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
+            # __file__/personas/loader.py → super_prompt/personas/ → super_prompt/ → core-py/ → cursor-assets/
+            if not canonical.exists():
+                # Fallback: repo layout packages/cursor-assets
+                canonical = Path(__file__).parent.parent.parent.parent / "cursor-assets" / "manifests" / "personas.yaml"
+            self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            if canonical.exists():
+                self.manifest_path.write_text(canonical.read_text(encoding='utf-8'), encoding='utf-8')
+            else:
+                # Last resort: write an empty scaffold to encourage init
+                self.manifest_path.write_text("personas:\n", encoding='utf-8')
+        except Exception:
+            # Best-effort; write minimal scaffold
+            self.manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            self.manifest_path.write_text("personas:\n", encoding='utf-8')
 
     def get_persona(self, name: str) -> Optional[PersonaConfig]:
         """Get a specific persona by name"""

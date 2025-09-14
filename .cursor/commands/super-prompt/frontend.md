@@ -1,4 +1,8 @@
 ---
-description: "Run super-prompt frontend persona"
-run: "super-prompt mcp tool frontend --query '$_prompt_'"
+description: frontend command
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-frontend'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
+
+🎨 Frontend
+UI/UX specialist and accessibility advocate

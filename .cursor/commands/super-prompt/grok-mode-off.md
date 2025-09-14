@@ -1,13 +1,8 @@
 ---
-description: Disable Grok mode for all commands (Cursor)
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["/grok-mode-off"]
+description: grok-mode-off command
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'grok-mode-off'], check=False)"]
 ---
 
-Disable Grok-optimized prompting by removing `.cursor/.grok-mode`.
-
-Usage
-```
-/grok-mode-off
-```
-
+🔴 Grok Mode Off
+Disable Grok mode and remove Grok guidance rules.

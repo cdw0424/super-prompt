@@ -1,13 +1,10 @@
 ---
-description: Enable Grok mode for all commands (Cursor)
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["/grok-mode-on"]
+description: grok-mode-on command
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'grok-mode-on'], check=False)"]
 ---
 
-Enable Grok-optimized prompting for all subsequent commands by creating `.cursor/.grok-mode`.
+🤖 Grok Mode On
+Enable Grok mode and install Grok guidance rules.
 
-Usage
-```
-/grok-mode-on
-```
-
+Note: Modes are mutually exclusive. This turns off other modes.

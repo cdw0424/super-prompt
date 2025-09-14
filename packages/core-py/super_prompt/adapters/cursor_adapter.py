@@ -25,8 +25,16 @@ class CursorAdapter:
             # Best-effort logging; never break flow due to logging
             pass
 
-    def load_personas_manifest(self) -> Dict[str, Any]:
-        """Load personas from data-driven manifest"""
+    def load_personas_manifest(self, project_root: Optional[Path] = None) -> Dict[str, Any]:
+        """Load personas from manifest with project-local override if present"""
+        # Prefer project-local override
+        if project_root:
+            local_manifest = Path(project_root) / "personas" / "manifest.yaml"
+            if local_manifest.exists():
+                with open(local_manifest, 'r', encoding='utf-8') as f:
+                    return yaml.safe_load(f)
+
+        # Fallback to packaged canonical manifest
         manifest_path = self.assets_root / "manifests" / "personas.yaml"
         if manifest_path.exists():
             with open(manifest_path, 'r', encoding='utf-8') as f:
@@ -66,36 +74,11 @@ class CursorAdapter:
                 import os
                 os.chmod(commands_dir / "tag-executor.sh", 0o755)
 
-        # Auto-generate .md commands for ALL .py processors that don't have .md files
-        # Look for processors in the target project's .super-prompt directory
-        processors_dir = project_root / ".super-prompt" / "utils" / "cursor-processors"
-        d(f"🔍 DEBUG: Looking for processors in {processors_dir}")
-        if processors_dir.exists():
-            processor_count = 0
-            generated_count = 0
-            for py_file in processors_dir.glob("*.py"):
-                processor_name = py_file.stem
-                processor_count += 1
-                d(f"🔍 DEBUG: Found processor {processor_name}")
-
-                # Only skip Python module files, generate commands for ALL processors
-                if processor_name in ["__init__"]:
-                    d(f"🔍 DEBUG: Skipping {processor_name}")
-                    continue
-
-                md_file = commands_dir / f"{processor_name}.md"
-                if not md_file.exists():
-                    d(f"🔍 DEBUG: Generating command for {processor_name}")
-                    self._generate_processor_command(commands_dir, processor_name)
-                    generated_count += 1
-                else:
-                    d(f"🔍 DEBUG: Command exists for {processor_name}")
-            d(f"🔍 DEBUG: Processed {processor_count} processors, generated {generated_count} new commands")
-        else:
-            d(f"❌ DEBUG: Processors directory not found: {processors_dir}")
+        # Note: We no longer auto-generate commands from arbitrary processors.
+        # Personas and commands are pre-defined via manifest/templates only.
 
         # Load personas from manifest
-        manifest = self.load_personas_manifest()
+        manifest = self.load_personas_manifest(project_root)
         personas = manifest.get("personas", {})
 
         # Generate command files for each persona in manifest (if not already exists)
@@ -244,6 +227,8 @@ args: ["${{input}} /{cmd_name}"]
         else:
             # Fallback to generating if templates don't exist
             self._generate_sdd_rules(rules_dir)
+            self._generate_ssot_rules(rules_dir)
+            self._generate_amr_rules(rules_dir)
             self._generate_persona_rules(rules_dir)
 
     def _generate_sdd_rules(self, rules_dir: Path) -> None:
@@ -306,3 +291,61 @@ alwaysApply: false
 '''
 
         persona_rule.write_text(content)
+
+    def _generate_ssot_rules(self, rules_dir: Path) -> None:
+        """Generate SSOT-first common guidance that applies to everything"""
+        ssot_rule = rules_dir / "11-ssot.mdc"
+
+        content = '''---
+description: "SSOT First Principle — Single Source of Truth"
+globs: ["**/*"]
+alwaysApply: true
+---
+# SSOT (Single Source of Truth)
+- Treat the following as the canonical sources in this order:
+  1) personas manifest (packages/cursor-assets/manifests/personas.yaml or project personas/manifest.yaml)
+  2) .cursor/rules/*.mdc (materialized guidance, modes, overrides)
+  3) AGENTS.md / project docs specifying behavior
+- Avoid duplicating config; prefer referencing the SSOT to prevent drift.
+- When conflicts arise, defer to the SSOT order above.
+- Log decisions referencing the SSOT version/path where applicable.
+- Mode toggles materialize model-specific overrides; never inline divergent copies.
+'''
+
+        ssot_rule.write_text(content)
+
+    def _generate_amr_rules(self, rules_dir: Path) -> None:
+        """Generate AMR rules that apply to all LLMs and all commands"""
+        amr_rule = rules_dir / "12-amr.mdc"
+
+        content = '''---
+description: "Auto Model Router (AMR) — global guidance"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Auto Model Router (AMR)
+- Scope: Applies to all LLM interactions and all commands.
+- Language: English. Logs must start with `--------`.
+
+## Reasoning Levels
+- Default: medium. Prefer fast, concise execution.
+- Escalate to gpt-5 high ONLY when heavy reasoning is required (architecture, deep root-cause, complex planning, cross-module refactor).
+- After high PLAN/REVIEW or high EXECUTION, return to medium and continue.
+
+## State Machine (per turn)
+- INTENT → TASK_CLASSIFY → PLAN → EXECUTE → VERIFY → REPORT
+- Classify task: L0/L1/H. If H → switch to high.
+- For execution: if task requires heavy reasoning, execute at gpt-5 high; otherwise execute at medium.
+
+## Commands for Switching
+- To high: first line `/model gpt-5 high` then `--------router: switch to high (reason=deep_planning)`
+- Back to medium: `/model gpt-5 medium` then `--------router: back to medium (reason=execution)`
+
+## Handoff Brief (small→large)
+- Before high reasoning, compile a concise handoff brief:
+  - repo languages/frameworks, important files, tests/stubs
+  - exact task and constraints, risks, acceptance checks
+  - smallest viable context; avoid over-collection
+'''
+
+        amr_rule.write_text(content)

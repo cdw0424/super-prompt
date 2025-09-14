@@ -20,14 +20,14 @@ As a developer using Super Prompt, I want to use structured development workflow
 - [ ] /plan command generates implementation plans with constitution compliance
 - [ ] /tasks command creates testable task breakdowns
 - [ ] SDD gates prevent advancement without proper validation
-- [ ] Prompt optimizer combines spec+plan+constitution correctly
+- [ ] AMR handoff brief summarizes spec+plan+constitution correctly
 
 ## Scope & Boundaries
 ### In Scope
 - Spec Kit folder structure and templates
 - /specify, /plan, /tasks slash commands
 - Enhanced SDD gates with constitution validation
-- Prompt optimizer for structured prompts
+- AMR handoff brief generation via MCP tools
 - Acceptance self-check automation
 
 ### Out of Scope

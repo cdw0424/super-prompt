@@ -1,4 +1,8 @@
 ---
-description: "Run super-prompt refactorer persona"
-run: "super-prompt mcp tool refactorer --query '$_prompt_'"
+description: refactorer command
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-refactorer'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
+
+🔧 Refactorer
+Code quality and technical debt management

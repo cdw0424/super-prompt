@@ -1,7 +1,8 @@
 ---
 description: analyzer command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${input} /analyzer"]
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-analyzer'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
 
-🔍 Root Cause Analyst\nExpert in systematic analysis, debugging, performance diagnostics, and complex problem resolution.
+🔍 Analyzer
+Root cause analysis and systematic investigation

@@ -1,5 +1,95 @@
 # Changelog
 
+## v4.0.20 - 2025-09-14
+
+### 🌟 **Project Philosophy & README Improvements**
+- **feat(docs)**: Added comprehensive project philosophy emphasizing efficiency through model optimization
+- **fix(docs)**: Changed Korean "(더블 체크)" to English "(Double Check)" in README
+- **improvement**: Enhanced documentation clarity and internationalization
+- **philosophy**: "Maximum Efficiency Through Model Optimization" - leveraging fast, affordable models like Grok Code Fast with optimized modes for each LLM
+
+### 🎯 **Core Value Proposition**
+We pursue the utmost efficiency in both time and cost by providing optimized modes tailored to each LLM model's strengths, maximizing productivity while minimizing resource consumption.
+
+---
+
+## v4.0.19 - 2025-09-14
+
+### 🎉 **Complete Command Arsenal: 25+ Personas Ready!**
+- **feat(commands)**: Added ALL missing essential commands
+  - 🔍 `/seq` - Sequential reasoning and step-by-step analysis
+  - 🧠 `/seq-ultra` - Ultra-deep sequential reasoning
+  - ⚡ `/ultracompressed` - Highly compressed, efficient responses
+  - 🤖 `/grok-mode-on` & `/grok-mode-off` - Grok mode toggle
+  - 💻 `/gpt-mode-on` & `/gpt-mode-off` - GPT mode toggle (renamed from codex)
+
+### 🧹 **Enhanced Migration Guide**
+- **improvement**: Added comprehensive clean migration instructions
+- **safety**: Clear guidance to delete old `.super-prompt/` and `.cursor/commands/` folders
+- **explanation**: Detailed reasons why clean installation is required
+- **automation**: Complete setup with just `npx super-prompt init`
+
+### ✅ **Complete Command Set (26 Commands)**
+Now when you run `npx super-prompt init`, you get:
+
+**🏗️ Core Development**
+- `/architect` - Systems architecture specialist
+- `/frontend` - UI/UX specialist and accessibility advocate
+- `/backend` - Server-side development and API specialist
+- `/dev` - Feature development specialist
+
+**🔬 Analysis & Quality**
+- `/analyzer` - Root cause analysis specialist
+- `/security` - Security analysis and threat modeling
+- `/performance` - Performance optimization specialist
+- `/qa` - Quality assurance and testing specialist
+
+**🎓 Knowledge & Guidance**
+- `/mentor` - Educational guidance and knowledge transfer
+- `/scribe` - Technical writing and documentation
+- `/doc-master` - Documentation architecture specialist
+
+**⚡ Advanced Reasoning**
+- `/seq` - Sequential reasoning and analysis
+- `/seq-ultra` - Ultra-deep sequential reasoning
+- `/high` - Deep reasoning with advanced models
+
+**🔧 Utilities**
+- `/refactorer` - Code quality and technical debt management
+- `/devops` - CI/CD and infrastructure automation
+- `/tr` - Troubleshooter for rapid issue resolution
+- `/ultracompressed` - Token-optimized responses
+
+**🎛️ Mode Controls**
+- `/grok-mode-on` & `/grok-mode-off` - Grok mode toggle
+- `/gpt-mode-on` & `/gpt-mode-off` - GPT mode toggle
+
+**📋 SDD Workflow**
+- `/implement`, `/plan`, `/specify`, `/tasks` - Spec-Driven Development
+
+## v4.0.18 - 2025-09-14
+
+### 🚀 **Major Improvement: Complete Persona Setup**
+- **feat(init)**: `npx super-prompt init` now automatically generates ALL persona commands
+- **enhancement**: Added automatic `personas-init` and `personas-build` to the init process
+- **improvement**: Users now get 15+ persona commands (architect, frontend, backend, security, etc.) out of the box
+- **user-experience**: No more manual steps needed - one command does everything!
+
+### 🎯 **What's New**
+When you run `npx super-prompt init`, you now automatically get:
+- 🏗️ `/architect` - System design and architecture specialist
+- 🎨 `/frontend` - UI/UX specialist and accessibility advocate
+- ⚙️ `/backend` - Server-side development and API specialist
+- 🛡️ `/security` - Security analysis and threat modeling
+- ⚡ `/performance` - Performance optimization specialist
+- 🎓 `/mentor` - Educational guidance and knowledge transfer
+- ✅ `/qa` - Quality assurance and testing specialist
+- 🔧 `/refactorer` - Code quality and technical debt management
+- 🚀 `/devops` - CI/CD, infrastructure automation
+- 📝 `/scribe` - Technical writing and documentation
+- 🧠 `/high` - Deep reasoning with advanced models
+- And 5+ more specialized personas!
+
 ## v4.0.17 - 2025-09-14
 
 ### 🔧 **Command Fix**
@@ -656,3 +746,41 @@ super-prompt super:init --help # ✅ Legacy syntax support
 ### 🛠️ Dev persona flag
 - feat(cli): Add `--sp-dev` and `--dev` flags to `optimize` command.
 - feat(optimizer): Add `dev` persona to PromptOptimizer so `/dev` and flags resolve without unknown-persona errors.
+## v4.0.21 - 2025-09-14
+
+### ✨ Architecture & MCP
+- docs(readme): Add detailed architecture section (MCP-first, AMR global, mode guidance, components)
+- feat(mcp): Add FastMCP server exposing AMR, context, validation, personas, and mode toggles
+- refactor(core): Modularize large CLI into commands/* and modes.py (MCP-first functions)
+
+### 🧠 AMR & Model Guidance
+- feat(amr): Global AMR rules apply to all LLM interactions and commands (`.cursor/rules/12-amr.mdc`)
+- feat(mode): Strict mutual exclusivity between GPT and Grok modes with auto-installed guidance rules
+- feat(amr): Repo overview + handoff brief MCP tools for small→large reasoning flow
+
+### 📦 Packaging & Install
+- feat(install): Fallback to pip install from source if wheel not present
+- chore(version): Bump to 4.0.21 (npm, pyproject)
+
+### 🧹 Cleanup
+- chore(personas): Canonicalize personas manifest under packages/cursor-assets/manifests/personas.yaml
+- chore: Remove redundant Python files and legacy analyzer
+## v4.0.22 - 2025-09-14
+
+### 🔐 SSOT + Personas
+- feat(ssot): Add global SSOT rule (11-ssot.mdc) and integrate SSOT-first guidance into GPT/Grok rules
+- feat(personas): Add Grok model overrides/guidance across all personas; ensure no missing overrides
+- feat(personas): Auto-append standardized <mcp_usage> into materialized overrides for each persona
+- chore(loader): Default persona manifest now copies canonical SSOT manifest instead of generating hardcoded defaults
+- chore(cli): Persona manifest loading follows SSOT order (project → package)
+
+### 🧠 AMR + Memory
+- feat(memory): SQLite-backed persistent memory tools (kv, task_tag, events) and event logging for CLI/MCP tool calls
+- feat(amr): Orchestrator tool `amr_persona_orchestrate` includes memory task_tag, overview, brief, and suggested next steps
+
+### ⚙️ Modes
+- feat(grok): Expanded Grok guidance (context discipline, explicit goals, native tool-calling, cache optimization)
+- feat(gpt): GPT‑5 guidance applied consistently; SSOT reminder added
+
+### 📦 Packaging
+- chore(version): Bump npm and core-py to 4.0.22
