@@ -1,5 +1,57 @@
 # Changelog
 
+## v4.4.0 - 2025-09-15
+
+### 🚀 **Streamlined Architecture - Pure stdio Mode**
+
+This major release introduces a dramatically simplified architecture by removing all TCP networking code and transitioning to pure stdio mode for MCP communication, resulting in enhanced security, performance, and maintainability.
+
+#### **🔧 Architecture Simplification**
+- **TCP Code Complete Removal**: Eliminated all TCP server, networking, and port management code
+- **Pure stdio Mode**: MCP server now runs exclusively in stdio mode for direct process communication
+- **Zero Network Exposure**: No more port binding or network interfaces required
+- **Simplified Execution**: Direct stdin/stdout communication between MCP client and server
+
+#### **🛡️ Security & Performance Enhancements**
+- **Enhanced Security**: Complete elimination of network attack vectors and port exposure
+- **Improved Performance**: Direct process communication with minimal overhead
+- **Reduced Complexity**: Removed complex TCP connection management and threading
+- **Resource Optimization**: Lower memory footprint and faster startup times
+
+#### **🧹 Code Quality Improvements**
+- **Massive Code Reduction**: Removed hundreds of lines of complex TCP networking code
+- **Simplified Dependencies**: Eliminated socket, threading, and networking libraries
+- **Cleaner Architecture**: Single execution path with no conditional branching
+- **Better Maintainability**: Significantly reduced code complexity and potential bugs
+
+#### **⚡ Operational Benefits**
+- **Faster Startup**: No TCP server initialization or port binding delays
+- **Reliable Communication**: Direct stdio communication with guaranteed delivery
+- **Simplified Deployment**: No firewall configuration or port management required
+- **Better IDE Integration**: Seamless integration with Cursor's MCP architecture
+
+#### **🎯 Developer Experience**
+- **Zero Configuration**: No TCP ports or network settings to configure
+- **Immediate Availability**: MCP tools available instantly without server startup delays
+- **Reduced Troubleshooting**: Eliminated network-related configuration issues
+- **Cleaner Logs**: Simplified logging without TCP connection noise
+
+### **Technical Architecture**
+```bash
+# Simplified Execution Flow:
+Cursor MCP → npx sp-mcp → Python MCP Server → stdio Communication
+     ↓          ↓              ↓                    ↓
+   Command    Package Exec    Direct Process      stdin/stdout
+```
+
+#### **🔄 Migration Benefits**
+- **Backward Compatibility**: All existing MCP tools continue to work seamlessly
+- **No Breaking Changes**: Existing commands and functionality preserved
+- **Improved Reliability**: Eliminated TCP connection failures and timeouts
+- **Future-Proof**: Aligns with MCP best practices for stdio communication
+
+---
+
 ## v4.3.0 - 2025-09-15
 
 ### 🚀 **Complete Auto-Setup System - Perfect Environment**

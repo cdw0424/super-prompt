@@ -4,14 +4,12 @@
       "command": "npx",
       "args": [
         "-y",
-        "@cdw0424/super-prompt@4.2.0",
+        "@cdw0424/super-prompt@4.3.0",
         "sp-mcp"
       ],
       "env": {
         "SUPER_PROMPT_ALLOW_INIT": "true",
         "SUPER_PROMPT_PROJECT_ROOT": ".",
-        "SUPER_PROMPT_TCP_MODE": "true",
-        "SUPER_PROMPT_TCP_PORT": "8282",
         "PYTHON": "python3"
       }
     }

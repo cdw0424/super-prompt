@@ -1,27 +1,33 @@
-# Super Prompt v4.3.0: Complete Auto-Setup - Perfect Environment
+# Super Prompt v4.4.0: Streamlined Architecture - Pure stdio Mode
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**🎯 One-command complete setup with intelligent environment automation for
-perfect Super Prompt experience.**
+**🚀 Streamlined, secure, and ultra-fast MCP server with pure stdio mode for
+perfect development workflow.**
 
-Super Prompt v4.3 introduces comprehensive automatic setup system with TCP
-server management, ensuring users get a perfectly configured environment with
-zero manual configuration. All systems auto-verify and report status for
-immediate productivity.
+Super Prompt v4.4 introduces dramatically simplified architecture with complete
+TCP code removal and pure stdio mode transition. Enhanced security, performance,
+and maintainability with zero network exposure and direct process communication.
 
 ---
 
-### 🚀 **What's New in v4.3: Complete Auto-Setup System**
+### 🚀 **What's New in v4.4: Streamlined Architecture**
 
-#### **🎯 One-Command Complete Setup**
+#### **🔧 Architecture Simplification**
 
-- **Intelligent Auto-Setup**: Single `super:init` command configures everything perfectly
-- **Automatic TCP Server Management**: TCP server (port 8282) auto-starts and verifies connectivity
-- **Comprehensive Environment Verification**: Multi-layer validation of all systems and configurations
-- **Smart Process Management**: Automatic cleanup and restart of background services
+- **Pure stdio Mode**: MCP server runs exclusively in stdio mode for direct process communication
+- **Zero Network Exposure**: No port binding, TCP servers, or network interfaces required
+- **Massive Code Reduction**: Removed hundreds of lines of complex TCP networking code
+- **Simplified Dependencies**: Eliminated socket, threading, and networking libraries
+
+#### **🛡️ Security & Performance**
+
+- **Enhanced Security**: Complete elimination of network attack vectors and port exposure
+- **Improved Performance**: Direct process communication with minimal overhead
+- **Faster Startup**: No TCP server initialization or port binding delays
+- **Resource Optimization**: Lower memory footprint and cleaner architecture
 
 #### **🧠 Enhanced Reasoning System**
 

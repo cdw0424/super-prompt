@@ -565,10 +565,7 @@ def mcp_serve():
         typer.echo("   Press Ctrl+C to exit.")
 
         # Use sys.executable to ensure we're using the python from the correct venv
-        # TCP 포트 8282에서 실행하도록 환경변수 설정
         env = os.environ.copy()
-        env["SUPER_PROMPT_TCP_MODE"] = "true"
-        env["SUPER_PROMPT_TCP_PORT"] = "8282"
         subprocess.run([sys.executable, str(server_script_path)], env=env, check=True)
 
     except subprocess.CalledProcessError as e:
@@ -1083,50 +1080,6 @@ Brief description of the feature.
             typer.echo("✅ Personas manifest ensured (personas/manifest.yaml)")
         except Exception as e:
             typer.echo(f"⚠️  Could not materialize personas manifest: {e}")
-
-        # 🚀 자동 TCP 서버 시작 (포트 8282)
-        try:
-            typer.echo("🚀 Starting TCP server on port 8282...")
-            # TCP 서버를 백그라운드에서 실행
-            tcp_server_path = Path(__file__).parent / "tcp_server.py"
-            if tcp_server_path.exists():
-                # 기존 TCP 서버 프로세스 정리
-                import subprocess
-
-                try:
-                    subprocess.run(["pkill", "-f", "tcp_server.py"], check=False)
-                except Exception:
-                    pass
-
-                # 새 TCP 서버 시작
-                subprocess.Popen(
-                    [sys.executable, str(tcp_server_path)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    cwd=str(target_dir),
-                )
-
-                # 서버가 시작될 때까지 잠시 대기
-                import time
-
-                time.sleep(2)
-
-                # 포트 확인
-                import socket
-
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(1)
-                result = sock.connect_ex(("127.0.0.1", 8282))
-                sock.close()
-
-                if result == 0:
-                    typer.echo("✅ TCP server started successfully on port 8282")
-                else:
-                    typer.echo("⚠️  TCP server may not be responding on port 8282")
-            else:
-                typer.echo("⚠️  TCP server script not found, skipping TCP server startup")
-        except Exception as e:
-            typer.echo(f"⚠️  Could not start TCP server: {e}")
 
         # 🔍 환경 검증 및 상태 확인
         try:
