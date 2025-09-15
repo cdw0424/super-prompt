@@ -17,14 +17,19 @@ and maintainability with zero network exposure and direct process communication.
 
 #### **🔧 Architecture Simplification**
 
-- **Pure stdio Mode**: MCP server runs exclusively in stdio mode for direct process communication
-- **Zero Network Exposure**: No port binding, TCP servers, or network interfaces required
-- **Massive Code Reduction**: Removed hundreds of lines of complex TCP networking code
-- **Simplified Dependencies**: Eliminated socket, threading, and networking libraries
+- **Pure stdio Mode**: MCP server runs exclusively in stdio mode for direct
+  process communication
+- **Zero Network Exposure**: No port binding, TCP servers, or network interfaces
+  required
+- **Massive Code Reduction**: Removed hundreds of lines of complex TCP
+  networking code
+- **Simplified Dependencies**: Eliminated socket, threading, and networking
+  libraries
 
 #### **🛡️ Security & Performance**
 
-- **Enhanced Security**: Complete elimination of network attack vectors and port exposure
+- **Enhanced Security**: Complete elimination of network attack vectors and port
+  exposure
 - **Improved Performance**: Direct process communication with minimal overhead
 - **Faster Startup**: No TCP server initialization or port binding delays
 - **Resource Optimization**: Lower memory footprint and cleaner architecture
