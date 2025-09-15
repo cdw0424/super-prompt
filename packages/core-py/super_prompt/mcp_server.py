@@ -262,5 +262,149 @@ def gpt_mode_on() -> TextContent:
         print("-------- mode: set to gpt", file=sys.stderr, flush=True)
         return TextContent(type="text", text="mode set to gpt")
 
+# === Persona Tools ===
+
+@mcp.tool()  # 도구명: sp.architect
+def architect(query: str = "") -> TextContent:
+    """🏗️ Architect - System design and architecture specialist"""
+    with memory_span('sp.architect'):
+        return _execute_persona("architect", query)
+
+@mcp.tool()  # 도구명: sp.frontend
+def frontend(query: str = "") -> TextContent:
+    """🎨 Frontend - UI/UX specialist and accessibility advocate"""
+    with memory_span('sp.frontend'):
+        return _execute_persona("frontend", query)
+
+@mcp.tool()  # 도구명: sp.backend
+def backend(query: str = "") -> TextContent:
+    """⚡ Backend - Reliability engineer and API specialist"""
+    with memory_span('sp.backend'):
+        return _execute_persona("backend", query)
+
+@mcp.tool()  # 도구명: sp.security
+def security(query: str = "") -> TextContent:
+    """🛡️ Security - Threat modeling and vulnerability specialist"""
+    with memory_span('sp.security'):
+        return _execute_persona("security", query)
+
+@mcp.tool()  # 도구명: sp.performance
+def performance(query: str = "") -> TextContent:
+    """🚀 Performance - Optimization and bottleneck elimination expert"""
+    with memory_span('sp.performance'):
+        return _execute_persona("performance", query)
+
+@mcp.tool()  # 도구명: sp.analyzer
+def analyzer(query: str = "") -> TextContent:
+    """🔍 Analyzer - Root cause investigation specialist"""
+    with memory_span('sp.analyzer'):
+        return _execute_persona("analyzer", query)
+
+@mcp.tool()  # 도구명: sp.qa
+def qa(query: str = "") -> TextContent:
+    """🧪 QA - Quality advocate and testing specialist"""
+    with memory_span('sp.qa'):
+        return _execute_persona("qa", query)
+
+@mcp.tool()  # 도구명: sp.refactorer
+def refactorer(query: str = "") -> TextContent:
+    """🔧 Refactorer - Code quality and technical debt specialist"""
+    with memory_span('sp.refactorer'):
+        return _execute_persona("refactorer", query)
+
+@mcp.tool()  # 도구명: sp.devops
+def devops(query: str = "") -> TextContent:
+    """🚢 DevOps - Infrastructure and deployment specialist"""
+    with memory_span('sp.devops'):
+        return _execute_persona("devops", query)
+
+@mcp.tool()  # 도구명: sp.mentor
+def mentor(query: str = "") -> TextContent:
+    """👨‍🏫 Mentor - Knowledge transfer and educational specialist"""
+    with memory_span('sp.mentor'):
+        return _execute_persona("mentor", query)
+
+@mcp.tool()  # 도구명: sp.scribe
+def scribe(query: str = "", lang: str = "en") -> TextContent:
+    """📝 Scribe - Professional documentation specialist"""
+    with memory_span('sp.scribe'):
+        return _execute_persona("scribe", query, lang=lang)
+
+# === Additional Tools ===
+
+@mcp.tool()  # 도구명: sp.grok_mode_off
+def grok_mode_off() -> TextContent:
+    """Turn off Grok mode"""
+    with memory_span('sp.grok_mode_off'):
+        set_mode('gpt')
+        return TextContent(type="text", text="Grok mode turned off, switched to GPT")
+
+@mcp.tool()  # 도구명: sp.gpt_mode_off
+def gpt_mode_off() -> TextContent:
+    """Turn off GPT mode"""
+    with memory_span('sp.gpt_mode_off'):
+        set_mode('grok')
+        return TextContent(type="text", text="GPT mode turned off, switched to Grok")
+
+@mcp.tool()  # 도구명: sp.specify
+def specify(query: str = "") -> TextContent:
+    """📋 Specify - Create detailed specifications"""
+    with memory_span('sp.specify'):
+        return TextContent(type="text", text=f"📋 Specification tool activated.\n\nQuery: {query}\n\nThis tool helps create detailed specifications for features and requirements.")
+
+@mcp.tool()  # 도구명: sp.plan
+def plan(query: str = "") -> TextContent:
+    """📅 Plan - Create implementation plans"""
+    with memory_span('sp.plan'):
+        return TextContent(type="text", text=f"📅 Planning tool activated.\n\nQuery: {query}\n\nThis tool helps create structured implementation plans.")
+
+@mcp.tool()  # 도구명: sp.tasks
+def tasks(query: str = "") -> TextContent:
+    """✅ Tasks - Break down work into tasks"""
+    with memory_span('sp.tasks'):
+        return TextContent(type="text", text=f"✅ Task breakdown tool activated.\n\nQuery: {query}\n\nThis tool helps break down work into manageable tasks.")
+
+@mcp.tool()  # 도구명: sp.implement
+def implement(query: str = "") -> TextContent:
+    """🔨 Implement - Execute implementation"""
+    with memory_span('sp.implement'):
+        return TextContent(type="text", text=f"🔨 Implementation tool activated.\n\nQuery: {query}\n\nThis tool helps execute implementations based on plans and specifications.")
+
+def _execute_persona(persona_name: str, query: str = "", **kwargs) -> TextContent:
+    """Execute persona with given query"""
+    try:
+        from .cli import app
+        from .personas.loader import PersonaLoader
+
+        # Load persona configuration
+        loader = PersonaLoader()
+        loader.load_manifest()
+
+        # Get persona config
+        persona_config = None
+        for p in loader.list_personas():
+            if p['name'] == persona_name:
+                persona_config = p
+                break
+
+        if not persona_config:
+            return TextContent(type="text", text=f"Persona '{persona_name}' not found")
+
+        # Create persona prompt
+        persona_prompt = f"""You are {persona_config['description']}.
+
+{persona_config.get('system_prompt', '')}
+
+User query: {query}"""
+
+        # Return persona activation message
+        return TextContent(
+            type="text",
+            text=f"🎭 {persona_config['emoji']} {persona_config['name'].title()} persona activated!\n\n{persona_prompt}"
+        )
+
+    except Exception as e:
+        return TextContent(type="text", text=f"Error executing persona: {str(e)}")
+
 if __name__ == "__main__":
     mcp.run()  # stdio로 MCP 서버 실행

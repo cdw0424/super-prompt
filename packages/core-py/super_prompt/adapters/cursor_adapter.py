@@ -101,8 +101,10 @@ class CursorAdapter:
                     description = persona_config.get("description", f"{name} persona")
                     content = f'''---
 description: {alias} command (alias of {persona_key})
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-{persona_key}'] + __import__('sys').argv[1:], input='${{input}}', text=True, check=False)"]
+run: mcp
+tool: sp.{persona_key}
+args:
+  query: "${{input}}"
 ---
 
 {icon} {name}
@@ -131,8 +133,10 @@ args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-{per
 
         content = f'''---
 description: {persona} command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-{persona}'] + __import__('sys').argv[1:], input='${{input}}', text=True, check=False)"]
+run: mcp
+tool: sp.{persona}
+args:
+  query: "${{input}}"
 ---
 
 {icon} {name}
@@ -228,8 +232,10 @@ args: ["${{input}} /{processor_name}"]
             # Fallback: Generate basic content with python runner
             content = f'''---
 description: {cmd_name} command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', '{cmd_name}'] + __import__('sys').argv[1:], input='${{input}}', text=True, check=False)"]
+run: mcp
+tool: sp.{cmd_name}
+args:
+  query: "${{input}}"
 ---
 
 📋 {cmd_name.title()}

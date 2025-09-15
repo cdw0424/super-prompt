@@ -1024,3 +1024,11 @@ super-prompt super:init --help # ✅ Legacy syntax support
 - fix(install): detect Python >=3.10, prefer 3.12/3.11/3.10; install core-py wheel; search fallback in `packages/core-py/dist`
 - chore(prepack): add script to copy latest core-py wheel into root `dist/` for npm publish
 - chore(mcp_register): register `sp-mcp` in `.cursor/mcp.json` and `~/.codex/config.toml`
+## v4.0.57 - 2025-09-15
+
+### Fixes & Improvements
+- fix(init): Ensure `.cursor` is created at project root, not in `packages/core-py`, during local repo development
+- fix(init): Add safe Node fallback path that writes `.cursor/mcp.json`, `.cursor/tools.json`, and generates commands/rules via Python CursorAdapter
+- feat(mcp): Templates now include `SUPER_PROMPT_REQUIRE_MCP=1`, `SUPER_PROMPT_NPM_SPEC`, `PYTHONUNBUFFERED=1`, `PYTHONUTF8=1`
+- fix(cli): Robust Git project root detection to prevent path confusion
+- docs: Update README to v4.0.57

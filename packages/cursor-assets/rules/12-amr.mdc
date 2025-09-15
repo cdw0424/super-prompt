@@ -1,0 +1,28 @@
+---
+description: "Auto Model Router (AMR) — global guidance"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Auto Model Router (AMR)
+- Scope: Applies to all LLM interactions and all commands.
+- Language: English. Logs must start with `--------`.
+
+## Reasoning Levels
+- Default: medium. Prefer fast, concise execution.
+- Escalate to gpt-5 high ONLY when heavy reasoning is required (architecture, deep root-cause, complex planning, cross-module refactor).
+- After high PLAN/REVIEW or high EXECUTION, return to medium and continue.
+
+## State Machine (per turn)
+- INTENT → TASK_CLASSIFY → PLAN → EXECUTE → VERIFY → REPORT
+- Classify task: L0/L1/H. If H → switch to high.
+- For execution: if task requires heavy reasoning, execute at gpt-5 high; otherwise execute at medium.
+
+## Commands for Switching
+- To high: first line `/model gpt-5 high` then `--------router: switch to high (reason=deep_planning)`
+- Back to medium: `/model gpt-5 medium` then `--------router: back to medium (reason=execution)`
+
+## Handoff Brief (small→large)
+- Before high reasoning, compile a concise handoff brief:
+  - repo languages/frameworks, important files, tests/stubs
+  - exact task and constraints, risks, acceptance checks
+  - smallest viable context; avoid over-collection

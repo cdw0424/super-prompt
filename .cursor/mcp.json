@@ -5,9 +5,12 @@
       "args": ["-y", "@cdw0424/super-prompt@latest", "sp-mcp"],
       "env": {
         "SUPER_PROMPT_ALLOW_INIT": "true",
-        "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}"
+        "SUPER_PROMPT_REQUIRE_MCP": "1",
+        "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}",
+        "SUPER_PROMPT_NPM_SPEC": "@cdw0424/super-prompt@latest",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONUTF8": "1"
       }
     }
   }
 }
-

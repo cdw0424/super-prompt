@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 import os
-from .paths import package_root, cursor_assets_root
+from ..paths import package_root, cursor_assets_root
 
 
 @dataclass

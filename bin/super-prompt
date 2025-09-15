@@ -25,8 +25,13 @@ APP_HOME="$(resolve_app_home)"
 
 # Find the project root (git root or current directory).
 resolve_project_root() {
-  if command -v git &>/dev/null && git rev-parse --show-toplevel &>/dev/null; then
-    return 0
+  if command -v git &>/dev/null; then
+    local root
+    root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ -n "$root" ]; then
+      printf "%s" "$root"
+      return 0
+    fi
   fi
   printf "%s" "$(pwd)"
 }
@@ -133,6 +138,7 @@ resolve_mode() {
 # CLI 인자 파싱 및 명령 추출
 parse_args_and_cmd() {
   CMD=""
+  FIRST_ARG="${1:-}"
   while [ $# -gt 0 ]; do
     case "$1" in
       --gpt)
@@ -170,6 +176,48 @@ parse_args_and_cmd() {
 parse_args_and_cmd "$@"
 resolve_mode
 
+# Map Codex-style flags to MCP tools
+route_codex_flags() {
+  local arg="$FIRST_ARG"
+  case "$arg" in
+    --architect|--sp-architect) TOOL="sp.architect" ;;
+    --backend|--sp-backend) TOOL="sp.backend" ;;
+    --frontend|--sp-frontend) TOOL="sp.frontend" ;;
+    --security|--sp-security) TOOL="sp.security" ;;
+    --performance|--sp-performance) TOOL="sp.performance" ;;
+    --analyzer|--sp-analyzer) TOOL="sp.analyzer" ;;
+    --qa|--sp-qa) TOOL="sp.qa" ;;
+    --refactorer|--sp-refactorer) TOOL="sp.refactorer" ;;
+    --devops|--sp-devops) TOOL="sp.devops" ;;
+    --mentor|--sp-mentor) TOOL="sp.mentor" ;;
+    --scribe|--sp-scribe) TOOL="sp.scribe" ;;
+    --grok|--sp-grok) TOOL="sp.grok" ;;
+    --db-expert|--sp-db-expert) TOOL="sp.db-expert" ;;
+    --optimize|--sp-optimize) TOOL="sp.optimize" ;;
+    --translate|--sp-translate|--tr|--sp-tr) TOOL="sp.tr" ;;
+    --seq|--sp-seq) TOOL="sp.seq" ;;
+    --seq-ultra|--sp-seq-ultra) TOOL="sp.seq-ultra" ;;
+    --ultracompressed|--sp-ultracompressed) TOOL="sp.ultracompressed" ;;
+    --dev|--sp-dev) TOOL="sp.dev" ;;
+    --review|--sp-review) TOOL="sp.review" ;;
+    --service-planner|--sp-service-planner) TOOL="sp.service-planner" ;;
+    # SDD
+    --sp-sdd-spec|--specify|--sp-specify) TOOL="sp.specify" ;;
+    --sp-sdd-plan|--plan|--sp-plan) TOOL="sp.plan" ;;
+    --sp-sdd-tasks|--tasks|--sp-tasks) TOOL="sp.tasks" ;;
+    --sp-sdd-implement|--implement|--sp-implement) TOOL="sp.implement" ;;
+    *) TOOL="" ;;
+  esac
+  if [ -n "$TOOL" ]; then
+    shift # consume the flag
+    # Treat remaining args as a single query string
+    local query="$*"
+    exec node "$APP_HOME/src/mcp-client.js" call "$TOOL" "--query=$query"
+  fi
+}
+
+route_codex_flags "$@"
+
 case "$CMD" in
   mcp-server)
     # 서버만 직접 노출 (클라이언트가 붙음)
@@ -177,8 +225,19 @@ case "$CMD" in
     exec "$VENV_PYTHON" -m super_prompt.mcp_server "$@"
     ;;
   super:init)
-    # 무조건 MCP로 호출
-    exec node "$APP_HOME/src/mcp-client.js" call sp.init "$@"
+    # If running inside the package repo root, avoid self-copy bug by using Node fallback
+    if [ "$APP_HOME" = "$PROJECT_ROOT" ]; then
+      exec node "$APP_HOME/src/mcp-client.js" call sp.init "$@"
+    else
+      # Initialize via Python CLI, targeting the actual project root
+      export SUPER_PROMPT_REQUIRE_MCP="0"
+      export SUPER_PROMPT_ALLOW_INIT="true"
+      export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+      export SUPER_PROMPT_PROJECT_ROOT="$PROJECT_ROOT"
+      export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+      cd "$PROJECT_ROOT"
+      exec "$VENV_PYTHON" -m super_prompt.cli "$@"
+    fi
     ;;
   super:refresh)
     exec node "$APP_HOME/src/mcp-client.js" call sp.refresh "$@"
