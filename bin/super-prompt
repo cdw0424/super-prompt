@@ -220,13 +220,18 @@ route_codex_flags "$@"
 
 case "$CMD" in
   mcp-server)
+    shift
     # 서버만 직접 노출 (클라이언트가 붙음)
     export MCP_SERVER_MODE="1"  # Mark as MCP server mode
+    # Ensure Python can import super_prompt from package sources without wheel install
+    export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
     exec "$VENV_PYTHON" -m super_prompt.mcp_server "$@"
     ;;
   super:init)
+    shift
     # If running inside the package repo root, avoid self-copy bug by using Node fallback
     if [ "$APP_HOME" = "$PROJECT_ROOT" ]; then
+      export SUPER_PROMPT_ALLOW_INIT="true"
       exec node "$APP_HOME/src/mcp-client.js" call sp.init "$@"
     else
       # Initialize via Python CLI, targeting the actual project root
@@ -240,6 +245,7 @@ case "$CMD" in
     fi
     ;;
   super:refresh)
+    shift
     exec node "$APP_HOME/src/mcp-client.js" call sp.refresh "$@"
     ;;
   grok-mode-on)

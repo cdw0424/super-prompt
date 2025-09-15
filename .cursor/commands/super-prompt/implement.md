@@ -1,9 +1,7 @@
 ---
 description: implement command
-run: mcp
-tool: sp.implement
-args:
-  query: "${input}"
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'implement'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
 
 📋 Implement

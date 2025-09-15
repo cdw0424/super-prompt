@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.0.57",
-  "description": "Super Prompt v4.0.57 (MCP Architecture - Production Ready)",
+  "version": "4.0.58",
+  "description": "Super Prompt v4.0.58 (MCP Architecture - Production Ready)",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
@@ -10,7 +10,7 @@
     "clean:py": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
     "clean": "rm -rf dist || true && npm run clean:py",
     "build": "echo 'Build complete - JavaScript project'",
-  "prepack": "npm run clean && node scripts/prepare-python-dist.js && npm run build",
+    "prepack": "npm run clean && node scripts/prepare-python-dist.js && npm run build",
     "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",
     "postinstall": "node install.js",
     "test": "node --test",
@@ -46,7 +46,6 @@
     "url": "https://github.com/cdw0424/super-prompt/issues"
   },
   "homepage": "https://github.com/cdw0424/super-prompt#readme",
-  
   "os": [
     "darwin",
     "linux",
@@ -57,6 +56,9 @@
     "src/",
     "dist/",
     "templates/",
+    "packages/core-py/",
+    "packages/cursor-assets/",
+    "packages/codex-assets/",
     "install.js",
     "README.md",
     "CHANGELOG.md"

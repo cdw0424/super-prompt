@@ -218,6 +218,7 @@ async function setupPythonVenv(superPromptDir) {
 
         const venvDir = path.join(superPromptDir, 'venv');
         const platform = os.platform();
+        const offline = String(process.env.SUPER_PROMPT_OFFLINE || process.env.SP_NO_PIP_INSTALL || '').toLowerCase() === 'true' || String(process.env.npm_config_offline || '').toLowerCase() === 'true';
 
         // Remove existing venv if it exists
         if (fs.existsSync(venvDir)) {
@@ -244,20 +245,24 @@ async function setupPythonVenv(superPromptDir) {
         const venvPip = platform === 'win32' ? path.join(venvBin, 'pip.exe') : path.join(venvBin, 'pip');
         const venvPython = platform === 'win32' ? path.join(venvBin, 'python.exe') : path.join(venvBin, 'python');
 
-        // Upgrade pip in venv
-        console.log(`${colors.dim}   → Upgrading pip in virtual environment...${colors.reset}`);
-        execSync(`"${venvPython}" -m pip install --upgrade pip`, { stdio: 'inherit' });
+        if (offline) {
+          console.log(`${colors.yellow}   ⚠ Offline mode detected — skipping pip installs${colors.reset}`);
+        } else {
+          // Upgrade pip in venv
+          console.log(`${colors.dim}   → Upgrading pip in virtual environment...${colors.reset}`);
+          execSync(`"${venvPython}" -m pip install --upgrade pip`, { stdio: 'inherit' });
 
-        // Install required Python packages (minimal set)
-        const packages = [
-            'typer>=0.9.0',      // CLI framework
-            'pyyaml>=6.0',       // YAML parsing
-            'pathspec>=0.11.0',   // File filtering
-            'mcp>=0.4.0'         // MCP server framework (Python >=3.10)
-        ];
+          // Install required Python packages (minimal set)
+          const packages = [
+              'typer>=0.9.0',      // CLI framework
+              'pyyaml>=6.0',       // YAML parsing
+              'pathspec>=0.11.0',   // File filtering
+              'mcp>=0.4.0'         // MCP server framework (Python >=3.10)
+          ];
 
-        console.log(`${colors.dim}   → Installing Python dependencies...${colors.reset}`);
-        execSync(`"${venvPip}" install ${packages.join(' ')}`, { stdio: 'inherit' });
+          console.log(`${colors.dim}   → Installing Python dependencies...${colors.reset}`);
+          execSync(`"${venvPip}" install ${packages.join(' ')}`, { stdio: 'inherit' });
+        }
 
         // Install the built wheel for the core-py package
         const distCandidates = [
@@ -295,7 +300,7 @@ async function setupPythonVenv(superPromptDir) {
         const venvInfo = {
             created: new Date().toISOString(),
             python_version: execSync(`"${venvPython}" --version`, { encoding: 'utf8' }).trim(),
-            packages: packages,
+            packages: offline ? [] : ['typer','pyyaml','pathspec','mcp'],
             platform: platform,
             data_dir: dataDir
         };

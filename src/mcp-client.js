@@ -37,27 +37,19 @@ async function run() {
     return;
   }
 
-  // MCP graceful fallback
+  // If MCP client is explicitly disabled, run NOOP
   const explicitlyDisabled = process.env.MCP_CLIENT_DISABLED === 'true';
   if (explicitlyDisabled) {
     console.warn('-------- MCP memory: NOOP mode (enabled without persistence)');
     console.log('-------- Tool called:', tool);
     console.log('-------- Args:', JSON.stringify(kv, null, 2));
-    // NOOP 모드에서도 성공으로 종료
     process.exit(0);
-  } else {
-    // Temporary direct fallback for essential tools until full MCP client ships
-    if (tool === 'sp.init') {
-      await directInit();
-      process.exit(0);
-      return;
-    }
-    // 정상 MCP 클라이언트 생성 경로 (향후 구현)
-    console.warn('-------- MCP client: full implementation pending');
-    console.log('-------- Tool called:', tool);
-    console.log('-------- Args:', JSON.stringify(kv, null, 2));
-    process.exit(0);
+    return;
   }
+
+  // Temporary direct-call path via Python module (no full MCP handshake required)
+  await directCall(tool, kv);
+  process.exit(0);
 }
 
 function safePkgVersion() {
@@ -75,6 +67,7 @@ async function directInit() {
   const root = process.env.SUPER_PROMPT_PROJECT_ROOT || process.cwd();
   const tplRoot = path.join(__dirname, '..', 'templates');
   const appHome = path.join(__dirname, '..');
+  const pinnedSpec = getPinnedSpec();
 
   // Display protection notice and ASCII art
   console.log('\x1b[31m\x1b[1m🚨 CRITICAL PROTECTION NOTICE:\x1b[0m');
@@ -123,6 +116,24 @@ async function directInit() {
         if (!fs.existsSync(dst)) {
           fs.copyFileSync(tpl, dst);
           console.log('-------- wrote:', path.relative(root, dst));
+          // Post-process copied mcp.json to pin npm spec
+          if (path.basename(dst) === 'mcp.json') {
+            try {
+              const json = JSON.parse(fs.readFileSync(dst, 'utf-8'));
+              const entry = json?.mcpServers?.['super-prompt'];
+              if (entry && Array.isArray(entry.args) && entry.args.length >= 3) {
+                entry.args[1] = pinnedSpec;
+                entry.env = {
+                  ...(entry.env || {}),
+                  SUPER_PROMPT_NPM_SPEC: pinnedSpec,
+                };
+                fs.writeFileSync(dst, JSON.stringify(json, null, 2));
+                console.log('-------- pinned npm spec in .cursor/mcp.json');
+              }
+            } catch (e) {
+              // best-effort
+            }
+          }
         }
       } else {
         // Fallback defaults
@@ -155,18 +166,79 @@ async function directInit() {
   console.log('   3. Access Super Prompt via MCP integration');
 }
 
+async function directCall(toolName, argsObj) {
+  const root = process.env.SUPER_PROMPT_PROJECT_ROOT || process.cwd();
+  const appHome = path.join(__dirname, '..');
+
+  const py = await resolvePython(root, appHome);
+  const env = {
+    ...process.env,
+    MCP_SERVER_MODE: '1',
+    SUPER_PROMPT_PROJECT_ROOT: root,
+    SUPER_PROMPT_PACKAGE_ROOT: appHome,
+    PYTHONPATH: `${appHome}/packages/core-py:${process.env.PYTHONPATH || ''}`,
+    PYTHONUNBUFFERED: '1',
+    PYTHONUTF8: '1',
+    SP_DIRECT_TOOL: toolName,
+    SP_DIRECT_ARGS_JSON: JSON.stringify(argsObj || {}),
+  };
+
+  await new Promise((resolve, reject) => {
+    const proc = spawn(py, ['-m', 'super_prompt.mcp_server'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    let err = '';
+    proc.stdout.on('data', d => { out += d.toString(); });
+    proc.stderr.on('data', d => { err += d.toString(); });
+    proc.on('close', code => {
+      if (err.trim()) process.stderr.write(err);
+      if (code === 0) {
+        if (out) process.stdout.write(out);
+        resolve(undefined);
+      } else {
+        reject(new Error(`direct call failed (code ${code})`));
+      }
+    });
+  });
+}
+
+async function resolvePython(projectRoot, appHome) {
+  // Prefer project venv, then package venv, then system python3
+  const candidates = [];
+  const isWin = process.platform === 'win32';
+  const join = (...p) => path.join(...p);
+  if (isWin) {
+    candidates.push(join(projectRoot, '.super-prompt', 'venv', 'Scripts', 'python.exe'));
+    candidates.push(join(appHome, '.super-prompt', 'venv', 'Scripts', 'python.exe'));
+  } else {
+    candidates.push(join(projectRoot, '.super-prompt', 'venv', 'bin', 'python'));
+    candidates.push(join(appHome, '.super-prompt', 'venv', 'bin', 'python'));
+  }
+  candidates.push(process.env.PYTHON || 'python3');
+
+  for (const c of candidates) {
+    try {
+      if (c === 'python3' || c === process.env.PYTHON) {
+        return c;
+      }
+      if (fs.existsSync(c)) return c;
+    } catch {}
+  }
+  return 'python3';
+}
+
 function defaultCursorFile(name) {
   if (name === 'mcp.json') {
+    const pinned = getPinnedSpec();
     return {
       mcpServers: {
         'super-prompt': {
           command: 'npx',
-          args: ['-y', '@cdw0424/super-prompt@latest', 'sp-mcp'],
+          args: ['-y', pinned, 'sp-mcp'],
           env: {
             SUPER_PROMPT_ALLOW_INIT: 'true',
             SUPER_PROMPT_REQUIRE_MCP: '1',
             SUPER_PROMPT_PROJECT_ROOT: '${workspaceFolder}',
-            SUPER_PROMPT_NPM_SPEC: '@cdw0424/super-prompt@latest',
+            SUPER_PROMPT_NPM_SPEC: pinned,
             PYTHONUNBUFFERED: '1',
             PYTHONUTF8: '1',
           },
@@ -242,4 +314,10 @@ async function generateCursorAssets(projectRoot, appHome) {
       }
     });
   });
+}
+
+function getPinnedSpec() {
+  const env = process.env.SUPER_PROMPT_NPM_SPEC;
+  if (env && /^@cdw0424\/super-prompt@/.test(env)) return env;
+  return `@cdw0424/super-prompt@${safePkgVersion()}`;
 }

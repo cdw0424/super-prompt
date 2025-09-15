@@ -1,5 +1,23 @@
 # Changelog
 
+## v4.0.58 - 2025-09-15
+
+### Features
+- init: One-step automation now sets up Cursor and Codex, registers MCP, defaults mode to GPT, and materializes personas manifest.
+- mcp: Direct-call fallback path (`SP_DIRECT_TOOL` + `SP_DIRECT_ARGS_JSON`) with strict argument consumption and stderr logging.
+- packaging: Include `packages/core-py/`, `packages/cursor-assets/`, and `packages/codex-assets/` in npm distribution.
+- init: Pin `.cursor/mcp.json` npm spec to the installed package version to prevent drift.
+- offline: Respect `SUPER_PROMPT_OFFLINE`, `SP_NO_PIP_INSTALL`, and `npm_config_offline` to skip pip steps; source import fallback via `PYTHONPATH`.
+
+### Improvements
+- bin: Ensure `PYTHONPATH=$APP_HOME/packages/core-py` when starting MCP server.
+- logs: Add `-------- mcp:` tool argument logs for easier debugging.
+- docs: English-only, updated Quick Start, pinned-spec example, and offline notes.
+
+### Notes
+- Full MCP server still requires Python MCP SDK; the direct-call path works without it and is enabled by the wrapper.
+- For best results, allow network once to let the installer populate the venv.
+
 ## v4.0.55 - 2025-09-15
 
 ### Changes

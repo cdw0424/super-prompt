@@ -5,7 +5,7 @@ Overview
 - Initialization creates all required Cursor config automatically; no manual edits needed.
 
 Automatic Setup
-- Run: `npx super-prompt super:init`
+- Run: `npx -y @cdw0424/super-prompt super:init`
 - This generates `.cursor/mcp.json` with a safe default that spawns the server using `npx -y @cdw0424/super-prompt sp-mcp` and exports required environment variables. It also installs Cursor rules/commands for Super Prompt.
 
 Manual Reference (optional)
@@ -16,7 +16,7 @@ If you need to inspect or customize, `.cursor/mcp.json` follows this structure:
   "mcpServers": {
     "super-prompt": {
       "command": "npx",
-      "args": ["-y", "@cdw0424/super-prompt@latest", "sp-mcp"],
+      "args": ["-y", "@cdw0424/super-prompt@<installed-version>", "sp-mcp"],
       "env": {
         "SUPER_PROMPT_ALLOW_INIT": "true",
         "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}"

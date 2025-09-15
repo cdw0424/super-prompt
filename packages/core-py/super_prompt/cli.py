@@ -33,7 +33,9 @@ from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
 from .paths import package_root, project_root, project_data_dir, cursor_assets_root
-from .mcp_register import ensure_cursor_mcp_registered
+from .mcp_register import ensure_cursor_mcp_registered, ensure_codex_mcp_registered
+from .mode_store import set_mode as set_mode_file
+from .personas.loader import PersonaLoader
 
 
 def get_current_version() -> str:
@@ -680,7 +682,7 @@ def validate(
 
 @app.command()
 def init(
-    project_root: Optional[Path] = typer.Option(".", "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(Path("."), "--project-root", help="Project root directory"),
     force: bool = typer.Option(False, "--force", help="Force reinitialization"),
 ):
     """Initialize Super Prompt for a project
@@ -726,7 +728,8 @@ def init(
         typer.echo(logo)
         typer.echo()
 
-        target_dir = project_data_dir() if project_root == "." else Path(project_root)
+        # Resolve real project root (never point to .super-prompt here)
+        target_dir = Path(project_root).resolve() if project_root else Path.cwd().resolve()
 
         # --- Legacy cleanup (idempotent) ---
         legacy_paths = [
@@ -963,12 +966,35 @@ Brief description of the feature.
 - [ ] Test case 2
 """)
 
-        # MCP 서버 자동 등록 (.cursor/mcp.json 병합)
+        # MCP 서버 자동 등록 (.cursor/mcp.json 병합) 및 Codex 등록
         try:
-            cfg_path = ensure_cursor_mcp_registered(target_dir)
+            # Prefer exact npm spec to avoid drift
+            npm_spec = f"@cdw0424/super-prompt@{current_version}"
+            cfg_path = ensure_cursor_mcp_registered(target_dir, npm_spec)
             typer.echo(f"✅ Cursor MCP server registered: {cfg_path}")
         except Exception as e:
             typer.echo(f"⚠️  MCP registration skipped: {e}")
+
+        try:
+            codex_cfg = ensure_codex_mcp_registered(target_dir)
+            typer.echo(f"✅ Codex MCP server registered: {codex_cfg}")
+        except Exception as e:
+            typer.echo(f"⚠️  Codex registration skipped: {e}")
+
+        # Ensure default LLM mode is GPT
+        try:
+            set_mode_file('gpt')
+            typer.echo("✅ Default LLM mode set to gpt (.super-prompt/mode.json)")
+        except Exception as e:
+            typer.echo(f"⚠️  Could not set default mode: {e}")
+
+        # Ensure personas manifest is materialized from SSOT
+        try:
+            loader = PersonaLoader()
+            loader.load_manifest()
+            typer.echo("✅ Personas manifest ensured (personas/manifest.yaml)")
+        except Exception as e:
+            typer.echo(f"⚠️  Could not materialize personas manifest: {e}")
         typer.echo("✅ Super Prompt initialized!")
         typer.echo(f"   Project root: {target_dir.absolute()}")
         typer.echo(f"   Version: {current_version}")

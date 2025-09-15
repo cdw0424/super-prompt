@@ -1,9 +1,7 @@
 ---
 description: specify command
-run: mcp
-tool: sp.specify
-args:
-  query: "${input}"
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'specify'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
 
 📋 Specify

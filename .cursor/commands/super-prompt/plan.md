@@ -1,9 +1,7 @@
 ---
 description: plan command
-run: mcp
-tool: sp.plan
-args:
-  query: "${input}"
+run: "python3"
+args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'plan'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
 ---
 
 📋 Plan

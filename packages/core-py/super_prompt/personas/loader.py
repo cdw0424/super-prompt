@@ -2,7 +2,10 @@
 Persona Loader - Load and manage persona configurations
 """
 
-import yaml
+try:
+    import yaml  # type: ignore
+except Exception:  # degrade gracefully if PyYAML is missing
+    yaml = None  # type: ignore
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
@@ -53,6 +56,11 @@ class PersonaLoader:
         if not self.manifest_path.exists():
             # Create default manifest if it doesn't exist
             self._create_default_manifest()
+            return 0
+
+        if yaml is None:
+            import sys
+            print("-------- Warning: PyYAML not installed; skipping persona manifest load", file=sys.stderr, flush=True)
             return 0
 
         try:

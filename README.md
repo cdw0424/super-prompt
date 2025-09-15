@@ -1,4 +1,4 @@
-# Super Prompt v4.0.57: Production Ready MCP Architecture
+# Super Prompt v4.0.58: Production Ready MCP Architecture
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -195,7 +195,7 @@ The initializer writes this for you under `.cursor/mcp.json`:
   "mcpServers": {
     "super-prompt": {
       "command": "npx",
-  "args": ["-y", "@cdw0424/super-prompt@latest", "sp-mcp"],
+  "args": ["-y", "@cdw0424/super-prompt@<installed-version>", "sp-mcp"],
   "env": {
     "SUPER_PROMPT_ALLOW_INIT": "true",
     "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}"
@@ -269,3 +269,12 @@ npm install -g @cdw0424/super-prompt@latest
 ## 📄 License
 
 MIT © [Daniel Choi](https://github.com/cdw0424)
+
+
+### Offline installation
+- If your environment has no internet access during install or init, Super Prompt will still work using source imports.
+- To explicitly skip pip activity during install/init, set one of:
+  - `SUPER_PROMPT_OFFLINE=true`
+  - `SP_NO_PIP_INSTALL=true`
+  - Or `npm_config_offline=true` for npm postinstall
+These flags create the venv without attempting network installs; the runtime falls back to `PYTHONPATH` source imports.
