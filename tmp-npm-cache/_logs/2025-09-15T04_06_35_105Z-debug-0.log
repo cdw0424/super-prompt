@@ -7,16 +7,16 @@
 6 silly config load:file:/Users/weklem/.nvm/versions/node/v24.0.2/etc/npmrc
 7 verbose title npm publish
 8 verbose argv "publish" "--access" "public"
-9 verbose logfile logs-max:10 dir:/Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_56_08_948Z-
-10 verbose logfile /Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_56_08_948Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T04_06_35_105Z-
+10 verbose logfile /Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T04_06_35_105Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 verbose publish [ '.' ]
 13 silly logfile done cleaning log files
 14 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
 15 notice
-16 notice 📦  @cdw0424/super-prompt@4.0.60
+16 notice 📦  @cdw0424/super-prompt@4.0.61
 17 notice Tarball Contents
-18 notice 58.8kB CHANGELOG.md
+18 notice 59.2kB CHANGELOG.md
 18 notice 1.1kB LICENSE
 18 notice 10.7kB README.md
 18 notice 182B bin/sp-mcp
@@ -37,9 +37,9 @@
 18 notice 289B packages/core-py/.cursor/commands/super-prompt/doc-master.md
 18 notice 273B packages/core-py/.cursor/commands/super-prompt/frontend.md
 18 notice 258B packages/core-py/.cursor/commands/super-prompt/gpt-mode-off.md
-18 notice 283B packages/core-py/.cursor/commands/super-prompt/gpt-mode-on.md
+18 notice 202B packages/core-py/.cursor/commands/super-prompt/gpt-mode-on.md
 18 notice 262B packages/core-py/.cursor/commands/super-prompt/grok-mode-off.md
-18 notice 287B packages/core-py/.cursor/commands/super-prompt/grok-mode-on.md
+18 notice 207B packages/core-py/.cursor/commands/super-prompt/grok-mode-on.md
 18 notice 256B packages/core-py/.cursor/commands/super-prompt/grok.md
 18 notice 294B packages/core-py/.cursor/commands/super-prompt/high.md
 18 notice 245B packages/core-py/.cursor/commands/super-prompt/implement.md
@@ -135,9 +135,9 @@
 18 notice 166B packages/cursor-assets/commands/super-prompt/doc-master.md
 18 notice 150B packages/cursor-assets/commands/super-prompt/frontend.md
 18 notice 135B packages/cursor-assets/commands/super-prompt/gpt-mode-off.md
-18 notice 160B packages/cursor-assets/commands/super-prompt/gpt-mode-on.md
+18 notice 212B packages/cursor-assets/commands/super-prompt/gpt-mode-on.md
 18 notice 139B packages/cursor-assets/commands/super-prompt/grok-mode-off.md
-18 notice 164B packages/cursor-assets/commands/super-prompt/grok-mode-on.md
+18 notice 217B packages/cursor-assets/commands/super-prompt/grok-mode-on.md
 18 notice 133B packages/cursor-assets/commands/super-prompt/grok.md
 18 notice 171B packages/cursor-assets/commands/super-prompt/high.md
 18 notice 245B packages/cursor-assets/commands/super-prompt/implement.md
@@ -186,17 +186,17 @@
 18 notice 226B templates/personas/default.json
 19 notice Tarball Details
 20 notice name: @cdw0424/super-prompt
-21 notice version: 4.0.60
-22 notice filename: cdw0424-super-prompt-4.0.60.tgz
-23 notice package size: 151.1 kB
-24 notice unpacked size: 565.8 kB
-25 notice shasum: 9ac3120d7be980986aec83315d50f9ca9a2080b3
-26 notice integrity: sha512-d+F+MNTev4B3f[...]MRGDS5efPXe8A==
+21 notice version: 4.0.61
+22 notice filename: cdw0424-super-prompt-4.0.61.tgz
+23 notice package size: 151.2 kB
+24 notice unpacked size: 566.1 kB
+25 notice shasum: 8c6cac66fa7e845e0f9421fcdf19895b842d44cb
+26 notice integrity: sha512-L8biKj+sv0+tQ[...]U0QUiMK6QGFKA==
 27 notice total files: 168
 28 notice
-29 http fetch GET 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 1754ms (cache miss)
+29 http fetch GET 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 1608ms (cache miss)
 30 notice Publishing to https://registry.npmjs.org/ with tag latest and public access
-31 http fetch PUT 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 1883ms
+31 http fetch PUT 200 https://registry.npmjs.org/@cdw0424%2fsuper-prompt 2287ms
 32 verbose cwd /Users/weklem/Desktop/devs/super-promt
 33 verbose os Darwin 24.6.0
 34 verbose node v24.0.2

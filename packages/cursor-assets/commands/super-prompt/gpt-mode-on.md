@@ -1,10 +1,8 @@
 ---
 description: gpt-mode-on command
-run: mcp
-tool: sp.gpt-mode-on
-args:
-  query: "${input}"
+run: "bash"
+args: ["-lc", "super-prompt gpt-mode-on || npx -y @cdw0424/super-prompt gpt-mode-on"]
 ---
 
 💻 GPT Mode On
-Enable GPT mode for enhanced code generation
+Enable GPT mode instantly and persist for this project

@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.0.61 - 2025-09-15
+
+### Improvements
+- LLM Mode toggles: switched Cursor commands to direct CLI path for instant activation (no MCP startup).
+- Packaged fallback commands updated to the same fast path.
+
+### Packaging
+- Includes updated command assets under packages/cursor-assets and packaged core-py .cursor for consistency.
+
 ## v4.0.60 - 2025-09-15
 
 ### Fixes

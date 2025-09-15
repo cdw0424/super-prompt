@@ -1,7 +1,7 @@
 ---
 description: grok-mode-on command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-grok-mode-on'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
+run: "bash"
+args: ["-lc", "super-prompt grok-mode-on || npx -y @cdw0424/super-prompt grok-mode-on"]
 ---
 
 🤖 Grok Mode On

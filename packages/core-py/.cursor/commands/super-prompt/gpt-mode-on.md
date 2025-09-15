@@ -1,7 +1,7 @@
 ---
 description: gpt-mode-on command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', '--persona-gpt-mode-on'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
+run: "bash"
+args: ["-lc", "super-prompt gpt-mode-on || npx -y @cdw0424/super-prompt gpt-mode-on"]
 ---
 
 💻 GPT Mode On
