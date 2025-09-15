@@ -11,7 +11,9 @@
         "SUPER_PROMPT_ALLOW_INIT": "true",
         "SUPER_PROMPT_REQUIRE_MCP": "1",
         "SUPER_PROMPT_PROJECT_ROOT": "/Users/weklem/Desktop/devs/super-promt",
-        "SUPER_PROMPT_NPM_SPEC": "@cdw0424/super-prompt@4.1.0",
+        "SUPER_PROMPT_NPM_SPEC": "@cdw0424/super-prompt@4.2.0",
+        "SUPER_PROMPT_TCP_MODE": "true",
+        "SUPER_PROMPT_TCP_PORT": "8282",
         "PYTHONUNBUFFERED": "1",
         "PYTHONUTF8": "1",
         "PYTHON": "python3"

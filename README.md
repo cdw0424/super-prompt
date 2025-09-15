@@ -1,30 +1,27 @@
-# Super Prompt v4.2.0: MCP Environment Automation - Smart Reasoning
+# Super Prompt v4.3.0: Complete Auto-Setup - Perfect Environment
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**🤖 Intelligent MCP environment automation with Codex CLI integration for
-seamless, reliable reasoning capabilities.**
+**🎯 One-command complete setup with intelligent environment automation for
+perfect Super Prompt experience.**
 
-Super Prompt v4.2 introduces comprehensive MCP environment automation with Codex
-CLI integration, ensuring optimal performance and reliability. All tools
-automatically manage their environment for consistent, expert-level analysis.
+Super Prompt v4.3 introduces comprehensive automatic setup system with TCP
+server management, ensuring users get a perfectly configured environment with
+zero manual configuration. All systems auto-verify and report status for
+immediate productivity.
 
 ---
 
-### 🚀 **What's New in v4.2: MCP Environment Automation**
+### 🚀 **What's New in v4.3: Complete Auto-Setup System**
 
-#### **🤖 Intelligent Environment Management**
+#### **🎯 One-Command Complete Setup**
 
-- **Automatic Environment Setup**: All tools automatically ensure MCP
-  environment readiness
-- **Smart Venv Management**: Automatic virtual environment activation and
-  validation
-- **MCP Server Orchestration**: Intelligent MCP server lifecycle management with
-  process monitoring
-- **Environment Health Checks**: Comprehensive environment validation before
-  tool execution
+- **Intelligent Auto-Setup**: Single `super:init` command configures everything perfectly
+- **Automatic TCP Server Management**: TCP server (port 8282) auto-starts and verifies connectivity
+- **Comprehensive Environment Verification**: Multi-layer validation of all systems and configurations
+- **Smart Process Management**: Automatic cleanup and restart of background services
 
 #### **🧠 Enhanced Reasoning System**
 

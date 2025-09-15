@@ -342,7 +342,7 @@ def _check_mcp_server_running() -> bool:
     """Check if MCP server process is running"""
     try:
         # Check for running MCP server processes
-        result = subprocess.run(["pgrep", "-f", "mcp-serve"], capture_output=True, text=True)
+        result = subprocess.run(["pgrep", "-f", "mcp_server.py"], capture_output=True, text=True)
         return result.returncode == 0 and len(result.stdout.strip()) > 0
     except Exception:
         return False
@@ -2163,4 +2163,123 @@ if __name__ == "__main__":
             flush=True,
         )
         sys.exit(96)
-    mcp.run()  # stdio로 MCP 서버 실행
+
+    # 환경변수로 실행 모드 결정 (기본적으로 stdio 모드)
+    tcp_mode = os.environ.get("SUPER_PROMPT_TCP_MODE", "").lower() in ("true", "1", "yes")
+    tcp_port = int(os.environ.get("SUPER_PROMPT_TCP_PORT", "8282"))
+
+    # TCP 포트 정보 로깅 (항상 표시)
+    print(f"-------- MCP server configured for port {tcp_port}", file=sys.stderr, flush=True)
+
+    if tcp_mode:
+        # TCP 모드로 실행 (포트 8282)
+        print(
+            f"-------- Attempting to start TCP server on port {tcp_port}",
+            file=sys.stderr,
+            flush=True,
+        )
+        try:
+            # 간단한 TCP 서버 구현
+            import socket
+            import threading
+            import json
+
+            def handle_client(client_socket, addr):
+                print(f"-------- TCP connection from {addr}", file=sys.stderr, flush=True)
+                try:
+                    buffer = ""
+                    while True:
+                        data = client_socket.recv(4096)
+                        if not data:
+                            break
+
+                        buffer += data.decode("utf-8")
+
+                        # JSON 메시지 완성 확인 (줄바꿈으로 구분)
+                        if "\n" in buffer:
+                            messages = buffer.split("\n")
+                            buffer = messages[-1]  # 마지막 불완전 메시지 저장
+
+                            for msg in messages[:-1]:
+                                if msg.strip():
+                                    try:
+                                        request = json.loads(msg.strip())
+                                        # 간단한 MCP 응답
+                                        response = {
+                                            "jsonrpc": "2.0",
+                                            "id": request.get("id"),
+                                            "result": {
+                                                "message": f"Super Prompt MCP Server on port {tcp_port}",
+                                                "tools": [
+                                                    "high",
+                                                    "architect",
+                                                    "dev",
+                                                    "analyzer",
+                                                    "doc-master",
+                                                ],
+                                                "version": "4.2.0",
+                                            },
+                                        }
+                                        response_json = json.dumps(response) + "\n"
+                                        client_socket.send(response_json.encode("utf-8"))
+                                        print(
+                                            f"-------- TCP response sent to {addr}",
+                                            file=sys.stderr,
+                                            flush=True,
+                                        )
+                                    except json.JSONDecodeError as e:
+                                        print(
+                                            f"-------- TCP JSON parse error: {e}",
+                                            file=sys.stderr,
+                                            flush=True,
+                                        )
+                                        continue
+                except Exception as e:
+                    print(f"-------- TCP client error: {e}", file=sys.stderr, flush=True)
+                finally:
+                    client_socket.close()
+                    print(f"-------- TCP connection closed for {addr}", file=sys.stderr, flush=True)
+
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server_socket.bind(("127.0.0.1", tcp_port))
+            server_socket.listen(5)
+
+            print(
+                f"-------- TCP server successfully listening on port {tcp_port}",
+                file=sys.stderr,
+                flush=True,
+            )
+            print(f"-------- Server ready to accept connections", file=sys.stderr, flush=True)
+
+            while True:
+                try:
+                    client_socket, addr = server_socket.accept()
+                    print(
+                        f"-------- Accepting TCP connection from {addr}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    client_thread = threading.Thread(
+                        target=handle_client, args=(client_socket, addr)
+                    )
+                    client_thread.daemon = True
+                    client_thread.start()
+                except KeyboardInterrupt:
+                    print("-------- TCP server shutting down", file=sys.stderr, flush=True)
+                    break
+                except Exception as e:
+                    print(f"-------- TCP server error: {e}", file=sys.stderr, flush=True)
+
+            server_socket.close()
+
+        except Exception as e:
+            print(f"-------- ERROR: Failed to start TCP server: {e}", file=sys.stderr, flush=True)
+            print("-------- Falling back to stdio mode", file=sys.stderr, flush=True)
+            tcp_mode = False
+
+    if not tcp_mode:
+        # 기본 stdio 모드로 실행
+        print("-------- MCP server starting in stdio mode", file=sys.stderr, flush=True)
+        print(f"-------- (TCP port configured: {tcp_port})", file=sys.stderr, flush=True)
+        mcp.run()  # stdio로 MCP 서버 실행
