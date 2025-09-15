@@ -89,9 +89,9 @@ fi
 # of a specific source file. The python executable will handle module resolution.
 # The python package is installed via the .whl file in install.js.
 
-# 패키지 루트 고정 (서버가 활용)
+# Set package root for server usage
 export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
-# 현재 패키지 버전 -> mcp.json 등록에 사용
+# Get current package version for mcp.json registration
 PKG_VERSION="$(node -p "require('$APP_HOME/package.json').version" 2>/dev/null || echo "")"
 if [ -n "$PKG_VERSION" ]; then
   export SUPER_PROMPT_NPM_SPEC="@cdw0424/super-prompt@$PKG_VERSION"
@@ -99,34 +99,34 @@ else
   export SUPER_PROMPT_NPM_SPEC="@cdw0424/super-prompt@latest"
 fi
 
-# 모드 토글 검증 및 설정
+# Mode toggle validation and setup
 resolve_mode() {
   local prev_mode="${LLM_MODE:-}"
   local mode="${LLM_MODE:-gpt}"
   local enable_gpt="${ENABLE_GPT:-}"
   local enable_grok="${ENABLE_GROK:-}"
 
-  # 상호배타 검증
+  # Mutual exclusion validation
   if [ "$enable_gpt" = "true" ] && [ "$enable_grok" = "true" ]; then
     echo "-------- ERROR: Cannot enable both GPT and Grok modes simultaneously" >&2
     echo "-------- Please set either LLM_MODE=gpt or LLM_MODE=grok, or use --gpt or --grok flag" >&2
     exit 1
   fi
 
-  # 환경변수 우선, CLI 플래그로 오버라이드
+  # Environment variables take precedence, CLI flags override
   if [ "$enable_gpt" = "true" ]; then
     mode="gpt"
   elif [ "$enable_grok" = "true" ]; then
     mode="grok"
   fi
 
-  # 유효성 검증
+  # Validation check
   if [ "$mode" != "gpt" ] && [ "$mode" != "grok" ]; then
     echo "-------- ERROR: Invalid mode '$mode'. Supported modes: gpt, grok" >&2
     exit 1
   fi
 
-  # 모드 변경 시 dispose 로깅
+  # Log disposal when mode changes
   if [ -n "$prev_mode" ] && [ "$prev_mode" != "$mode" ]; then
     echo "-------- mode: disposed previous provider ($prev_mode)" >&2
   fi
@@ -135,7 +135,7 @@ resolve_mode() {
   export LLM_MODE="$mode"
 }
 
-# CLI 인자 파싱 및 명령 추출
+# CLI argument parsing and command extraction
 parse_args_and_cmd() {
   CMD=""
   FIRST_ARG="${1:-}"
@@ -158,7 +158,7 @@ parse_args_and_cmd() {
         shift
         break
         ;;
-      mcp-server|super:init|super:refresh)
+      mcp-serve|super:init|super:refresh)
         CMD="$1"
         shift
         break
@@ -172,7 +172,7 @@ parse_args_and_cmd() {
   done
 }
 
-# 메인 인자 파싱
+# Main argument parsing
 parse_args_and_cmd "$@"
 resolve_mode
 
@@ -221,9 +221,9 @@ route_codex_flags() {
 route_codex_flags "$@"
 
 case "$CMD" in
-  mcp-server|mcp-serve)
+  mcp-serve)
     shift
-    # 서버만 직접 노출 (클라이언트가 붙음)
+    # MCP server exposed in stdio mode for client connection
     export MCP_SERVER_MODE="1"  # Mark as MCP server mode
     # Ensure Python can import super_prompt from package sources without wheel install
     export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
