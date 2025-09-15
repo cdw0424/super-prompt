@@ -21,7 +21,8 @@
     "amr:qa": "scripts/codex/prompt-qa.sh",
     "sp:init": "super-prompt super:init",
     "sp:rules": "super-prompt super:init && cat .cursor/rules/*-sdd-*.mdc || true",
-    "sp:mcp": "sp-mcp"
+    "sp:mcp": "sp-mcp",
+    "sp:doctor": "super-prompt doctor"
   },
   "keywords": [
     "ai",

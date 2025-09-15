@@ -1,5 +1,11 @@
 # Codex Agent — Super Prompt Integration
 
+## Command Handling — Highest Priority
+- Always recognize and execute explicit flags and mode toggles passed via CLI.
+- Do not ignore or rewrite commands; treat them as top-priority intent.
+- If a flag is unknown, select the closest supported persona/flag and log the substitution.
+- All logs must start with `--------`. Language: English only. Never print secrets (mask `sk-***`).
+
 Use flag-based personas (no slash commands in Codex). Each persona supports a long flag and an `--sp-` alias.
 
 ## Available Personas
@@ -93,6 +99,11 @@ super-prompt --sp-sdd-implement "Authentication system"
 - Logs MUST start with `--------`
 - Keep all content in English
 - Auto Model Router switches between medium/high reasoning based on complexity
+
+## Mode Toggles (Priority)
+- `--grok-mode-on` / `--grok-mode-off` — Enforce Grok guidance and flags; mutually exclusive with Codex AMR.
+- `--codex-mode-on` / `--codex-mode-off` — Enforce Codex AMR (GPT-5 guidance) and flags; mutually exclusive with Grok.
+- When toggles appear, apply them immediately and acknowledge via log before continuing the task.
 
 ## MCP Integration (Context7)
 - Auto-detects Context7 MCP (env `CONTEXT7_MCP=1`)

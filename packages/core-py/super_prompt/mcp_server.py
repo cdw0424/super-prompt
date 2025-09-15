@@ -71,6 +71,37 @@ class SpanManager:
     def __init__(self):
         self.spans: Dict[str, Dict[str, Any]] = {}
         self._span_counter = 0
+        self._init_db()
+
+    def _init_db(self):
+        """메모리 데이터베이스 초기화"""
+        import sqlite3
+        import os
+        from pathlib import Path
+
+        # 데이터베이스 경로 설정
+        db_path = Path.home() / ".super-prompt" / "memory" / "spans.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        self.db_path = str(db_path)
+        self.conn = sqlite3.connect(self.db_path)
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS spans (
+                id TEXT PRIMARY KEY,
+                command_id TEXT,
+                user_id TEXT,
+                start_time REAL,
+                end_time REAL,
+                duration REAL,
+                status TEXT,
+                meta TEXT,
+                events TEXT,
+                extra TEXT
+            )
+        """
+        )
+        self.conn.commit()
 
     def start_span(self, meta: Dict[str, Any]) -> str:
         """새로운 span 시작"""
@@ -117,8 +148,43 @@ class SpanManager:
                 flush=True,
             )
 
-            # 메모리에 유지 (실제로는 파일이나 DB에 저장)
-            # TODO: 영구 저장소에 저장
+            # 데이터베이스에 저장
+            self._save_span_to_db(span)
+
+    def _save_span_to_db(self, span: Dict[str, Any]) -> None:
+        """span을 데이터베이스에 저장"""
+        import json
+
+        try:
+            self.conn.execute(
+                """
+                INSERT OR REPLACE INTO spans
+                (id, command_id, user_id, start_time, end_time, duration, status, meta, events, extra)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    span["id"],
+                    span["meta"].get("commandId", ""),
+                    span["meta"].get("userId", ""),
+                    span["start_time"],
+                    span.get("end_time", 0),
+                    span.get("duration", 0),
+                    span.get("status", "unknown"),
+                    json.dumps(span["meta"]),
+                    json.dumps(span["events"]),
+                    json.dumps(span.get("extra", {})),
+                ),
+            )
+            self.conn.commit()
+            print(
+                f"-------- memory: span {span['id']} saved to database", file=sys.stderr, flush=True
+            )
+        except Exception as e:
+            print(
+                f"-------- memory: failed to save span {span['id']}: {e}",
+                file=sys.stderr,
+                flush=True,
+            )
 
 
 # 전역 span 관리자
@@ -729,7 +795,7 @@ def list_commands() -> TextContent:
     """List available Super Prompt commands"""
     with memory_span("sp.list_commands"):
         # 배포물에 실제로 들어간 커맨드 개수 확인용
-        commands_dir = _pkg_root() / "packages" / "cursor-assets" / "commands" / "super-prompt"
+        commands_dir = package_root() / "packages" / "cursor-assets" / "commands" / "super-prompt"
         count = 0
         files = []
         if commands_dir.exists():

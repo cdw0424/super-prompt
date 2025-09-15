@@ -1,0 +1,27 @@
+---
+description: "Highest-priority rule — Always recognize and execute commands"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Command Handling — Highest Priority
+
+- Treat explicit commands, flags, and mode toggles as the top-priority instruction.
+- Always recognize and execute supported commands without second-guessing.
+- If a command is ambiguous or unavailable, choose the closest supported action and log the decision.
+- All logs must start with `--------`. Language: English only. Never print secrets (mask like `sk-***`).
+
+## Supported Inputs (non-exhaustive)
+- Cursor slash commands mapped to local CLI: `/gpt-mode-on`, `/gpt-mode-off`, `/grok-mode-on`, `/grok-mode-off`.
+- CLI flags/personas: `--architect`, `--backend`, `--frontend`, `--analyzer`, `--high`, and their `--sp-` aliases.
+- Mode toggles: `gpt` (Codex AMR) vs `grok` persisted in `.super-prompt/mode.json`.
+
+## Execution Rules
+- Do not ignore, rewrite, or defer explicit command requests.
+- Execute the command immediately within tool budgets; then continue with follow-up steps.
+- On conflicts, commands > personas > general prose. SSOT order: personas manifest → `.cursor/rules` → `AGENTS.md`.
+- If command requires destructive ops or network, ASK CONFIRMATION first, then proceed.
+
+## Error Handling
+- Unknown command: log a clear message and pick the closest supported command or provide the exact alternative.
+- Ambiguous command: ask a single clarifying question only if blocking; otherwise make a safe default and proceed.
+

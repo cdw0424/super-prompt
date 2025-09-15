@@ -248,6 +248,10 @@ case "$CMD" in
   gpt-mode-on|codex-mode-on)
     exec node "$APP_HOME/src/mode/set.js" gpt
     ;;
+  doctor)
+    # Run installation and project readiness checks
+    exec node "$APP_HOME/src/doctor.js"
+    ;;
   --version|-v|version)
     exec node "$APP_HOME/src/mcp-client.js" call sp.version
     ;;
