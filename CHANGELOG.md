@@ -1,5 +1,24 @@
 # Changelog
 
+## v4.0.60 - 2025-09-15
+
+### Fixes
+- Typos: Rename promt → prompt in docs and code references; no remaining occurrences.
+- Paths: Remove hardcoded absolute paths; use ${workspaceFolder} and CWD-based discovery.
+- Tools: update_cursor_commands.py now targets project-local .cursor paths.
+- Scripts: audit log message in English; standardized prefix.
+
+### Packaging
+- No functional code changes; housekeeping for reliability and consistency.
+
+## v4.0.59 - 2025-09-15
+
+### Fixes
+- bin: super:init always routes through Node MCP client to call `sp.init` (avoid Typer usage screen fallback).
+
+### Docs
+- README: bump header to v4.0.59.
+
 ## v4.0.58 - 2025-09-15
 
 ### Features

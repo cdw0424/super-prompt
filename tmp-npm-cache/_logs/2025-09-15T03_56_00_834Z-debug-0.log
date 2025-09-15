@@ -7,19 +7,19 @@
 6 silly config load:file:/Users/weklem/.nvm/versions/node/v24.0.2/etc/npmrc
 7 verbose title npm pack
 8 verbose argv "pack"
-9 verbose logfile logs-max:10 dir:/Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_41_46_226Z-
-10 verbose logfile /Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_41_46_226Z-debug-0.log
+9 verbose logfile logs-max:10 dir:/Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_56_00_834Z-
+10 verbose logfile /Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_56_00_834Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
 14 notice
-15 notice 📦  @cdw0424/super-prompt@4.0.58
+15 notice 📦  @cdw0424/super-prompt@4.0.60
 16 notice Tarball Contents
-17 notice 58.2kB CHANGELOG.md
+17 notice 58.8kB CHANGELOG.md
 17 notice 1.1kB LICENSE
 17 notice 10.7kB README.md
 17 notice 182B bin/sp-mcp
-17 notice 8.0kB bin/super-prompt
+17 notice 7.8kB bin/super-prompt
 17 notice 23.9kB install.js
 17 notice 2.3kB package.json
 17 notice 5.8kB packages/codex-assets/manifests/agents.yaml
@@ -185,12 +185,12 @@
 17 notice 226B templates/personas/default.json
 18 notice Tarball Details
 19 notice name: @cdw0424/super-prompt
-20 notice version: 4.0.58
-21 notice filename: cdw0424-super-prompt-4.0.58.tgz
-22 notice package size: 150.9 kB
-23 notice unpacked size: 565.5 kB
-24 notice shasum: 464b6c750869fd27e448c03f154ac76f9c0fcaea
-25 notice integrity: sha512-eSCGksUEjQ5ve[...]YTVW5bB7Xeufw==
+20 notice version: 4.0.60
+21 notice filename: cdw0424-super-prompt-4.0.60.tgz
+22 notice package size: 151.1 kB
+23 notice unpacked size: 565.8 kB
+24 notice shasum: 9ac3120d7be980986aec83315d50f9ca9a2080b3
+25 notice integrity: sha512-d+F+MNTev4B3f[...]MRGDS5efPXe8A==
 26 notice total files: 168
 27 notice
 28 verbose cwd /Users/weklem/Desktop/devs/super-promt

@@ -229,20 +229,12 @@ case "$CMD" in
     ;;
   super:init)
     shift
-    # If running inside the package repo root, avoid self-copy bug by using Node fallback
-    if [ "$APP_HOME" = "$PROJECT_ROOT" ]; then
-      export SUPER_PROMPT_ALLOW_INIT="true"
-      exec node "$APP_HOME/src/mcp-client.js" call sp.init "$@"
-    else
-      # Initialize via Python CLI, targeting the actual project root
-      export SUPER_PROMPT_REQUIRE_MCP="0"
-      export SUPER_PROMPT_ALLOW_INIT="true"
-      export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
-      export SUPER_PROMPT_PROJECT_ROOT="$PROJECT_ROOT"
-      export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
-      cd "$PROJECT_ROOT"
-      exec "$VENV_PYTHON" -m super_prompt.cli "$@"
-    fi
+    # Always use the Node MCP client to call sp.init so behavior is consistent across installs
+    export SUPER_PROMPT_ALLOW_INIT="true"
+    export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+    export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
+    export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+    exec node "$APP_HOME/src/mcp-client.js" call sp.init "$@"
     ;;
   super:refresh)
     shift

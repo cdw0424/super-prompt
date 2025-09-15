@@ -704,7 +704,7 @@ personas:
       gpt:
         guidance: |
           <persona_guidance name="service_planner" model="gpt">
-          - Strictly follow docs/gpt_promt_guide.md for prompting style and reasoning calibration.
+          - Strictly follow docs/gpt_prompt_guide.md for prompting style and reasoning calibration.
           - Keep outputs structured, concise, and action‑oriented; avoid over‑collecting context.
           - Always produce English outputs; prefix all logs with `--------`.
           - Use the following workflow and headings in deliverables:
@@ -728,7 +728,7 @@ personas:
       grok:
         guidance: |
           <persona_guidance name="service_planner" model="grok">
-          - Strictly follow docs/grok_promt_guide.md: keep prompts lean, optimize for cache, use native MCP tool calling.
+          - Strictly follow docs/grok_prompt_guide.md: keep prompts lean, optimize for cache, use native MCP tool calling.
           - Prefer short, decisive sections with clear acceptance and counter‑metrics.
           - Headings/order same as GPT model; keep prefixes stable to maximize cache hits.
           - MCP‑first operation:

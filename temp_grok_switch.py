@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
-sys.path.insert(0, '/Users/choi-dong-won/Desktop/devs/super-promt/packages/core-py')
+sys.path.insert(0, '/Users/choi-dong-won/Desktop/devs/super-prompt/packages/core-py')
 
 from super_prompt.mode_store import set_mode
 

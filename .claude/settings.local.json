@@ -18,7 +18,7 @@
       "Bash(python3:*)",
       "Bash(.super-prompt/venv/bin/pip install -e packages/core-py/)",
       "Read(//private/tmp/test-super-prompt/**)",
-      "Bash(/Users/choi-dong-won/Desktop/devs/super-promt/bin/super-prompt super:init)",
+      "Bash(super-prompt super:init)",
       "Read(//tmp/test-super-prompt/.cursor/commands/super-prompt/**)",
       "Bash(npm run clean:*)",
       "Bash(npm pack)",

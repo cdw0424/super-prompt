@@ -258,4 +258,4 @@ if (binRel) {
   }
 })();
 
-log('검수 스크립트 종료 - super-promt 프로젝트용');
+log('-------- audit: finished (super-prompt project)');

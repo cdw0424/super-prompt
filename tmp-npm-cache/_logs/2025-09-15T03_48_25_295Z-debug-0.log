@@ -5,10 +5,10 @@
 4 silly config load:file:/Users/weklem/Desktop/devs/super-promt/.npmrc
 5 silly config load:file:/Users/weklem/.npmrc
 6 silly config load:file:/Users/weklem/.nvm/versions/node/v24.0.2/etc/npmrc
-7 verbose title npm run clean
-8 verbose argv "run" "clean"
-9 verbose logfile logs-max:10 dir:/Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_43_17_890Z-
-10 verbose logfile /Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_43_17_890Z-debug-0.log
+7 verbose title npm run build
+8 verbose argv "run" "build"
+9 verbose logfile logs-max:10 dir:/Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_48_25_295Z-
+10 verbose logfile /Users/weklem/Desktop/devs/super-promt/tmp-npm-cache/_logs/2025-09-15T03_48_25_295Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
 12 silly logfile done cleaning log files
 13 verbose cwd /Users/weklem/Desktop/devs/super-promt

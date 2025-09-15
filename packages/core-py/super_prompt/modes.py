@@ -354,12 +354,12 @@ def _install_persona_overrides(root: Path, model: str) -> List[str]:
 def _write_model_prompt_guide(root: Path, model: str) -> None:
     """Write model-specific prompting guide from docs into .cursor/rules.
 
-    Reads docs/gpt_promt_guide.md or docs/grok_promt_guide.md and writes a
+    Reads docs/gpt_prompt_guide.md or docs/grok_prompt_guide.md and writes a
     rule file so the agent consistently sees the correct guidance.
     """
     docs_map = {
-        "gpt": Path("docs") / "gpt_promt_guide.md",
-        "grok": Path("docs") / "grok_promt_guide.md",
+        "gpt": Path("docs") / "gpt_prompt_guide.md",
+        "grok": Path("docs") / "grok_prompt_guide.md",
     }
     src = docs_map.get(model)
     if not src:

@@ -48,7 +48,7 @@ args:
 def main():
     # Get all command directories that might exist
     search_dirs = [
-        "/Users/choi-dong-won/Desktop/devs/super-promt/.cursor/commands/super-prompt",
+        "/Users/weklem/Desktop/devs/super-promt/.cursor/commands/super-prompt",
         "/tmp/test-super-prompt/.cursor/commands/super-prompt"
     ]
 
