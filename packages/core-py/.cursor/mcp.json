@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@cdw0424/super-prompt@4.0.56",
+        "@cdw0424/super-prompt@4.1.0",
         "sp-mcp"
       ],
       "env": {

@@ -92,7 +92,7 @@ super-prompt --sp-sdd-implement "Authentication system"
 ## Tips
 - Logs MUST start with `--------`
 - Keep all content in English
-- Auto Model Router switches between medium ↔ high reasoning based on complexity
+- Auto Model Router switches between medium/high reasoning based on complexity
 
 ## MCP Integration (Context7)
 - Auto-detects Context7 MCP (env `CONTEXT7_MCP=1`)

@@ -552,7 +552,7 @@ def mcp_serve():
     try:
         # We construct the path to the server script relative to this CLI script.
         # This makes the execution path independent of where the user runs the command.
-        server_script_path = Path(__file__).parent / "mcp_srv" / "server.py"
+        server_script_path = Path(__file__).parent / "mcp_server.py"
 
         if not server_script_path.exists():
             typer.echo(

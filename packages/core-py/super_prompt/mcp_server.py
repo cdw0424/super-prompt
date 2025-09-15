@@ -7,6 +7,8 @@ import asyncio
 import subprocess
 import json
 from pathlib import Path
+import socket
+import time
 
 # MCP SDK (Anthropic 공개 라이브러리)
 # NOTE: Provide safe fallbacks when SDK is unavailable so that direct tool calls can run.
@@ -307,6 +309,107 @@ def _should_use_codex_assistance(query: str, tool_name: str) -> bool:
     )
 
     return has_complexity or is_long_query or has_technical_content
+
+
+def _ensure_venv_activated():
+    """Ensure virtual environment is activated"""
+    try:
+        # Check if we're in the correct venv
+        if hasattr(sys, "real_prefix") or (
+            hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+        ):
+            print("-------- venv: already activated", file=sys.stderr, flush=True)
+            return True
+
+        # Try to find and use venv Python
+        project_root = Path.cwd()
+        venv_python = project_root / ".super-prompt" / "venv" / "bin" / "python3"
+
+        if venv_python.exists():
+            print(
+                "-------- venv: found venv Python, environment ready", file=sys.stderr, flush=True
+            )
+            return True
+        else:
+            print("-------- venv: not found, using system Python", file=sys.stderr, flush=True)
+            return True  # Continue with system Python
+    except Exception as e:
+        print(f"-------- venv: check failed: {e}, continuing", file=sys.stderr, flush=True)
+        return True  # Don't fail the whole process
+
+
+def _check_mcp_server_running() -> bool:
+    """Check if MCP server process is running"""
+    try:
+        # Check for running MCP server processes
+        result = subprocess.run(["pgrep", "-f", "mcp-serve"], capture_output=True, text=True)
+        return result.returncode == 0 and len(result.stdout.strip()) > 0
+    except Exception:
+        return False
+
+
+def _start_mcp_server_if_needed():
+    """Start MCP server if not running"""
+    try:
+        # Check if server is already running
+        if _check_mcp_server_running():
+            print("-------- mcp-server: already running", file=sys.stderr, flush=True)
+            return True
+
+        print("-------- mcp-server: starting...", file=sys.stderr, flush=True)
+
+        # Start MCP server in background
+        project_root = Path.cwd()
+        cli_path = project_root / "packages" / "core-py" / "super_prompt" / "cli.py"
+
+        if cli_path.exists():
+            # Start server in background
+            cmd = [sys.executable, str(cli_path), "mcp-serve"]
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,  # Suppress output since MCP uses stdio
+                stderr=subprocess.DEVNULL,
+                cwd=str(project_root),
+            )
+
+            # Wait a bit for server to start
+            time.sleep(3)
+
+            # Check if server started successfully by checking process
+            if _check_mcp_server_running():
+                print("-------- mcp-server: started successfully", file=sys.stderr, flush=True)
+                return True
+            else:
+                print("-------- mcp-server: failed to start", file=sys.stderr, flush=True)
+                return False
+        else:
+            print(f"-------- mcp-server: CLI not found at {cli_path}", file=sys.stderr, flush=True)
+            return False
+
+    except Exception as e:
+        print(f"-------- mcp-server: error starting server: {e}", file=sys.stderr, flush=True)
+        return False
+
+
+def _ensure_mcp_environment():
+    """Ensure MCP environment is ready - venv activated and server running"""
+    try:
+        # Ensure venv is activated
+        venv_ok = _ensure_venv_activated()
+
+        # Ensure MCP server is running
+        server_ok = _start_mcp_server_if_needed()
+
+        if venv_ok and server_ok:
+            print("-------- environment: MCP ready", file=sys.stderr, flush=True)
+            return True
+        else:
+            print("-------- environment: MCP setup incomplete", file=sys.stderr, flush=True)
+            return False
+
+    except Exception as e:
+        print(f"-------- environment: setup error: {e}", file=sys.stderr, flush=True)
+        return False
 
 
 def _run_direct_tool_if_requested() -> bool:
@@ -700,6 +803,15 @@ def gpt_mode_on() -> TextContent:
 def architect(query: str = "") -> TextContent:
     """🏗️ Architect - System design and architecture specialist"""
     with memory_span("sp.architect"):
+        # Ensure MCP environment is ready
+        env_ready = _ensure_mcp_environment()
+        if not env_ready:
+            print(
+                "-------- architect: MCP environment setup failed, proceeding with local analysis",
+                file=sys.stderr,
+                flush=True,
+            )
+
         if not query.strip():
             return TextContent(
                 type="text",
@@ -752,7 +864,7 @@ def architect(query: str = "") -> TextContent:
                 file=sys.stderr,
                 flush=True,
             )
-            return _execute_persona("architect", query)
+        return _execute_persona("architect", query)
 
 
 @mcp.tool()  # 도구명: sp.frontend
@@ -787,6 +899,15 @@ def performance(query: str = "") -> TextContent:
 def analyzer(query: str = "") -> TextContent:
     """🔍 Analyzer - Root cause investigation specialist"""
     with memory_span("sp.analyzer"):
+        # Ensure MCP environment is ready
+        env_ready = _ensure_mcp_environment()
+        if not env_ready:
+            print(
+                "-------- analyzer: MCP environment setup failed, proceeding with local analysis",
+                file=sys.stderr,
+                flush=True,
+            )
+
         if not query.strip():
             return TextContent(
                 type="text",
@@ -1005,6 +1126,15 @@ def seq_ultra(query: str = "") -> TextContent:
 def high(query: str = "") -> TextContent:
     """🧠 High Reasoning - Deep reasoning and strategic problem solving with GPT-5 high model approach"""
     with memory_span("sp.high"):
+        # Ensure MCP environment is ready
+        env_ready = _ensure_mcp_environment()
+        if not env_ready:
+            print(
+                "-------- high: MCP environment setup failed, proceeding with local analysis",
+                file=sys.stderr,
+                flush=True,
+            )
+
         if not query.strip():
             return TextContent(
                 type="text",
@@ -1051,6 +1181,15 @@ def high(query: str = "") -> TextContent:
 def dev(query: str = "") -> TextContent:
     """🚀 Dev - Feature development with quality and delivery focus"""
     with memory_span("sp.dev"):
+        # Ensure MCP environment is ready
+        env_ready = _ensure_mcp_environment()
+        if not env_ready:
+            print(
+                "-------- dev: MCP environment setup failed, proceeding with local analysis",
+                file=sys.stderr,
+                flush=True,
+            )
+
         if not query.strip():
             return TextContent(
                 type="text",

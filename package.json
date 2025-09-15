@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.1.0",
-  "description": "Super Prompt v4.1.0 (Codex CLI Integration - Advanced Reasoning)",
+  "version": "4.2.0",
+  "description": "Super Prompt v4.2.0 (MCP Environment Automation - Smart Reasoning)",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"

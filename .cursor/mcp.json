@@ -4,14 +4,14 @@
       "command": "npx",
       "args": [
         "-y",
-        "@cdw0424/super-prompt@4.0.59",
+        "@cdw0424/super-prompt@4.1.0",
         "sp-mcp"
       ],
       "env": {
         "SUPER_PROMPT_ALLOW_INIT": "true",
         "SUPER_PROMPT_REQUIRE_MCP": "1",
-        "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}",
-        "SUPER_PROMPT_NPM_SPEC": "@cdw0424/super-prompt@4.0.59",
+        "SUPER_PROMPT_PROJECT_ROOT": "/Users/weklem/Desktop/devs/super-promt",
+        "SUPER_PROMPT_NPM_SPEC": "@cdw0424/super-prompt@4.1.0",
         "PYTHONUNBUFFERED": "1",
         "PYTHONUTF8": "1",
         "PYTHON": "python3"
