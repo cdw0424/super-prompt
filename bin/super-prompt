@@ -197,10 +197,12 @@ route_codex_flags() {
     --translate|--sp-translate|--tr|--sp-tr) TOOL="sp.tr" ;;
     --seq|--sp-seq) TOOL="sp.seq" ;;
     --seq-ultra|--sp-seq-ultra) TOOL="sp.seq-ultra" ;;
+    --high|--sp-high) TOOL="sp.high" ;;
     --ultracompressed|--sp-ultracompressed) TOOL="sp.ultracompressed" ;;
     --dev|--sp-dev) TOOL="sp.dev" ;;
     --review|--sp-review) TOOL="sp.review" ;;
     --service-planner|--sp-service-planner) TOOL="sp.service-planner" ;;
+    --doc-master|--sp-doc-master) TOOL="sp.doc-master" ;;
     # SDD
     --sp-sdd-spec|--specify|--sp-specify) TOOL="sp.specify" ;;
     --sp-sdd-plan|--plan|--sp-plan) TOOL="sp.plan" ;;

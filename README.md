@@ -1,12 +1,27 @@
-# Super Prompt v4.0.61: Production Ready MCP Architecture
+# Super Prompt v4.1.0: Codex CLI Integration - Advanced Reasoning
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**A powerful prompt engineering toolkit, now rebuilt from the ground up as a FastMCP server for seamless IDE integration.**
+**🧠 Advanced reasoning capabilities powered by OpenAI Codex CLI integration for intelligent tool selection and expert-level analysis.**
 
-Super Prompt v4 marks a fundamental shift from a command-line utility to a robust, programmatic backend for your IDE. It exposes its powerful persona-based prompt optimization engine as a set of MCP tools, enabling a fluid and integrated development experience.
+Super Prompt v4.1 introduces seamless Codex CLI integration, providing intelligent reasoning capabilities across all tools. Complex queries automatically leverage Codex for expert analysis while simple tasks use efficient local processing.
+
+---
+
+### 🚀 **What's New in v4.1: Codex CLI Integration**
+
+#### **🧠 Advanced Reasoning System**
+- **Intelligent Tool Selection**: Automatic complexity detection determines when to use Codex CLI vs local analysis
+- **Context-Aware Prompts**: Project structure analysis and situation summary generation for optimal Codex prompts
+- **Multi-Tool Integration**: Codex support across `high`, `architect`, `dev`, `analyzer`, and `doc-master` tools
+- **Seamless Fallback**: Graceful degradation to local analysis when Codex is unavailable
+
+#### **🔧 Smart Complexity Detection**
+- **Keyword Analysis**: Detects technical terms, complexity indicators, and reasoning requirements
+- **Query Length Assessment**: Longer queries trigger Codex for comprehensive analysis
+- **Domain Expertise**: Specialized prompts for development, architecture, security, and documentation
 
 ---
 
@@ -23,6 +38,8 @@ Super Prompt v4 marks a fundamental shift from a command-line utility to a robus
 4.  **🔄 Mode Toggle System**: Seamless switching between GPT and Grok models with environment variables, CLI flags, and automatic resource management.
 
 5.  **🧠 MCP Memory System**: Comprehensive span-based memory tracking across all commands with automatic error handling and health checks.
+
+6.  **🤖 Codex CLI Integration**: Intelligent reasoning capabilities with automatic complexity detection and expert-level analysis.
 
 ---
 

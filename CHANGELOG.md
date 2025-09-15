@@ -1,5 +1,51 @@
 # Changelog
 
+## v4.1.0 - 2025-09-15
+
+### 🚀 **Codex CLI Integration - Advanced Reasoning**
+
+This major release introduces seamless integration with OpenAI Codex CLI for advanced reasoning capabilities, providing intelligent tool selection and high-quality AI assistance.
+
+#### **🧠 Advanced Reasoning System**
+- **Codex CLI Integration**: All tools now intelligently call Codex CLI for complex queries requiring deep reasoning
+- **Smart Tool Selection**: Automatic detection of query complexity to determine when to use Codex vs local analysis
+- **High Reasoning Mode**: Enhanced `/high` command with Codex-powered strategic analysis
+- **Context-Aware Prompts**: Project context analysis and situation summary generation for optimal Codex prompts
+
+#### **🔧 Technical Enhancements**
+- **Intelligent Complexity Detection**: Query analysis based on keywords, length, and technical content
+- **Multi-Tool Codex Support**: Extended Codex integration to `architect`, `dev`, `analyzer`, `doc-master` tools
+- **Fallback Architecture**: Graceful fallback to local analysis when Codex is unavailable
+- **Performance Optimization**: Efficient context collection and prompt generation
+
+#### **🛠️ Tool-Specific Improvements**
+- **High Command**: Always uses Codex CLI for strategic analysis with project context
+- **Dev Command**: Complex development tasks trigger Codex for expert technical guidance
+- **Architect Command**: System design and architecture queries use Codex for comprehensive analysis
+- **Analyzer Command**: Root cause investigation leverages Codex for systematic analysis
+- **Doc-Master Command**: Complex documentation tasks utilize Codex for expert guidance
+
+#### **📊 Context Analysis Features**
+- **Project Structure Analysis**: Automatic file counting and pattern recognition
+- **Query Relevance Detection**: Smart identification of API, security, database, and UI contexts
+- **Situation Summary Generation**: Concise problem summaries optimized for Codex processing
+
+#### **🎯 User Experience**
+- **Seamless Integration**: Transparent Codex usage with clear feedback
+- **Performance Feedback**: Real-time status updates during Codex processing
+- **Error Handling**: Robust fallback mechanisms when Codex services are unavailable
+- **Consistent Interface**: Same command interface regardless of Codex usage
+
+### **Breaking Changes (For the Better)**
+- **Enhanced Reasoning**: All complex queries now benefit from Codex-powered analysis
+- **Improved Accuracy**: Context-aware prompts provide more relevant and accurate responses
+- **Future-Ready**: Architecture supports additional AI integrations and reasoning models
+
+### **Migration**
+- **Automatic**: No manual migration required - works immediately after update
+- **Backward Compatible**: Simple queries continue to work with local analysis
+- **Enhanced**: Complex queries now receive significantly improved analysis
+
 ## v4.0.61 - 2025-09-15
 
 ### Improvements

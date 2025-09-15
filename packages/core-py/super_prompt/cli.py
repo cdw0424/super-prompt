@@ -52,13 +52,17 @@ def get_current_version() -> str:
             current = Path(__file__).resolve()
             npm_root = None
             while current.parent != current:  # Stop at filesystem root
-                if (current / "packages" / "cursor-assets").exists() or (current / "package.json").exists():
+                if (current / "packages" / "cursor-assets").exists() or (
+                    current / "package.json"
+                ).exists():
                     try:
                         if (current / "package.json").exists():
                             with open(current / "package.json") as f:
                                 package_data = json.load(f)
                                 if package_data.get("name") == "@cdw0424/super-prompt":
-                                    print(f"----- DEBUG: Resolved package root by ascent: {current}")
+                                    print(
+                                        f"----- DEBUG: Resolved package root by ascent: {current}"
+                                    )
                                     npm_root = current
                                     break
                     except Exception as e:
@@ -69,19 +73,19 @@ def get_current_version() -> str:
 
         if npm_root and (npm_root / "package.json").exists():
             package_json = npm_root / "package.json"
-            with open(package_json, 'r', encoding='utf-8') as f:
+            with open(package_json, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                version = data.get('version', '3.1.56')
+                version = data.get("version", "3.1.56")
                 print(f"----- DEBUG: Found version {version} in npm package")
                 return version
 
         # Fallback: try to read from environment or use default
-        env_version = os.environ.get('SUPER_PROMPT_VERSION', '3.1.56')
+        env_version = os.environ.get("SUPER_PROMPT_VERSION", "3.1.56")
         print(f"----- DEBUG: Using environment/default version {env_version}")
         return env_version
     except Exception as e:
         print(f"----- DEBUG: Exception in version detection: {e}")
-        return '3.1.56'
+        return "3.1.56"
 
 
 app = typer.Typer(
@@ -90,21 +94,38 @@ app = typer.Typer(
     add_completion=False,
 )
 
-sdd_spec_query: Optional[str] = typer.Option(None, "--sp-sdd-spec", help="Create an SDD specification for a feature.")
-sdd_plan_query: Optional[str] = typer.Option(None, "--sp-sdd-plan", help="Create an SDD plan for a feature.")
-sdd_tasks_query: Optional[str] = typer.Option(None, "--sp-sdd-tasks", help="Create SDD tasks for a feature.")
-sdd_implement_query: Optional[str] = typer.Option(None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts.")
-high_query: Optional[str] = typer.Option(None, "--sp-high", help="Execute with GPT-5 high reasoning model.")
+sdd_spec_query: Optional[str] = typer.Option(
+    None, "--sp-sdd-spec", help="Create an SDD specification for a feature."
+)
+sdd_plan_query: Optional[str] = typer.Option(
+    None, "--sp-sdd-plan", help="Create an SDD plan for a feature."
+)
+sdd_tasks_query: Optional[str] = typer.Option(
+    None, "--sp-sdd-tasks", help="Create SDD tasks for a feature."
+)
+sdd_implement_query: Optional[str] = typer.Option(
+    None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts."
+)
+high_query: Optional[str] = typer.Option(
+    None, "--sp-high", help="Execute with GPT-5 high reasoning model."
+)
 
 
 @app.callback(invoke_without_command=True)
 def callback(
     ctx: typer.Context,
-    sp_sdd_spec: Optional[str] = typer.Option(None, "--sp-sdd-spec", help="Create an SDD specification for a feature."),
-    sp_sdd_plan: Optional[str] = typer.Option(None, "--sp-sdd-plan", help="Create an SDD plan for a feature."),
-    sp_sdd_tasks: Optional[str] = typer.Option(None, "--sp-sdd-tasks", help="Create SDD tasks for a feature."),
-    sp_sdd_implement: Optional[str] = typer.Option(None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts."),
-    sp_high: Optional[str] = typer.Option(None, "--sp-high", help="Execute with GPT-5 high reasoning model."),
+    sp_sdd_spec: Optional[str] = typer.Option(
+        None, "--sp-sdd-spec", help="Create an SDD specification for a feature."
+    ),
+    sp_sdd_plan: Optional[str] = typer.Option(
+        None, "--sp-sdd-plan", help="Create an SDD plan for a feature."
+    ),
+    sp_sdd_tasks: Optional[str] = typer.Option(
+        None, "--sp-sdd-tasks", help="Create SDD tasks for a feature."
+    ),
+    sp_sdd_implement: Optional[str] = typer.Option(
+        None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts."
+    ),
 ):
     """Super Prompt Core CLI"""
     # Check for execution context file FIRST (before checking subcommands)
@@ -113,7 +134,7 @@ def callback(
 
     if context_file and Path(context_file).exists():
         try:
-            with open(context_file, 'r', encoding='utf-8') as f:
+            with open(context_file, "r", encoding="utf-8") as f:
                 execution_context = json.load(f)
             typer.echo(f"-------- Loaded execution context from {context_file}")
         except Exception as e:
@@ -157,18 +178,7 @@ def callback(
             active_sdd_action = action
             feature_query = query
 
-    # Handle high reasoning option
-    if sp_high is not None:
-        if active_sdd_action is not None:
-            typer.echo("❌ Error: Cannot combine --sp-high with SDD actions.", err=True)
-            raise typer.Exit(1)
-        print("🚀 Executing with GPT-5 High Reasoning Model...")
-        print(f"📝 Query: {sp_high}")
-        # For now, just print the high reasoning message
-        # In future, this should integrate with actual GPT-5 high model
-        print("🔬 High reasoning analysis would be performed here.")
-        print("💡 This is a placeholder for GPT-5 high model integration.")
-        return
+    # High reasoning is now handled via MCP tool (sp.high), not CLI
 
     if active_sdd_action and feature_query:
         sdd_command(action=active_sdd_action, feature=feature_query, project_root=None)
@@ -179,18 +189,20 @@ def callback(
         # If no command is passed, and no SDD flags, show help.
         # This requires `invoke_without_command=True` on the callback.
         # We check if any sdd option was passed but without a value.
-        if ctx.params['sp_sdd_spec'] is None and \
-           ctx.params['sp_sdd_plan'] is None and \
-           ctx.params['sp_sdd_tasks'] is None and \
-           ctx.params['sp_sdd_implement'] is None and \
-           ctx.params['sp_high'] is None and \
-           not ctx.invoked_subcommand:
-             # Check if there are any other arguments that might imply a command is being called
-             if len(sys.argv) > 1:
+        if (
+            ctx.params["sp_sdd_spec"] is None
+            and ctx.params["sp_sdd_plan"] is None
+            and ctx.params["sp_sdd_tasks"] is None
+            and ctx.params["sp_sdd_implement"] is None
+            and ctx.params["sp_high"] is None
+            and not ctx.invoked_subcommand
+        ):
+            # Check if there are any other arguments that might imply a command is being called
+            if len(sys.argv) > 1:
                 # A command might be trying to be called but is not matching.
                 # Typer will handle this and show an error.
                 pass
-             else:
+            else:
                 typer.echo(ctx.get_help())
 
 
@@ -203,7 +215,9 @@ def sdd_command(
     try:
         if action == "check":
             # Check implementation readiness
-            gate_result = check_implementation_ready(feature, str(project_root) if project_root else ".")
+            gate_result = check_implementation_ready(
+                feature, str(project_root) if project_root else "."
+            )
 
             if gate_result.ok:
                 typer.echo("✅ Implementation ready!")
@@ -221,14 +235,16 @@ def sdd_command(
                 f"Create {action.upper()} for {feature}",
                 sdd_stage=action,
                 project_id=feature,
-                project_root=str(project_root) if project_root else "."
+                project_root=str(project_root) if project_root else ".",
             )
 
             typer.echo(f"✅ {action.upper()} created for {feature}")
 
         elif action == "implement":
             # Check gates before implementation
-            gate_result = check_implementation_ready(feature, str(project_root) if project_root else ".")
+            gate_result = check_implementation_ready(
+                feature, str(project_root) if project_root else "."
+            )
 
             if not gate_result.ok:
                 typer.echo("❌ Cannot implement - gates not satisfied:")
@@ -242,7 +258,7 @@ def sdd_command(
                 f"Implement {feature}",
                 sdd_stage="implement",
                 project_id=feature,
-                project_root=str(project_root) if project_root else "."
+                project_root=str(project_root) if project_root else ".",
             )
 
             typer.echo(f"✅ Implementation completed for {feature}")
@@ -257,9 +273,7 @@ def sdd_command(
 
 
 @app.command("amr-rules")
-def amr_rules(
-    out: Path = typer.Option(Path(".cursor/rules"), "--out", help="Output directory")
-):
+def amr_rules(out: Path = typer.Option(Path(".cursor/rules"), "--out", help="Output directory")):
     """Generate AMR rule file (05-amr.mdc) for Cursor."""
     try:
         out.mkdir(parents=True, exist_ok=True)
@@ -333,17 +347,22 @@ T3 EXECUTE:
 
 @app.command("amr-print")
 def amr_print(
-    path: Path = typer.Option(Path("prompts/codex_amr_bootstrap_prompt_en.txt"), "--path", help="Prompt file path"),
+    path: Path = typer.Option(
+        Path("prompts/codex_amr_bootstrap_prompt_en.txt"), "--path", help="Prompt file path"
+    ),
 ):
     """Print AMR bootstrap prompt to stdout."""
     try:
         if path.exists():
             typer.echo(path.read_text())
         else:
-            typer.echo("No bootstrap prompt found. Provide --path or add prompts/codex_amr_bootstrap_prompt_en.txt")
+            typer.echo(
+                "No bootstrap prompt found. Provide --path or add prompts/codex_amr_bootstrap_prompt_en.txt"
+            )
             raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("amr-qa")
@@ -352,25 +371,33 @@ def amr_qa(
 ):
     """Validate a transcript for AMR/state-machine conformance."""
     if not file.exists():
-        typer.echo(f"❌ File not found: {file}"); raise typer.Exit(2)
+        typer.echo(f"❌ File not found: {file}")
+        raise typer.Exit(2)
     txt = file.read_text()
     ok = True
     import re
+
     if not re.search(r"^\[INTENT\]", txt, re.M):
-        typer.echo("-------- Missing [INTENT] section"); ok = False
+        typer.echo("-------- Missing [INTENT] section")
+        ok = False
     if not (re.search(r"^\[PLAN\]", txt, re.M) or re.search(r"^\[EXECUTE\]", txt, re.M)):
-        typer.echo("-------- Missing [PLAN] or [EXECUTE] section"); ok = False
+        typer.echo("-------- Missing [PLAN] or [EXECUTE] section")
+        ok = False
     if re.search(r"^(router:|run:)", txt, re.M):
-        typer.echo("-------- Found log lines without '--------' prefix"); ok = False
+        typer.echo("-------- Found log lines without '--------' prefix")
+        ok = False
     if "/model gpt-5 high" in txt and "/model gpt-5 medium" not in txt:
-        typer.echo("-------- High switch found without returning to medium"); ok = False
+        typer.echo("-------- High switch found without returning to medium")
+        ok = False
     typer.echo("--------qa: OK" if ok else "--------qa: FAIL")
     raise typer.Exit(0 if ok else 1)
 
 
 @app.command("codex-init")
 def codex_init(
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Create Codex CLI assets in .codex/"""
     try:
@@ -379,12 +406,15 @@ def codex_init(
         adapter.generate_assets(root)
         typer.echo("--------codex:init: .codex assets created")
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("codex-mode-on")
 def codex_mode_on(
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Enable Codex AMR mode by creating .codex/.codex-mode flag."""
     try:
@@ -403,12 +433,15 @@ def codex_mode_on(
                 pass
         typer.echo("-------- Codex AMR mode: ENABLED (.codex/.codex-mode)")
     except Exception as e:
-        typer.echo(f"❌ Error enabling Codex mode: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error enabling Codex mode: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("codex-mode-off")
 def codex_mode_off(
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Disable Codex AMR mode by removing .codex/.codex-mode flag."""
     try:
@@ -420,12 +453,15 @@ def codex_mode_off(
         else:
             typer.echo("-------- Codex AMR mode: Already disabled")
     except Exception as e:
-        typer.echo(f"❌ Error disabling Codex mode: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error disabling Codex mode: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("grok-mode-on")
 def grok_mode_on(
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Enable Grok mode by creating .cursor/.grok-mode flag (and disable Codex mode)."""
     try:
@@ -444,12 +480,15 @@ def grok_mode_on(
                 pass
         typer.echo("-------- Grok mode: ENABLED (.cursor/.grok-mode)")
     except Exception as e:
-        typer.echo(f"❌ Error enabling Grok mode: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error enabling Grok mode: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("grok-mode-off")
 def grok_mode_off(
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Disable Grok mode by removing .cursor/.grok-mode flag."""
     try:
@@ -461,13 +500,16 @@ def grok_mode_off(
         else:
             typer.echo("-------- Grok mode: Already disabled")
     except Exception as e:
-        typer.echo(f"❌ Error disabling Grok mode: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error disabling Grok mode: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("personas-init")
 def personas_init(
     overwrite: bool = typer.Option(False, "--overwrite", help="Overwrite if exists"),
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Copy package personas manifest into project personas/manifest.yaml"""
     try:
@@ -482,12 +524,15 @@ def personas_init(
         dst.write_text(src.read_text())
         typer.echo(f"--------personas:init: wrote manifest → {dst}")
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("personas-build")
 def personas_build(
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Build personas assets (Cursor commands + rules) in current project"""
     try:
@@ -497,7 +542,8 @@ def personas_build(
         cursor.generate_rules(root)
         typer.echo("--------personas:build: .cursor commands + rules updated")
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True); raise typer.Exit(1)
+        typer.echo(f"❌ Error: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("mcp-serve")
@@ -509,7 +555,9 @@ def mcp_serve():
         server_script_path = Path(__file__).parent / "mcp_srv" / "server.py"
 
         if not server_script_path.exists():
-            typer.echo(f"❌ Fatal Error: MCP server script not found at {server_script_path}", err=True)
+            typer.echo(
+                f"❌ Fatal Error: MCP server script not found at {server_script_path}", err=True
+            )
             typer.echo("   The package installation may be corrupt.", err=True)
             raise typer.Exit(1)
 
@@ -534,10 +582,15 @@ def mcp_serve():
 def sdd_cli(
     action: str = typer.Argument(..., help="SDD action (spec/plan/tasks/implement)"),
     feature: str = typer.Argument(..., help="Feature name"),
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """[DEPRECATED] SDD (Spec-Driven Development) workflow commands. Use flags like --sp-sdd-spec instead."""
-    typer.echo("⚠️  Warning: The 'sdd' subcommand is deprecated and will be removed. Use flags like --sp-sdd-spec instead.", err=True)
+    typer.echo(
+        "⚠️  Warning: The 'sdd' subcommand is deprecated and will be removed. Use flags like --sp-sdd-spec instead.",
+        err=True,
+    )
     sdd_command(action, feature, project_root)
 
 
@@ -585,7 +638,9 @@ def personas(
 def context(
     action: str = typer.Argument(..., help="Action (collect/stats/clear)"),
     query: Optional[str] = typer.Argument(None, help="Query for context collection"),
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
     max_tokens: int = typer.Option(16000, "--max-tokens", help="Maximum context tokens"),
 ):
     """Context collection and management"""
@@ -622,7 +677,9 @@ def context(
 def validate(
     action: str = typer.Argument(..., help="Action (todo/check)"),
     target: Optional[str] = typer.Argument(None, help="Validation target"),
-    project_root: Optional[Path] = typer.Option(None, "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
 ):
     """Validation and quality checks"""
     try:
@@ -638,8 +695,21 @@ def validate(
         elif action == "check":
             # Run comprehensive checks
             checks = [
-                ("SDD gates", lambda: check_implementation_ready(target or "default", str(project_root) if project_root else ".")),
-                ("Context collection", lambda: len(ContextCollector(str(project_root) if project_root else ".").collect_context("test")["files"]) > 0),
+                (
+                    "SDD gates",
+                    lambda: check_implementation_ready(
+                        target or "default", str(project_root) if project_root else "."
+                    ),
+                ),
+                (
+                    "Context collection",
+                    lambda: len(
+                        ContextCollector(
+                            str(project_root) if project_root else "."
+                        ).collect_context("test")["files"]
+                    )
+                    > 0,
+                ),
             ]
 
             typer.echo("Running validation checks:")
@@ -648,7 +718,7 @@ def validate(
             for check_name, check_func in checks:
                 try:
                     result = check_func()
-                    if hasattr(result, 'ok'):
+                    if hasattr(result, "ok"):
                         passed = result.ok
                         details = f" ({len(result.missing)} issues)" if result.missing else ""
                     else:
@@ -682,7 +752,9 @@ def validate(
 
 @app.command()
 def init(
-    project_root: Optional[Path] = typer.Option(Path("."), "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        Path("."), "--project-root", help="Project root directory"
+    ),
     force: bool = typer.Option(False, "--force", help="Force reinitialization"),
 ):
     """Initialize Super Prompt for a project
@@ -700,7 +772,9 @@ def init(
         typer.echo("\033[33m  - .cursor/ (Cursor IDE configuration)\033[0m")
         typer.echo("\033[33m  - .super-prompt/ (Super Prompt internal files)\033[0m")
         typer.echo("\033[33m  - .codex/ (Codex CLI configuration)\033[0m")
-        typer.echo("\033[36mThis official installation process is authorized to create these directories.\033[0m")
+        typer.echo(
+            "\033[36mThis official installation process is authorized to create these directories.\033[0m"
+        )
         typer.echo()
 
         # Display Super Prompt ASCII Art
@@ -771,6 +845,7 @@ def init(
                     try:
                         with open(current / "package.json") as f:
                             import json
+
                             package_data = json.load(f)
                             if package_data.get("name") == "@cdw0424/super-prompt":
                                 print(f"----- DEBUG: Found npm package root at: {current}")
@@ -791,12 +866,14 @@ def init(
             except Exception:
                 pass
 
-        possible_package_dirs.extend([
-            Path(__file__).parent.parent.parent.parent,  # Development location
-            Path(__file__).parent.parent.parent.parent.parent,  # npm installed location
-            Path(__file__).resolve().parent.parent.parent.parent,  # Resolved path
-            find_npm_package_root(Path(__file__)),  # Find npm package root
-        ])
+        possible_package_dirs.extend(
+            [
+                Path(__file__).parent.parent.parent.parent,  # Development location
+                Path(__file__).parent.parent.parent.parent.parent,  # npm installed location
+                Path(__file__).resolve().parent.parent.parent.parent,  # Resolved path
+                find_npm_package_root(Path(__file__)),  # Find npm package root
+            ]
+        )
 
         # Filter out None values
         possible_package_dirs = [d for d in possible_package_dirs if d is not None]
@@ -893,8 +970,11 @@ def init(
                 shutil.rmtree(super_prompt_dir)
 
             # Copy entire .super-prompt directory (excluding venv)
-            shutil.copytree(source_super_prompt, super_prompt_dir,
-                          ignore=shutil.ignore_patterns('venv', '__pycache__', '*.pyc'))
+            shutil.copytree(
+                source_super_prompt,
+                super_prompt_dir,
+                ignore=shutil.ignore_patterns("venv", "__pycache__", "*.pyc"),
+            )
 
             # Create config.json with current project info
             config_content = {
@@ -902,23 +982,25 @@ def init(
                 "initialized_at": str(target_dir.absolute()),
                 "databases": {
                     "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
-                    "context_memory": ".super-prompt/context_memory.db"
+                    "context_memory": ".super-prompt/context_memory.db",
                 },
                 "protection": {
                     "protected_directories": [".cursor", ".super-prompt", ".codex"],
-                    "message": "These directories are protected from modification by personas and user commands"
-                }
+                    "message": "These directories are protected from modification by personas and user commands",
+                },
             }
 
             config_file = super_prompt_dir / "config.json"
-            with open(config_file, 'w', encoding='utf-8') as f:
+            with open(config_file, "w", encoding="utf-8") as f:
                 json.dump(config_content, f, indent=2, ensure_ascii=False)
 
             typer.echo("✅ Super Prompt internal files copied (.super-prompt/)")
 
             # List what was copied
             copied_files = [f for f in super_prompt_dir.glob("*") if f.is_file()]
-            typer.echo(f"   Copied {len(copied_files)} files: {', '.join([f.name for f in copied_files])}")
+            typer.echo(
+                f"   Copied {len(copied_files)} files: {', '.join([f.name for f in copied_files])}"
+            )
 
         else:
             # Fallback: create minimal configuration
@@ -929,16 +1011,16 @@ def init(
                 "initialized_at": str(target_dir.absolute()),
                 "databases": {
                     "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
-                    "context_memory": ".super-prompt/context_memory.db"
+                    "context_memory": ".super-prompt/context_memory.db",
                 },
                 "protection": {
                     "protected_directories": [".cursor", ".super-prompt", ".codex"],
-                    "message": "These directories are protected from modification by personas and user commands"
-                }
+                    "message": "These directories are protected from modification by personas and user commands",
+                },
             }
 
             config_file = super_prompt_dir / "config.json"
-            with open(config_file, 'w', encoding='utf-8') as f:
+            with open(config_file, "w", encoding="utf-8") as f:
                 json.dump(config_content, f, indent=2, ensure_ascii=False)
 
             typer.echo("✅ Super Prompt minimal configuration created (.super-prompt/)")
@@ -948,7 +1030,8 @@ def init(
         sdd_dir.mkdir(exist_ok=True)
         spec_file = sdd_dir / "spec.md"
         if not spec_file.exists() or force:
-            spec_file.write_text("""# Example Feature Specification
+            spec_file.write_text(
+                """# Example Feature Specification
 
 ## Overview
 Brief description of the feature.
@@ -964,7 +1047,8 @@ Brief description of the feature.
 ## Acceptance Criteria
 - [ ] Test case 1
 - [ ] Test case 2
-""")
+"""
+            )
 
         # MCP 서버 자동 등록 (.cursor/mcp.json 병합) 및 Codex 등록
         try:
@@ -983,7 +1067,7 @@ Brief description of the feature.
 
         # Ensure default LLM mode is GPT
         try:
-            set_mode_file('gpt')
+            set_mode_file("gpt")
             typer.echo("✅ Default LLM mode set to gpt (.super-prompt/mode.json)")
         except Exception as e:
             typer.echo(f"⚠️  Could not set default mode: {e}")
@@ -1018,7 +1102,9 @@ Brief description of the feature.
 # Alias: super:init → init
 @app.command("super:init")
 def super_init_alias(
-    project_root: Optional[Path] = typer.Option(".", "--project-root", help="Project root directory"),
+    project_root: Optional[Path] = typer.Option(
+        ".", "--project-root", help="Project root directory"
+    ),
     force: bool = typer.Option(False, "--force", help="Force reinitialization"),
 ):
     """Alias for init to support `super:init`.
@@ -1044,7 +1130,9 @@ def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args
 
         typer.echo(f"-------- Enhanced Persona Execution: {persona_key} (via env vars)")
         typer.echo(f"-------- System prompt loaded ({len(system_prompt)} chars)")
-        typer.echo(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
+        typer.echo(
+            f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}"
+        )
 
         # Load persona configuration
         personas_dir = Path(__file__).parent / "personas"
@@ -1052,11 +1140,12 @@ def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args
 
         if manifest_path.exists():
             import yaml
-            with open(manifest_path, 'r', encoding='utf-8') as f:
+
+            with open(manifest_path, "r", encoding="utf-8") as f:
                 manifest = yaml.safe_load(f)
 
-            if persona_key in manifest.get('personas', {}):
-                persona_config = manifest['personas'][persona_key]
+            if persona_key in manifest.get("personas", {}):
+                persona_config = manifest["personas"][persona_key]
                 typer.echo(f"-------- Loaded persona: {persona_config.get('name', persona_key)}")
             else:
                 typer.echo(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
@@ -1065,20 +1154,20 @@ def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args
 
         # Here we would integrate with the actual AI processing
         # For now, we'll just display the system prompt and user input
-        typer.echo("\n" + "="*60)
+        typer.echo("\n" + "=" * 60)
         typer.echo("🤖 SYSTEM PROMPT:")
-        typer.echo("="*60)
+        typer.echo("=" * 60)
         typer.echo(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
 
-        typer.echo("\n" + "="*60)
+        typer.echo("\n" + "=" * 60)
         typer.echo("👤 USER INPUT:")
-        typer.echo("="*60)
+        typer.echo("=" * 60)
         typer.echo(user_input)
 
-        typer.echo("\n" + "="*60)
+        typer.echo("\n" + "=" * 60)
         typer.echo("✅ Enhanced persona execution framework ready!")
         typer.echo("   (Actual AI processing would happen here)")
-        typer.echo("="*60)
+        typer.echo("=" * 60)
 
     except Exception as e:
         typer.echo(f"❌ Enhanced persona execution failed: {e}", err=True)
@@ -1103,34 +1192,40 @@ def handle_enhanced_persona_execution_from_context(execution_context: dict, args
             typer.echo("❌ Error: No user input provided for persona execution", err=True)
             raise typer.Exit(1)
 
-        typer.echo(f"-------- Enhanced Persona Execution: {persona_name} {persona_icon} (context-based)")
+        typer.echo(
+            f"-------- Enhanced Persona Execution: {persona_name} {persona_icon} (context-based)"
+        )
         typer.echo(f"-------- Role: {role_type} | Style: {interaction_style}")
         typer.echo(f"-------- System prompt loaded ({len(system_prompt)} chars)")
-        typer.echo(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
+        typer.echo(
+            f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}"
+        )
 
         # Display execution info
-        typer.echo("\n" + "="*60)
+        typer.echo("\n" + "=" * 60)
         typer.echo("🤖 SYSTEM PROMPT:")
-        typer.echo("="*60)
+        typer.echo("=" * 60)
         typer.echo(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
 
-        typer.echo("\n" + "="*60)
+        typer.echo("\n" + "=" * 60)
         typer.echo("👤 USER INPUT:")
-        typer.echo("="*60)
+        typer.echo("=" * 60)
         typer.echo(user_input)
 
-        typer.echo("\n" + "="*60)
+        typer.echo("\n" + "=" * 60)
         typer.echo("✅ Context-based persona execution completed!")
         typer.echo("   (Ready for AI processing integration)")
-        typer.echo("="*60)
+        typer.echo("=" * 60)
 
         # Return updated execution context
         updated_context = execution_context.copy()
-        updated_context.update({
-            "user_input": user_input,
-            "status": "ready_for_ai",
-            "execution_method": "context_based"
-        })
+        updated_context.update(
+            {
+                "user_input": user_input,
+                "status": "ready_for_ai",
+                "execution_method": "context_based",
+            }
+        )
 
         return updated_context
 
@@ -1161,12 +1256,13 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         if manifest_path.exists():
             try:
                 import yaml
-                with open(manifest_path, 'r', encoding='utf-8') as f:
+
+                with open(manifest_path, "r", encoding="utf-8") as f:
                     manifest = yaml.safe_load(f)
 
-                if persona_key in manifest.get('personas', {}):
-                    persona_config = manifest['personas'][persona_key]
-                    persona_name = persona_config.get('name', persona_key)
+                if persona_key in manifest.get("personas", {}):
+                    persona_config = manifest["personas"][persona_key]
+                    persona_name = persona_config.get("name", persona_key)
                     print(f"-------- Loaded persona: {persona_name}")
                 else:
                     print(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
@@ -1174,20 +1270,20 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
                 print(f"⚠️  Could not load persona manifest: {e}")
 
         # Display execution info
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🤖 SYSTEM PROMPT:")
-        print("="*60)
+        print("=" * 60)
         print(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("👤 USER INPUT:")
-        print("="*60)
+        print("=" * 60)
         print(user_input)
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("✅ Direct persona execution completed!")
         print("   (Ready for AI processing integration)")
-        print("="*60)
+        print("=" * 60)
 
         # Return execution context for further processing
         return {
@@ -1195,7 +1291,7 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
             "persona_name": persona_name,
             "system_prompt": system_prompt,
             "user_input": user_input,
-            "status": "ready_for_ai"
+            "status": "ready_for_ai",
         }
 
     except Exception as e:
