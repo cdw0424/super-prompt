@@ -7,8 +7,8 @@
 **🤖 Intelligent MCP environment automation with Codex CLI integration for
 seamless, reliable reasoning capabilities.**
 
-Super Prompt v4.2 introduces comprehensive MCP environment automation with
-Codex CLI integration, ensuring optimal performance and reliability. All tools
+Super Prompt v4.2 introduces comprehensive MCP environment automation with Codex
+CLI integration, ensuring optimal performance and reliability. All tools
 automatically manage their environment for consistent, expert-level analysis.
 
 ---
@@ -17,10 +17,14 @@ automatically manage their environment for consistent, expert-level analysis.
 
 #### **🤖 Intelligent Environment Management**
 
-- **Automatic Environment Setup**: All tools automatically ensure MCP environment readiness
-- **Smart Venv Management**: Automatic virtual environment activation and validation
-- **MCP Server Orchestration**: Intelligent MCP server lifecycle management with process monitoring
-- **Environment Health Checks**: Comprehensive environment validation before tool execution
+- **Automatic Environment Setup**: All tools automatically ensure MCP
+  environment readiness
+- **Smart Venv Management**: Automatic virtual environment activation and
+  validation
+- **MCP Server Orchestration**: Intelligent MCP server lifecycle management with
+  process monitoring
+- **Environment Health Checks**: Comprehensive environment validation before
+  tool execution
 
 #### **🧠 Enhanced Reasoning System**
 
@@ -37,8 +41,10 @@ automatically manage their environment for consistent, expert-level analysis.
 
 - **Process-Based Monitoring**: Advanced MCP server process tracking using pgrep
 - **Background Management**: Robust background server startup and monitoring
-- **Environment State Persistence**: Maintains environment state across tool executions
-- **Graceful Error Handling**: Comprehensive fallback mechanisms for environment failures
+- **Environment State Persistence**: Maintains environment state across tool
+  executions
+- **Graceful Error Handling**: Comprehensive fallback mechanisms for environment
+  failures
 
 ---
 
