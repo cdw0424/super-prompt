@@ -221,7 +221,7 @@ route_codex_flags() {
 route_codex_flags "$@"
 
 case "$CMD" in
-  mcp-server)
+  mcp-server|mcp-serve)
     shift
     # 서버만 직접 노출 (클라이언트가 붙음)
     export MCP_SERVER_MODE="1"  # Mark as MCP server mode
