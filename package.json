@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.4.0",
-  "description": "Super Prompt v4.4.0 (Streamlined Architecture - Pure stdio Mode)",
+  "version": "4.4.1",
+  "description": "Super Prompt v4.4.1 (Streamlined Architecture - Pure stdio Mode)",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
