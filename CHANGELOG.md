@@ -1,5 +1,77 @@
 # Changelog
 
+## v4.6.0 - 2025-09-16
+
+### 🚀 **Advanced Codex Integration & MCP Bridge Architecture**
+
+This major release introduces a revolutionary Codex integration system with Node-based MCP bridge architecture, centralized tool registration, and enhanced persona workflows for seamless Cursor/Codex development experience.
+
+#### **🧠 Advanced Codex Integration System**
+
+- **User Home Codex Directory**: Redirected Super Prompt's Codex integration to `~/.codex` for better organization and user control
+- **Enhanced CLI Messaging**: Updated initialization and doctor check messages to reflect new Codex directory structure
+- **Seamless Asset Seeding**: `super:init` now seeds Codex assets directly in user's home directory instead of project repository
+
+#### **🔧 Centralized MCP Tool Registration**
+
+- **Helper Architecture**: Implemented `register_tool` helper function for consistent spec-style annotations, categories, and JSON schemas
+- **Read-Only/Destructive Flags**: Enhanced tool registration honors read-only and destructive operation flags across legacy SDK versions
+- **Version Compatibility**: Universal MCP compatibility with automatic fallback mechanisms for different SDK versions
+
+#### **🌉 Node-Based MCP Bridge Implementation**
+
+- **Direct Codex Integration**: Replaced shell-based codex exec calls with robust Node-based MCP bridge (`src/tools/codex-mcp.js`)
+- **High Reasoning Mode**: Bridge invokes codex mcp using `gpt-5-codex` at high reasoning effort for complex analysis tasks
+- **Plan-First Architecture**: All operations now emit plan-first prompts with structured reasoning workflows
+- **Intelligent Fallback**: Graceful fallback to legacy CLI execution when bridge is unavailable or encounters issues
+
+#### **🎭 Enhanced Persona System**
+
+- **Embedded Codex Briefs**: Every persona now includes comprehensive Codex persona briefs and payload builders
+- **Consistent MCP Workflow**: Unified workflow where all personas hand the plan back to Cursor/Codex in standardized MCP format
+- **Smart Route Optimization**: Tightened `_should_use_codex_assistance` logic so key personas always route through the bridge
+- **Contextual Intelligence**: Enhanced persona selection based on task complexity and domain requirements
+
+#### **🧪 Comprehensive Testing Infrastructure**
+
+- **Unit Test Coverage**: Added comprehensive unit tests (`test_codex_bridge.py`) to validate MCP payload generation and fallback paths
+- **Bridge Validation**: Automated testing ensures the Node-based bridge correctly handles all persona types and scenarios
+- **Fallback Verification**: Tests confirm graceful degradation to legacy CLI when bridge is unavailable
+- **Integration Testing**: End-to-end testing validates complete Codex integration workflow
+
+#### **⚡ Performance & Reliability Enhancements**
+
+- **Zero Dependency Conflicts**: Node-based bridge eliminates Python dependency conflicts in Codex execution
+- **Optimized Payload Generation**: Streamlined payload building with intelligent context analysis
+- **Enhanced Error Handling**: Comprehensive error recovery with detailed logging and user feedback
+- **Memory Optimization**: Efficient resource usage with proper cleanup and garbage collection
+
+#### **🛡️ Security & Stability Improvements**
+
+- **Isolated Execution**: Bridge runs in separate Node.js process for enhanced security and stability
+- **Input Validation**: Robust input sanitization and validation across all bridge operations
+- **Process Monitoring**: Advanced monitoring and health checking for bridge operations
+- **Safe Fallbacks**: Multiple fallback layers ensure operations continue even during bridge failures
+
+### **Technical Architecture**
+
+```bash
+# New Codex Integration Flow:
+Cursor/Codex → MCP Bridge → Node Process → gpt-5-codex (high reasoning)
+     ↓              ↓              ↓                    ↓
+  Command       Payload Builder   Plan Generation     Codex Analysis
+  Processing    Context Analysis  Reasoning Chain     Results Return
+```
+
+### **Migration Notes**
+
+- **Seamless Upgrade**: Existing installations automatically benefit from enhanced Codex integration
+- **Backward Compatible**: All existing commands and workflows continue to function normally
+- **Enhanced Performance**: Significant improvements in Codex analysis quality and response times
+- **No Breaking Changes**: Complete backward compatibility maintained
+
+---
+
 ## v4.5.1 - 2025-09-15
 
 ### 🐛 **Bug Fixes & Performance Improvements**

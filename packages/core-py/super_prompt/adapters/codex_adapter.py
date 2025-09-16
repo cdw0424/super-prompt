@@ -1,9 +1,9 @@
 """
 Codex CLI Adapter - Generate Codex-specific integrations
 
-CRITICAL PROTECTION: This adapter is authorized to modify .codex/ directory ONLY during official
-installation processes. All persona commands and user operations MUST NEVER modify .cursor/,
-.super-prompt/, or .codex/ directories. This protection is absolute.
+CRITICAL PROTECTION: This adapter is authorized to modify the Codex home directory (~/.codex)
+ONLY during official installation processes. All persona commands and user operations MUST NEVER
+modify .cursor/, .super-prompt/, or ~/.codex directories. This protection is absolute.
 """
 
 from pathlib import Path
@@ -28,22 +28,22 @@ class CodexAdapter:
                 return yaml.safe_load(f)
         return {"agents": {}, "workflows": {}}
 
-    def generate_assets(self, project_root: Path) -> None:
+    def generate_assets(self, _project_root: Path) -> None:
         """Generate Codex integration assets from manifests"""
-        codex_dir = project_root / ".codex"
-        codex_dir.mkdir(parents=True, exist_ok=True)
+        codex_home = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
+        codex_home.mkdir(parents=True, exist_ok=True)
 
         # Load manifest
         manifest = self.load_agents_manifest()
 
         # Generate agents.md from manifest
-        self._generate_agents_md(codex_dir, manifest)
+        self._generate_agents_md(codex_home, manifest)
 
         # Generate bootstrap prompt from template
-        self._generate_bootstrap_prompt(codex_dir)
+        self._generate_bootstrap_prompt(codex_home)
 
         # Generate router check script
-        self._generate_router_check(codex_dir)
+        self._generate_router_check(codex_home)
 
     def _generate_agents_md(self, codex_dir: Path, manifest: Dict[str, Any]) -> None:
         """Generate Codex agents documentation from manifest"""
@@ -81,7 +81,7 @@ super-prompt --sp-architect "Propose modular structure for feature X"
 
 # Root cause analysis
 super-prompt --analyzer "Audit error handling and logging"
-super-prompt --sp-analyzer --out .codex/reports/analysis.md "Audit error handling and logging"
+super-prompt --sp-analyzer --out ~/.codex/reports/analysis.md "Audit error handling and logging"
 ```
 
 ## SDD Workflow (flag-based)
@@ -151,23 +151,26 @@ Follow the fixed workflow: INTENT → TASK_CLASSIFY → PLAN → EXECUTE → VER
 set -euo pipefail
 
 # Super Prompt Router Check
-# Validates AMR integration and SDD compliance
+# Validates AMR integration and SDD compliance for Codex CLI
 
-root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+codex_home="${CODEX_HOME:-$HOME/.codex}"
 AGENTS_PATH=""
-for p in "$root/.codex/agents.md" "$root/.codex/AGENTS.md" "$root/AGENTS.md"; do
-  if [ -f "$p" ]; then AGENTS_PATH="$p"; break; fi
+for candidate in "$codex_home/agents.md" "$codex_home/AGENTS.md"; do
+  if [ -f "$candidate" ]; then
+    AGENTS_PATH="$candidate"
+    break
+  fi
 done
 
 if [ -z "$AGENTS_PATH" ]; then
-  echo "--------router-check: FAIL (no agents/AGENTS.md found)"
+  echo "--------router-check: FAIL (no agents.md found under $codex_home)"
   exit 1
 fi
 
 missing=0
-grep -q "Auto Model Router" "$AGENTS_PATH" || { echo "AGENTS.md missing AMR marker"; missing=1; }
-grep -q "medium ↔ high" "$AGENTS_PATH" || { echo "AGENTS.md missing medium↔high"; missing=1; }
-grep -q "SDD" "$AGENTS_PATH" || { echo "AGENTS.md missing SDD reference"; missing=1; }
+grep -q "Auto Model Router" "$AGENTS_PATH" || { echo "agents.md missing AMR marker ($AGENTS_PATH)"; missing=1; }
+grep -q "medium ↔ high" "$AGENTS_PATH" || { echo "agents.md missing medium↔high ($AGENTS_PATH)"; missing=1; }
+grep -q "SDD" "$AGENTS_PATH" || { echo "agents.md missing SDD reference ($AGENTS_PATH)"; missing=1; }
 
 if [ "$missing" -ne 0 ]; then
   echo "--------router-check: FAIL"

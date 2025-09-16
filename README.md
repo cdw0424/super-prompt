@@ -1,4 +1,4 @@
-# Super Prompt v4.5.1: Ultimate Dual IDE Prompt Engineering Toolkit
+# Super Prompt v4.6.0: Ultimate Dual IDE Prompt Engineering Toolkit
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -6,7 +6,7 @@
 
 **🚀 The Ultimate Dual IDE Prompt Engineering Toolkit with Enhanced MCP Support**
 
-Super Prompt v4.5.1 delivers the most advanced MCP (Model Context Protocol) implementation
+Super Prompt v4.6.0 delivers the most advanced MCP (Model Context Protocol) implementation
 with real-time progress indicators, 100% persona loading success, comprehensive tool
 ecosystem, and critical bug fixes. Experience seamless development workflow across Cursor and Codex IDEs.
 

@@ -6,9 +6,17 @@ import sys
 import asyncio
 import subprocess
 import json
+import inspect
 from pathlib import Path
 import socket
 import time
+from textwrap import dedent
+
+try:
+    from importlib.metadata import version as _pkg_version
+    _PACKAGE_VERSION = _pkg_version("super-prompt")
+except Exception:
+    _PACKAGE_VERSION = "dev"
 
 # MCP SDK (Anthropic 공개 라이브러리) - 버전 호환성 개선
 # NOTE: Provide safe fallbacks when SDK is unavailable so that direct tool calls can run.
@@ -154,7 +162,7 @@ from .personas.loader import PersonaLoader
 import shutil, sys
 import time
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from contextlib import contextmanager
 
 # SECURITY: Prevent direct execution
@@ -335,6 +343,138 @@ class ProgressIndicator:
 progress = ProgressIndicator()
 
 
+# Authorization Framework
+class MCPAuthorization:
+    """MCP Authorization Framework for tool access control"""
+
+    PERMISSION_LEVELS = {
+        "read": 1,      # 읽기 전용 도구들
+        "write": 2,     # 설정 변경 도구들
+        "admin": 3,     # 시스템 관리 도구들
+    }
+
+    TOOL_PERMISSIONS = {
+        # Read-only tools
+        "version": "read",
+        "list_commands": "read",
+        "list_personas": "read",
+        "mode_get": "read",
+        "architect": "read",
+        "frontend": "read",
+        "backend": "read",
+        "security": "read",
+        "performance": "read",
+        "analyzer": "read",
+        "qa": "read",
+        "refactorer": "read",
+        "devops": "read",
+        "mentor": "read",
+        "scribe": "read",
+        "dev": "read",
+        "grok": "read",
+        "db-expert": "read",
+        "optimize": "read",
+        "review": "read",
+        "specify": "read",
+        "plan": "read",
+        "tasks": "read",
+        "implement": "read",
+        "seq": "read",
+        "seq-ultra": "read",
+        "high": "read",
+
+        # Write tools (configuration changes)
+        "mode_set": "write",
+        "grok_mode_on": "write",
+        "gpt_mode_on": "write",
+        "grok_mode_off": "write",
+        "gpt_mode_off": "write",
+
+        # Admin tools (system modifications)
+        "init": "admin",
+        "refresh": "admin",
+    }
+
+    @classmethod
+    def check_permission(cls, tool_name: str, user_level: str = "read") -> bool:
+        """Check if user has permission to access a tool"""
+        required_level = cls.TOOL_PERMISSIONS.get(tool_name, "read")
+        user_perm_level = cls.PERMISSION_LEVELS.get(user_level, 1)
+        required_perm_level = cls.PERMISSION_LEVELS.get(required_level, 1)
+
+        return user_perm_level >= required_perm_level
+
+    @classmethod
+    def get_user_permission_level(cls) -> str:
+        """Get current user's permission level from environment"""
+        # Check for explicit permission level
+        explicit_level = os.environ.get("SUPER_PROMPT_PERMISSION_LEVEL", "").lower()
+        if explicit_level in cls.PERMISSION_LEVELS:
+            return explicit_level
+
+        # Check for admin access
+        if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() in ("1", "true", "yes"):
+            return "admin"
+
+        # Default to read-only
+        return "read"
+
+    @classmethod
+    def require_permission(cls, tool_name: str) -> None:
+        """Require specific permission for tool access, raises exception if not authorized"""
+        user_level = cls.get_user_permission_level()
+        if not cls.check_permission(tool_name, user_level):
+            required_level = cls.TOOL_PERMISSIONS.get(tool_name, "read")
+            raise PermissionError(
+                f"MCP: Insufficient permissions. Tool '{tool_name}' requires '{required_level}' level, "
+                f"but user has '{user_level}' level. "
+                f"Set SUPER_PROMPT_PERMISSION_LEVEL={required_level} to grant access."
+            )
+
+
+# Resource Links 헬퍼 함수들
+def _get_persona_resource_links(persona_name: str) -> str:
+    """페르소나별 유용한 리소스 링크들을 반환"""
+    resource_links = {
+        "architect": """
+📚 **Recommended Resources:**
+• [System Design Interview](https://github.com/donnemartin/system-design-primer)
+• [Designing Data-Intensive Applications](https://dataintensive.net/)
+• [AWS Architecture Center](https://aws.amazon.com/architecture/)
+• [Google Cloud Architecture Framework](https://cloud.google.com/architecture/framework)
+""",
+        "frontend": """
+📚 **Recommended Resources:**
+• [React Documentation](https://react.dev/)
+• [Vue.js Guide](https://vuejs.org/guide/)
+• [MDN Web Docs](https://developer.mozilla.org/)
+• [Web.dev](https://web.dev/)
+• [A11Y Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+""",
+        "backend": """
+📚 **Recommended Resources:**
+• [REST API Design Best Practices](https://restfulapi.net/)
+• [GraphQL Specification](https://spec.graphql.org/)
+• [Database Design Tutorial](https://www.lucidchart.com/pages/database-diagram/database-design)
+• [OWASP API Security](https://owasp.org/www-project-api-security/)
+""",
+        "security": """
+📚 **Recommended Resources:**
+• [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+• [MITRE CWE Database](https://cwe.mitre.org/)
+• [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
+• [SANS Security Policy Templates](https://www.sans.org/information-security-policy/)
+""",
+        "analyzer": """
+📚 **Recommended Resources:**
+• [Root Cause Analysis Guide](https://asq.org/quality-resources/root-cause-analysis)
+• [Debugging Techniques](https://developers.google.com/web/tools/chrome-devtools)
+• [Performance Analysis Tools](https://developer.chrome.com/docs/devtools/)
+""",
+    }
+    return resource_links.get(persona_name, "")
+
+
 # Span 컨텍스트 매니저
 @contextmanager
 def memory_span(command_id: str, user_id: Optional[str] = None):
@@ -408,6 +548,356 @@ def _initialize_mcp_server():
 mcp = _initialize_mcp_server()
 
 
+TOOL_METADATA: Dict[str, Dict[str, Any]] = {
+    "sp.version": {"category": "system", "tags": ["system", "diagnostics"]},
+    "sp.init": {"category": "system", "tags": ["system", "setup"], "destructive": True},
+    "sp.refresh": {"category": "system", "tags": ["system", "setup"], "destructive": True},
+    "sp.list_commands": {"category": "system", "tags": ["system", "introspection"]},
+    "sp.list_personas": {"category": "system", "tags": ["system", "personas"]},
+    "sp.mode_get": {"category": "system", "tags": ["system", "mode"]},
+    "sp.mode_set": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.grok_mode_on": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.gpt_mode_on": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.grok_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.gpt_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.architect": {"category": "persona", "persona": "Architect", "tags": ["persona", "architecture"]},
+    "sp.frontend": {"category": "persona", "persona": "Frontend", "tags": ["persona", "frontend"]},
+    "sp.backend": {"category": "persona", "persona": "Backend", "tags": ["persona", "backend"]},
+    "sp.security": {"category": "persona", "persona": "Security", "tags": ["persona", "security"]},
+    "sp.performance": {"category": "persona", "persona": "Performance", "tags": ["persona", "performance"]},
+    "sp.analyzer": {"category": "persona", "persona": "Analyzer", "tags": ["persona", "analysis"]},
+    "sp.qa": {"category": "persona", "persona": "QA", "tags": ["persona", "quality"]},
+    "sp.refactorer": {"category": "persona", "persona": "Refactorer", "tags": ["persona", "refactoring"]},
+    "sp.devops": {"category": "persona", "persona": "DevOps", "tags": ["persona", "devops"]},
+    "sp.mentor": {"category": "persona", "persona": "Mentor", "tags": ["persona", "guidance"]},
+    "sp.scribe": {"category": "persona", "persona": "Scribe", "tags": ["persona", "documentation"]},
+    "sp.doc-master": {"category": "persona", "persona": "Doc Master", "tags": ["persona", "documentation"]},
+    "sp.service-planner": {"category": "persona", "persona": "Service Planner", "tags": ["persona", "strategy"]},
+    "sp.dev": {"category": "persona", "persona": "Dev", "tags": ["persona", "development"]},
+    "sp.review": {"category": "persona", "persona": "Review", "tags": ["persona", "review"]},
+    "sp.optimize": {"category": "persona", "persona": "Optimize", "tags": ["persona", "optimization"]},
+    "sp.grok": {"category": "persona", "persona": "Grok", "tags": ["persona", "grok"]},
+    "sp.db-expert": {"category": "persona", "persona": "DB Expert", "tags": ["persona", "database"]},
+    "sp.specify": {"category": "sdd", "tags": ["sdd", "spec"]},
+    "sp.plan": {"category": "sdd", "tags": ["sdd", "plan"]},
+    "sp.tasks": {"category": "sdd", "tags": ["sdd", "tasks"]},
+    "sp.implement": {"category": "sdd", "tags": ["sdd", "implement"]},
+    "sp.seq": {"category": "reasoning", "tags": ["reasoning", "sequential"]},
+    "sp.seq-ultra": {"category": "reasoning", "tags": ["reasoning", "sequential", "advanced"]},
+    "sp.high": {"category": "reasoning", "tags": ["reasoning", "high-effort"]},
+    "sp.tr": {"category": "utility", "tags": ["utility", "translation"]},
+    "sp.ultracompressed": {"category": "utility", "tags": ["utility", "compression"]},
+}
+
+REGISTERED_TOOL_ANNOTATIONS: Dict[str, Dict[str, Any]] = {}
+
+
+CODEX_PERSONA_BRIEFS: Dict[str, str] = {
+    "architect": dedent(
+        """
+        You are the Super Prompt Architect persona. Own system design decisions, surface trade-offs, and map work into phases before any coding begins.
+        Your mission is to deliver a battle-tested architecture plan that other MCP tools can execute. Highlight modules, data flows, and risk mitigations.
+        Suggest follow-up tools such as sp.plan, sp.tasks, sp.dev, and sp.review to continue execution.
+        """
+    ).strip(),
+    "analyzer": dedent(
+        """
+        You are the Super Prompt Analyzer persona. Perform deep root-cause analysis, outline experiments, and identify telemetry needed to validate hypotheses.
+        Deliver a prioritized diagnosis plan and recommend next MCP tools (e.g., sp.tasks for triage, sp.dev for fixes, sp.qa for validation).
+        """
+    ).strip(),
+    "high": dedent(
+        """
+        You are the Super Prompt High-Effort strategist. Produce a comprehensive plan that balances architecture, delivery sequencing, and testing gates.
+        Escalate to high reasoning automatically and hand off actionable steps to sp.plan, sp.tasks, and sp.dev.
+        """
+    ).strip(),
+    "dev": dedent(
+        """
+        You are the Super Prompt Dev persona. Focus on minimal, testable diffs aligned with the existing codebase.
+        Produce an implementation plan that references concrete files, guardrails, and validation steps. Recommend sp.tasks, sp.devops, or sp.review for follow-up.
+        """
+    ).strip(),
+    "doc-master": dedent(
+        """
+        You are the Super Prompt Doc Master persona. Plan documentation architecture, contributors, and verification tactics.
+        Deliver a doc plan that ties into sp.scribe, sp.qa, and sp.review for execution.
+        """
+    ).strip(),
+}
+
+
+def _codex_env_overrides() -> Dict[str, str]:
+    allowed = [
+        "OPENAI_API_KEY",
+        "OPENAI_KEY",
+        "OPENAI_ORGANIZATION",
+        "OPENAI_BASE_URL",
+        "CODEX_API_KEY",
+        "CODEX_HOME",
+        "RUST_LOG",
+    ]
+    env: Dict[str, str] = {}
+    for key in allowed:
+        value = os.environ.get(key)
+        if value:
+            env[key] = value
+    return env
+
+
+def _codex_persona_key(tool_name: str) -> str:
+    return tool_name or "general"
+
+
+def _codex_persona_brief(persona_key: str) -> str:
+    default_brief = dedent(
+        """
+        You are part of the Super Prompt multi-agent workflow. Produce a numbered implementation plan first,
+        call out risks, and recommend which MCP tools should run next (e.g., sp.plan, sp.tasks, sp.dev, sp.review).
+        """
+    ).strip()
+    return CODEX_PERSONA_BRIEFS.get(persona_key, default_brief)
+
+
+def _build_codex_prompt(query: str, context: str, persona_key: str) -> tuple[str, str]:
+    brief = _codex_persona_brief(persona_key)
+    context_block = (context or "").strip()
+    if len(context_block) > 1200:
+        context_block = context_block[:1200] + "..."
+
+    base_instructions = dedent(
+        f"""
+        {brief}
+
+        Operate in plan-first mode. Your response MUST contain two sections:
+        PLAN: Numbered steps with clear owners, file targets, and validation gates.
+        TOOLS: Bullet list mapping Super Prompt MCP commands to next actions (e.g., sp.plan, sp.tasks, sp.dev, sp.review, sp.qa).
+
+        Reference concrete files or directories whenever possible and identify risks or unknowns that require further discovery.
+        """
+    ).strip()
+
+    prompt = dedent(
+        f"""
+        {base_instructions}
+
+        [USER REQUEST]
+        {query.strip() or 'No user request provided.'}
+
+        [PROJECT INSIGHTS]
+        {context_block or 'No additional project context provided.'}
+
+        Respond with actionable guidance that other MCP tools can execute without additional clarification.
+        """
+    ).strip()
+
+    return prompt, base_instructions
+
+
+def _call_codex_assistance_mcp(query: str, context: str, tool_name: str) -> str:
+    persona_key = _codex_persona_key(tool_name)
+    prompt, base_instructions = _build_codex_prompt(query, context, persona_key)
+
+    payload = {
+        "prompt": prompt,
+        "model": "gpt-5-codex",
+        "includePlan": True,
+        "baseInstructions": base_instructions,
+        "arguments": {},
+        "env": _codex_env_overrides(),
+        "cwd": str(project_root()),
+        "clientName": "super-prompt",
+        "clientVersion": _PACKAGE_VERSION,
+        "reasoningEffort": "high",
+        "timeoutMs": 180000,
+    }
+
+    bridge = package_root() / "src" / "tools" / "codex-mcp.js"
+    if not bridge.exists():
+        raise FileNotFoundError(f"codex MCP bridge missing at {bridge}")
+
+    env = os.environ.copy()
+    env["CODEX_MCP_PAYLOAD"] = json.dumps(payload)
+
+    cmd = ["node", str(bridge)]
+    print(f"-------- codex: MCP bridge invoking ({persona_key})", file=sys.stderr, flush=True)
+    completed = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=payload["timeoutMs"] / 1000,
+    )
+
+    stdout = completed.stdout.strip()
+    if stdout:
+        last_line = stdout.splitlines()[-1]
+        try:
+            parsed = json.loads(last_line)
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Invalid JSON from codex MCP bridge: {error}: {last_line}")
+
+        if not parsed.get("ok"):
+            raise RuntimeError(parsed.get("text") or "Codex MCP returned an error")
+
+        text = (parsed.get("text") or "").strip()
+        if text:
+            return text
+
+        structured = parsed.get("structuredContent")
+        if structured:
+            return json.dumps(structured)
+
+        content = parsed.get("content")
+        if content:
+            return json.dumps(content)
+
+        return "Codex MCP returned no textual content"
+
+    stderr = completed.stderr.strip()
+    raise RuntimeError(stderr or "Codex MCP produced no output")
+
+
+def _call_codex_assistance_cli(query: str, context: str, tool_name: str) -> str:
+    situation_summary = _summarize_situation_for_codex(query, context, tool_name)
+
+    mcp_servers_config = "{}"
+    codex_cmd = [
+        "codex",
+        "exec",
+        "-c",
+        f"mcp_servers={mcp_servers_config}",
+        "-c",
+        'model_reasoning_effort="high"',
+        "--",
+        situation_summary,
+    ]
+
+    result = subprocess.run(
+        codex_cmd,
+        capture_output=True,
+        text=True,
+        timeout=90,
+    )
+
+    if result.returncode == 0:
+        return result.stdout.strip()
+
+    error_msg = result.stderr.strip() or "Codex CLI error"
+    return f"Codex assistance unavailable: {error_msg}"
+
+
+def _short_description(doc: Optional[str]) -> str:
+    if not doc:
+        return ""
+    lines = [line.strip() for line in doc.strip().splitlines() if line.strip()]
+    return lines[0] if lines else ""
+
+
+def register_tool(tool_name: str):
+    meta = TOOL_METADATA.get(tool_name, {})
+
+    def decorator(fn):
+        description = _short_description(fn.__doc__)
+        annotations: Dict[str, Any] = {
+            "name": tool_name,
+            "description": description,
+            "destructive": bool(meta.get("destructive", False)),
+        }
+
+        if "category" in meta:
+            annotations["category"] = meta["category"]
+        if meta.get("tags"):
+            annotations["tags"] = list(meta["tags"])
+        if meta.get("persona"):
+            annotations["persona"] = meta["persona"]
+        if meta.get("examples"):
+            annotations["examples"] = meta["examples"]
+
+        input_schema: Optional[Dict[str, Any]] = None
+        try:
+            fn_sig = inspect.signature(fn)
+        except Exception:
+            fn_sig = None
+
+        if fn_sig:
+            properties: Dict[str, Any] = {}
+            required: List[str] = []
+            for param_name, param in fn_sig.parameters.items():
+                if param_name == "self":
+                    continue
+                schema: Dict[str, Any] = {}
+                annotation = param.annotation
+                schema_type = "string"
+                if annotation in (bool, "bool"):
+                    schema_type = "boolean"
+                elif annotation in (int, "int"):
+                    schema_type = "integer"
+                elif annotation in (float, "float"):
+                    schema_type = "number"
+                schema["type"] = schema_type
+                if param.default is not inspect._empty:
+                    schema["default"] = param.default
+                properties[param_name] = schema
+                if param.default is inspect._empty:
+                    required.append(param_name)
+            if properties:
+                input_schema = {
+                    "type": "object",
+                    "properties": properties,
+                    "additionalProperties": False,
+                }
+                if required:
+                    input_schema["required"] = required
+
+        if input_schema:
+            annotations["input_schema"] = input_schema
+
+        REGISTERED_TOOL_ANNOTATIONS[tool_name] = annotations
+
+        tool_callable = getattr(mcp, "tool", None)
+        if not callable(tool_callable):
+            setattr(fn, "_sp_annotations", annotations)
+            return fn
+
+        try:
+            params = inspect.signature(tool_callable).parameters
+        except Exception:
+            params = {}
+
+        kwargs: Dict[str, Any] = {}
+        destructive = bool(meta.get("destructive", False))
+        if destructive and "destructive" in params:
+            kwargs["destructive"] = True
+        elif not destructive and "read_only" in params:
+            kwargs["read_only"] = True
+
+        if "annotations" in params:
+            kwargs["annotations"] = annotations
+        elif "metadata" in params:
+            kwargs["metadata"] = annotations
+        elif "tags" in params and meta.get("tags"):
+            kwargs["tags"] = list(meta["tags"])
+
+        if input_schema and "input_schema" in params:
+            kwargs["input_schema"] = input_schema
+
+        if "name" in params:
+            kwargs["name"] = tool_name
+
+        try:
+            decorated = tool_callable(**kwargs)
+        except TypeError:
+            decorated = tool_callable()
+
+        wrapped = decorated(fn)
+        setattr(wrapped, "_sp_annotations", annotations)
+        setattr(fn, "_sp_annotations", annotations)
+        return wrapped
+
+    return decorator
+
+
 def _text_from(content: "TextContent | str | None") -> str:
     try:
         if isinstance(content, TextContent):  # type: ignore
@@ -418,56 +908,29 @@ def _text_from(content: "TextContent | str | None") -> str:
 
 
 def _call_codex_assistance(query: str, context: str = "", tool_name: str = "general") -> str:
-    """Call Codex CLI for assistance with logical reasoning"""
+    """Route Codex assistance using the MCP bridge with CLI fallback."""
     try:
-        # 상황 요약 및 핵심 질문 추출
-        situation_summary = _summarize_situation_for_codex(query, context, tool_name)
-
-        # Codex 명령어 구성 - MCP 서버 설정과 high reasoning effort 사용
-        mcp_servers_config = "{}"  # 현재 MCP 서버 설정 비활성화 (필요시 설정)
-        codex_cmd = [
-            "codex",
-            "exec",
-            "-c",
-            f"mcp_servers={mcp_servers_config}",
-            "-c",
-            'model_reasoning_effort="high"',
-            "--",
-            situation_summary,
-        ]
-
-        print(f"-------- codex: calling {tool_name} assistance", file=sys.stderr, flush=True)
-
-        # Codex 실행
-        result = subprocess.run(
-            codex_cmd,
-            capture_output=True,
-            text=True,
-            timeout=60,  # 60초 타임아웃 (high reasoning에 더 많은 시간)
+        return _call_codex_assistance_mcp(query, context, tool_name)
+    except FileNotFoundError as missing:
+        print(
+            f"-------- codex: MCP bridge missing ({missing}); falling back to CLI",
+            file=sys.stderr,
+            flush=True,
+        )
+    except subprocess.TimeoutExpired as timeout_err:
+        print(
+            f"-------- codex: MCP bridge timeout ({tool_name}): {timeout_err}",
+            file=sys.stderr,
+            flush=True,
+        )
+    except Exception as error:
+        print(
+            f"-------- codex: MCP bridge failure ({tool_name}): {error}",
+            file=sys.stderr,
+            flush=True,
         )
 
-        if result.returncode == 0:
-            response = result.stdout.strip()
-            print(f"-------- codex: {tool_name} assistance completed", file=sys.stderr, flush=True)
-            return response
-        else:
-            error_msg = result.stderr.strip()
-            print(
-                f"-------- codex: {tool_name} assistance failed: {error_msg}",
-                file=sys.stderr,
-                flush=True,
-            )
-            return f"Codex assistance unavailable: {error_msg}"
-
-    except subprocess.TimeoutExpired:
-        print(f"-------- codex: {tool_name} assistance timeout", file=sys.stderr, flush=True)
-        return "Codex assistance timeout - proceeding with local analysis"
-    except FileNotFoundError:
-        print(f"-------- codex: {tool_name} CLI not found", file=sys.stderr, flush=True)
-        return "Codex CLI not available - proceeding with local analysis"
-    except Exception as e:
-        print(f"-------- codex: {tool_name} assistance error: {e}", file=sys.stderr, flush=True)
-        return f"Codex assistance error: {str(e)}"
+    return _call_codex_assistance_cli(query, context, tool_name)
 
 
 def _summarize_situation_for_codex(
@@ -509,8 +972,23 @@ What is the most important insight or recommendation for this situation? Focus o
 
 def _should_use_codex_assistance(query: str, tool_name: str) -> bool:
     """Determine if Codex assistance is needed for logical reasoning"""
-    # High 명령어는 항상 Codex 사용
-    if tool_name == "high":
+    mandatory = {
+        "architect",
+        "frontend",
+        "backend",
+        "security",
+        "performance",
+        "analyzer",
+        "qa",
+        "refactorer",
+        "devops",
+        "mentor",
+        "scribe",
+        "dev",
+        "doc-master",
+        "high",
+    }
+    if tool_name in mandatory:
         return True
 
     # 복잡한 쿼리의 경우 Codex 사용
@@ -924,8 +1402,8 @@ def _init_impl(force: bool = False) -> str:
     # 예시: commands/super-prompt/*, rules/* 등 선택 복사
     _copytree(src / "commands", pr / ".cursor" / "commands", force=force)
     _copytree(src / "rules", pr / ".cursor" / "rules", force=force)
-    # 프로젝트용 디렉터리 보장
-    for d in ["specs", "memory", ".codex"]:
+    # 프로젝트용 디렉터리 보장 (Codex assets live in ~/.codex)
+    for d in ["specs", "memory"]:
         (pr / d).mkdir(parents=True, exist_ok=True)
     # Generate Codex assets based on manifest
     try:
@@ -970,7 +1448,7 @@ def _copytree(src, dst, force=False):
             shutil.copy2(p, t)
 
 
-@mcp.tool()  # 도구명: sp.version
+@register_tool("sp.version")  # 도구명: sp.version - 읽기 전용 버전 정보 조회
 def version() -> TextContent:
     """Get Super Prompt version"""
     with memory_span("sp.version"):
@@ -984,9 +1462,12 @@ def version() -> TextContent:
         return TextContent(type="text", text=f"Super Prompt v{ver}")
 
 
-@mcp.tool()  # 도구명: sp.init
+@register_tool("sp.init")  # 도구명: sp.init - 파일 시스템 수정 (프로젝트 초기화)
 def init(force: bool = False) -> TextContent:
     """Initialize Super Prompt for current project"""
+    # MCP Authorization check
+    MCPAuthorization.require_permission("init")
+
     with memory_span("sp.init"):
         progress.show_progress("🚀 Super Prompt 초기화 시작")
         progress.show_info("권한 확인 중...")
@@ -1019,9 +1500,12 @@ def init(force: bool = False) -> TextContent:
         return TextContent(type="text", text=msg)
 
 
-@mcp.tool()  # 도구명: sp.refresh
+@register_tool("sp.refresh")  # 도구명: sp.refresh - 파일 시스템 수정 (에셋 새로고침)
 def refresh() -> TextContent:
     """Refresh Super Prompt assets in current project"""
+    # MCP Authorization check
+    MCPAuthorization.require_permission("refresh")
+
     with memory_span("sp.refresh"):
         progress.show_progress("🔄 Super Prompt 에셋 새로고침")
         progress.show_info("권한 확인 중...")
@@ -1043,7 +1527,7 @@ def refresh() -> TextContent:
         return TextContent(type="text", text=msg)
 
 
-@mcp.tool()  # 도구명: sp.list_commands
+@register_tool("sp.list_commands")  # 도구명: sp.list_commands - 읽기 전용 명령어 목록 조회
 def list_commands() -> TextContent:
     """List available Super Prompt commands"""
     with memory_span("sp.list_commands"):
@@ -1059,7 +1543,7 @@ def list_commands() -> TextContent:
         return TextContent(type="text", text=text)
 
 
-@mcp.tool()  # 도구명: sp.list_personas
+@register_tool("sp.list_personas")  # 도구명: sp.list_personas - 읽기 전용 페르소나 목록 조회
 def list_personas() -> TextContent:
     """List available Super Prompt personas"""
     with memory_span("sp.list_personas"):
@@ -1079,7 +1563,7 @@ def list_personas() -> TextContent:
     return TextContent(type="text", text=text)
 
 
-@mcp.tool()  # 도구명: sp.mode_get
+@register_tool("sp.mode_get")  # 도구명: sp.mode_get - 읽기 전용 현재 모드 조회
 def mode_get() -> TextContent:
     """Get current LLM mode (gpt|grok)"""
     with memory_span("sp.mode_get"):
@@ -1087,9 +1571,12 @@ def mode_get() -> TextContent:
         return TextContent(type="text", text=mode)
 
 
-@mcp.tool()  # 도구명: sp.mode_set
+@register_tool("sp.mode_set")  # 도구명: sp.mode_set - 설정 파일 수정 (모드 변경)
 def mode_set(mode: str) -> TextContent:
     """Set LLM mode to 'gpt' or 'grok'"""
+    # MCP Authorization check
+    MCPAuthorization.require_permission("mode_set")
+
     with memory_span("sp.mode_set"):
         print(f"-------- mcp: sp.mode_set(args={{mode:'{mode}'}})", file=sys.stderr, flush=True)
         m = set_mode(mode)
@@ -1097,7 +1584,7 @@ def mode_set(mode: str) -> TextContent:
         return TextContent(type="text", text=f"mode set to {m}")
 
 
-@mcp.tool()  # 도구명: sp.grok_mode_on
+@register_tool("sp.grok_mode_on")  # 도구명: sp.grok_mode_on - 설정 파일 수정 (모드 변경)
 def grok_mode_on() -> TextContent:
     """Switch LLM mode to grok"""
     with memory_span("sp.grok_mode_on"):
@@ -1106,7 +1593,7 @@ def grok_mode_on() -> TextContent:
         return TextContent(type="text", text="mode set to grok")
 
 
-@mcp.tool()  # 도구명: sp.gpt_mode_on
+@register_tool("sp.gpt_mode_on")  # 도구명: sp.gpt_mode_on - 설정 파일 수정 (모드 변경)
 def gpt_mode_on() -> TextContent:
     """Switch LLM mode to gpt"""
     with memory_span("sp.gpt_mode_on"):
@@ -1118,9 +1605,19 @@ def gpt_mode_on() -> TextContent:
 # === Persona Tools ===
 
 
-@mcp.tool()  # 도구명: sp.architect
+@register_tool("sp.architect")  # 도구명: sp.architect - 읽기 전용 아키텍처 분석 및 설계 조언
 def architect(query: str = "") -> TextContent:
-    """🏗️ Architect - System design and architecture specialist"""
+    """🏗️ Architect - System design and architecture specialist
+
+    Analyzes system architecture, provides design recommendations, and helps with
+    scalability planning. Best for complex system design decisions and architectural
+    reviews.
+
+    Args:
+        query: Architecture question or system design problem to analyze
+
+    Returns:
+        Detailed architectural analysis and recommendations"""
     with memory_span("sp.architect"):
         # Note: MCP environment check removed - direct calls work without full MCP server
         # This ensures the tool always works when called via MCP client direct invocation
@@ -1128,7 +1625,18 @@ def architect(query: str = "") -> TextContent:
         if not query.strip():
             return TextContent(
                 type="text",
-                text="🏗️ Architect tool activated.\n\nPlease provide an architecture or design question.",
+                text="""🏗️ Architect tool activated.
+
+To provide the best architectural guidance, please provide:
+
+• What type of system are you designing? (web app, API, microservices, etc.)
+• What are the key requirements? (scalability, performance, security, etc.)
+• What technologies/frameworks are you considering?
+• What's the expected user load and data volume?
+
+Example: "Design a scalable e-commerce platform using React and Node.js"
+
+Please provide your architecture question or requirements.""",
             )
 
         # Codex CLI 사용 여부 결정
@@ -1181,23 +1689,77 @@ def architect(query: str = "") -> TextContent:
         return _add_confession_mode(result, "architect", query)
 
 
-@mcp.tool()  # 도구명: sp.frontend
+@register_tool("sp.frontend")  # 도구명: sp.frontend - 읽기 전용 프론트엔드 UI/UX 분석 및 조언
 def frontend(query: str = "") -> TextContent:
-    """🎨 Frontend - UI/UX specialist and accessibility advocate"""
+    """🎨 Frontend - UI/UX specialist and accessibility advocate
+
+    Provides expertise in React, Vue, Angular, and modern frontend frameworks.
+    Focuses on component design, responsive layouts, accessibility (a11y), and
+    user experience optimization.
+
+    Args:
+        query: Frontend development question, UI/UX problem, or accessibility concern
+
+    Returns:
+        Frontend implementation guidance and best practices"""
     with memory_span("sp.frontend"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="""🎨 Frontend tool activated.
+
+To provide the best frontend guidance, please specify:
+
+• What framework/library are you using? (React, Vue, Angular, Svelte, etc.)
+• What type of component/feature are you building?
+• Is this about styling, state management, performance, or accessibility?
+• Do you have existing code or design mockups?
+
+Example: "How to implement a responsive navigation menu in React with accessibility"
+
+Please provide your frontend development question.""",
+            )
+
         result = _execute_persona("frontend", query)
         return _add_confession_mode(result, "frontend", query)
 
 
-@mcp.tool()  # 도구명: sp.backend
+@register_tool("sp.backend")  # 도구명: sp.backend - 읽기 전용 백엔드 API 및 데이터베이스 분석
 def backend(query: str = "") -> TextContent:
-    """⚡ Backend - Reliability engineer and API specialist"""
+    """⚡ Backend - Reliability engineer and API specialist
+
+    Expert in server-side development, API design, database optimization, and
+    system reliability. Covers REST APIs, GraphQL, microservices, and performance
+    optimization.
+
+    Args:
+        query: Backend development question, API design problem, or performance issue
+
+    Returns:
+        Backend implementation guidance and architectural recommendations"""
     with memory_span("sp.backend"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="""⚡ Backend tool activated.
+
+To provide the best backend guidance, please specify:
+
+• What language/framework are you using? (Node.js, Python, Java, Go, etc.)
+• What type of API/service are you building? (REST, GraphQL, microservices)
+• Is this about database design, API endpoints, performance, or security?
+• What database system are you considering? (PostgreSQL, MongoDB, Redis, etc.)
+
+Example: "Design REST API endpoints for user management with JWT authentication"
+
+Please provide your backend development question.""",
+            )
+
         result = _execute_persona("backend", query)
         return _add_confession_mode(result, "backend", query)
 
 
-@mcp.tool()  # 도구명: sp.security
+@register_tool("sp.security")  # 도구명: sp.security - 읽기 전용 보안 취약점 분석 및 조언
 def security(query: str = "") -> TextContent:
     """🛡️ Security - Threat modeling and vulnerability specialist"""
     with memory_span("sp.security"):
@@ -1205,7 +1767,7 @@ def security(query: str = "") -> TextContent:
         return _add_confession_mode(result, "security", query)
 
 
-@mcp.tool()  # 도구명: sp.performance
+@register_tool("sp.performance")  # 도구명: sp.performance - 읽기 전용 성능 분석 및 최적화 조언
 def performance(query: str = "") -> TextContent:
     """🚀 Performance - Optimization and bottleneck elimination expert"""
     with memory_span("sp.performance"):
@@ -1213,7 +1775,7 @@ def performance(query: str = "") -> TextContent:
         return _add_confession_mode(result, "performance", query)
 
 
-@mcp.tool()  # 도구명: sp.analyzer
+@register_tool("sp.analyzer")  # 도구명: sp.analyzer - 읽기 전용 근본 원인 분석 및 조사
 def analyzer(query: str = "") -> TextContent:
     """🔍 Analyzer - Root cause investigation specialist"""
     with memory_span("sp.analyzer"):
@@ -1227,7 +1789,19 @@ def analyzer(query: str = "") -> TextContent:
             progress.show_error("No query provided")
             return TextContent(
                 type="text",
-                text="🔍 Analyzer tool activated.\n\nPlease provide an issue or problem to analyze.",
+                text="""🔍 Analyzer tool activated.
+
+To perform effective root cause analysis, please provide:
+
+• What specific issue or error are you experiencing?
+• What symptoms have you observed?
+• When did this issue start occurring?
+• What recent changes were made before the issue appeared?
+• Are there any error messages, logs, or stack traces?
+
+Example: "My React app crashes when users submit forms - getting 'Cannot read property of undefined'"
+
+Please provide the problem description for analysis.""",
             )
 
         progress.show_progress("🔍 Starting root cause analysis")
@@ -1275,7 +1849,7 @@ def analyzer(query: str = "") -> TextContent:
         return _add_confession_mode(result, "analyzer", query)
 
 
-@mcp.tool()  # 도구명: sp.qa
+@register_tool("sp.qa")  # 도구명: sp.qa - 읽기 전용 품질 보증 및 테스트 분석
 def qa(query: str = "") -> TextContent:
     """🧪 QA - Quality advocate and testing specialist"""
     with memory_span("sp.qa"):
@@ -1283,7 +1857,7 @@ def qa(query: str = "") -> TextContent:
         return _add_confession_mode(result, "qa", query)
 
 
-@mcp.tool()  # 도구명: sp.refactorer
+@register_tool("sp.refactorer")  # 도구명: sp.refactorer - 읽기 전용 코드 리팩토링 분석 및 조언
 def refactorer(query: str = "") -> TextContent:
     """🔧 Refactorer - Code quality and technical debt specialist"""
     with memory_span("sp.refactorer"):
@@ -1291,7 +1865,7 @@ def refactorer(query: str = "") -> TextContent:
         return _add_confession_mode(result, "refactorer", query)
 
 
-@mcp.tool()  # 도구명: sp.devops
+@register_tool("sp.devops")  # 도구명: sp.devops - 읽기 전용 DevOps 및 인프라 분석
 def devops(query: str = "") -> TextContent:
     """🚢 DevOps - Infrastructure and deployment specialist"""
     with memory_span("sp.devops"):
@@ -1299,7 +1873,7 @@ def devops(query: str = "") -> TextContent:
         return _add_confession_mode(result, "devops", query)
 
 
-@mcp.tool()  # 도구명: sp.mentor
+@register_tool("sp.mentor")  # 도구명: sp.mentor - 읽기 전용 교육 및 멘토링 조언
 def mentor(query: str = "") -> TextContent:
     """👨‍🏫 Mentor - Knowledge transfer and educational specialist"""
     with memory_span("sp.mentor"):
@@ -1307,7 +1881,7 @@ def mentor(query: str = "") -> TextContent:
         return _add_confession_mode(result, "mentor", query)
 
 
-@mcp.tool()  # 도구명: sp.scribe
+@register_tool("sp.scribe")  # 도구명: sp.scribe - 읽기 전용 기술 문서 작성 조언
 def scribe(query: str = "", lang: str = "en") -> TextContent:
     """📝 Scribe - Professional documentation specialist"""
     with memory_span("sp.scribe"):
@@ -1370,11 +1944,16 @@ def _add_confession_mode(result: TextContent, persona_name: str, query: str) -> 
 **📊 AUDIT COMPLETED:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
 """
 
+    # Add resource links for the persona
+    resource_links = _get_persona_resource_links(persona_name)
+    if resource_links:
+        confession_audit += f"\n{resource_links}\n"
+
     combined_text = original_text + confession_audit
     return TextContent(type="text", text=combined_text)
 
 
-@mcp.tool()  # 도구명: sp.grok_mode_off
+@register_tool("sp.grok_mode_off")  # 도구명: sp.grok_mode_off - 설정 파일 수정 (모드 변경)
 def grok_mode_off() -> TextContent:
     """Turn off Grok mode"""
     with memory_span("sp.grok_mode_off"):
@@ -1382,7 +1961,7 @@ def grok_mode_off() -> TextContent:
         return TextContent(type="text", text="Grok mode turned off, switched to GPT")
 
 
-@mcp.tool()  # 도구명: sp.gpt_mode_off
+@register_tool("sp.gpt_mode_off")  # 도구명: sp.gpt_mode_off - 설정 파일 수정 (모드 변경)
 def gpt_mode_off() -> TextContent:
     """Turn off GPT mode"""
     with memory_span("sp.gpt_mode_off"):
@@ -1390,7 +1969,7 @@ def gpt_mode_off() -> TextContent:
         return TextContent(type="text", text="GPT mode turned off, switched to Grok")
 
 
-@mcp.tool()  # 도구명: sp.specify
+@register_tool("sp.specify")  # 도구명: sp.specify - 읽기 전용 요구사항 명세화
 def specify(query: str = "") -> TextContent:
     """📋 Specify - Create detailed specifications"""
     with memory_span("sp.specify"):
@@ -1400,7 +1979,7 @@ def specify(query: str = "") -> TextContent:
         )
 
 
-@mcp.tool()  # 도구명: sp.plan
+@register_tool("sp.plan")  # 도구명: sp.plan - 읽기 전용 계획 수립
 def plan(query: str = "") -> TextContent:
     """📅 Plan - Create implementation plans"""
     with memory_span("sp.plan"):
@@ -1410,7 +1989,7 @@ def plan(query: str = "") -> TextContent:
         )
 
 
-@mcp.tool()  # 도구명: sp.tasks
+@register_tool("sp.tasks")  # 도구명: sp.tasks - 읽기 전용 작업 분해
 def tasks(query: str = "") -> TextContent:
     """✅ Tasks - Break down work into tasks"""
     with memory_span("sp.tasks"):
@@ -1420,7 +1999,7 @@ def tasks(query: str = "") -> TextContent:
         )
 
 
-@mcp.tool()  # 도구명: sp.implement
+@register_tool("sp.implement")  # 도구명: sp.implement - 읽기 전용 구현 조언
 def implement(query: str = "") -> TextContent:
     """🔨 Implement - Execute implementation"""
     with memory_span("sp.implement"):
@@ -1430,7 +2009,7 @@ def implement(query: str = "") -> TextContent:
         )
 
 
-@mcp.tool()  # 도구명: sp.seq
+@register_tool("sp.seq")  # 도구명: sp.seq - 읽기 전용 순차적 추론
 def seq(query: str = "") -> TextContent:
     """🔍 Sequential - Step-by-step reasoning and analysis"""
     with memory_span("sp.seq"):
@@ -1459,7 +2038,7 @@ def seq(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.seq-ultra
+@register_tool("sp.seq-ultra")  # 도구명: sp.seq-ultra - 읽기 전용 심층 순차적 추론
 def seq_ultra(query: str = "") -> TextContent:
     """🧠 Sequential Ultra - Ultra-deep sequential reasoning for complex problems"""
     with memory_span("sp.seq-ultra"):
@@ -1491,7 +2070,7 @@ def seq_ultra(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.high
+@register_tool("sp.high")  # 도구명: sp.high - 읽기 전용 고수준 추론
 def high(query: str = "") -> TextContent:
     """🧠 High Reasoning - Deep reasoning and strategic problem solving with GPT-5 high model approach"""
     with memory_span("sp.high"):
@@ -1541,7 +2120,7 @@ def high(query: str = "") -> TextContent:
         return _add_confession_mode(result, "high", query)
 
 
-@mcp.tool()  # 도구명: sp.dev
+@register_tool("sp.dev")  # 도구명: sp.dev - 읽기 전용 개발 조언
 def dev(query: str = "") -> TextContent:
     """🚀 Dev - Feature development with quality and delivery focus"""
     with memory_span("sp.dev"):
@@ -1615,7 +2194,7 @@ def dev(query: str = "") -> TextContent:
         return _add_confession_mode(result, "dev", query)
 
 
-@mcp.tool()  # 도구명: sp.grok
+@register_tool("sp.grok")  # 도구명: sp.grok - 읽기 전용 Grok 세션 최적화
 def grok(query: str = "") -> TextContent:
     """🤖 Grok - xAI's helpful and maximally truthful AI"""
     with memory_span("sp.grok"):
@@ -1639,7 +2218,7 @@ def grok(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.db-expert
+@register_tool("sp.db-expert")  # 도구명: sp.db-expert - 읽기 전용 데이터베이스 전문가 조언
 def db_expert(query: str = "") -> TextContent:
     """🗄️ Database Expert - SQL, database design, and optimization specialist"""
     with memory_span("sp.db-expert"):
@@ -1663,7 +2242,7 @@ def db_expert(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.optimize
+@register_tool("sp.optimize")  # 도구명: sp.optimize - 읽기 전용 일반 최적화 조언
 def optimize(query: str = "") -> TextContent:
     """⚡ Optimize - Performance optimization and efficiency specialist"""
     with memory_span("sp.optimize"):
@@ -1687,7 +2266,7 @@ def optimize(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.review
+@register_tool("sp.review")  # 도구명: sp.review - 읽기 전용 코드 리뷰 및 품질 검토
 def review(query: str = "") -> TextContent:
     """🔍 Review - Code review and quality assurance specialist"""
     with memory_span("sp.review"):
@@ -1711,7 +2290,7 @@ def review(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.service-planner
+@register_tool("sp.service-planner")  # 도구명: sp.service-planner
 def service_planner(query: str = "") -> TextContent:
     """🏗️ Service Planner - System architecture and service design specialist"""
     with memory_span("sp.service-planner"):
@@ -1735,7 +2314,7 @@ def service_planner(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.tr
+@register_tool("sp.tr")  # 도구명: sp.tr
 def tr(query: str = "") -> TextContent:
     """🌐 Translate - Multi-language translation and localization specialist"""
     with memory_span("sp.tr"):
@@ -1759,7 +2338,7 @@ def tr(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.ultracompressed
+@register_tool("sp.ultracompressed")  # 도구명: sp.ultracompressed
 def ultracompressed(query: str = "") -> TextContent:
     """🗜️ Ultra Compressed - Maximum information density with minimal tokens"""
     with memory_span("sp.ultracompressed"):
@@ -1782,7 +2361,7 @@ def ultracompressed(query: str = "") -> TextContent:
         return TextContent(type="text", text=response)
 
 
-@mcp.tool()  # 도구명: sp.doc-master
+@register_tool("sp.doc-master")  # 도구명: sp.doc-master
 def doc_master(query: str = "") -> TextContent:
     """📚 Doc Master - Documentation architecture, writing, and verification"""
     with memory_span("sp.doc-master"):

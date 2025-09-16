@@ -399,12 +399,12 @@ def codex_init(
         None, "--project-root", help="Project root directory"
     ),
 ):
-    """Create Codex CLI assets in .codex/"""
+    """Create Codex CLI assets in ~/.codex"""
     try:
         root = Path(project_root or ".")
         adapter = CodexAdapter()
         adapter.generate_assets(root)
-        typer.echo("--------codex:init: .codex assets created")
+        typer.echo("--------codex:init: ~/.codex assets created")
     except Exception as e:
         typer.echo(f"❌ Error: {e}", err=True)
         raise typer.Exit(1)
@@ -416,7 +416,7 @@ def codex_mode_on(
         None, "--project-root", help="Project root directory"
     ),
 ):
-    """Enable Codex AMR mode by creating .codex/.codex-mode flag."""
+    """Enable Codex AMR mode by creating .cursor/.codex-mode flag."""
     try:
         root = Path(project_root or ".")
         cursor_dir = root / ".cursor"
@@ -431,7 +431,7 @@ def codex_mode_on(
                 typer.echo("-------- Grok mode disabled due to Codex AMR activation")
             except Exception:
                 pass
-        typer.echo("-------- Codex AMR mode: ENABLED (.codex/.codex-mode)")
+        typer.echo("-------- Codex AMR mode: ENABLED (.cursor/.codex-mode)")
     except Exception as e:
         typer.echo(f"❌ Error enabling Codex mode: {e}", err=True)
         raise typer.Exit(1)
@@ -443,7 +443,7 @@ def codex_mode_off(
         None, "--project-root", help="Project root directory"
     ),
 ):
-    """Disable Codex AMR mode by removing .codex/.codex-mode flag."""
+    """Disable Codex AMR mode by removing .cursor/.codex-mode flag."""
     try:
         root = Path(project_root or ".")
         flag = root / ".cursor" / ".codex-mode"

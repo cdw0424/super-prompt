@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const os = require('os');
 
 function projectRoot() {
   // INIT_CWD points to the user's project when running npm scripts
@@ -64,7 +65,7 @@ function main() {
   // 1) Core locations
   const cursorDir = path.join(pr, '.cursor');
   const rulesDir = path.join(cursorDir, 'rules');
-  const codexDir = path.join(pr, '.codex');
+  const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 
   // 2) Check mode
   ensureMode(pr);
@@ -81,7 +82,7 @@ function main() {
     const ok = checkFile(path.join(rulesDir, f), `.cursor/rules/${f}`);
     rulesOk = rulesOk && ok;
   }
-  const codexOk = checkFile(path.join(codexDir, 'agents.md'), '.codex/agents.md');
+  const codexOk = checkFile(path.join(codexHome, 'agents.md'), '~/.codex/agents.md');
 
   if (!rulesOk || !codexOk) {
     log('SUGGEST: run `super-prompt super:init` to materialize assets');
@@ -132,4 +133,3 @@ if (require.main === module) {
 }
 
 module.exports = { main };
-
