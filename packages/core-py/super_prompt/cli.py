@@ -1356,6 +1356,13 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
 
 def main():
     """Main entry point"""
+    # Initialize memory system early
+    try:
+        from .memory.store import MemoryStore
+        MemoryStore.open()  # Ensure memory database exists
+    except Exception as e:
+        print(f"-------- WARNING: memory system initialization failed: {e}", file=sys.stderr)
+
     app()
 
 

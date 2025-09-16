@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "4.4.2"
-description = "Core library for Super Prompt - Modular prompt engineering and development workflow management"
+version = "4.5.1"
+description = "Core library for Super Prompt v4.5.1 - Ultimate Dual IDE Prompt Engineering Toolkit with Enhanced MCP Support"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -66,6 +66,15 @@ Changelog = "https://github.com/cdw0424/super-prompt/blob/main/CHANGELOG.md"
 
 [project.scripts]
 super-prompt = "super_prompt.cli:app"
+
+[tool.hatch.build]
+exclude = [
+    "build_venv",
+    "dist",
+    ".pytest_cache",
+    "tests",
+    "*.egg-info",
+]
 
 [tool.hatch.build.targets.wheel]
 include = ["/super_prompt"]

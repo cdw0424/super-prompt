@@ -1,6 +1,7 @@
 ---
 description: debate command
 run: mcp
+server: super-prompt
 tool: sp.debate
 args:
   query: "${input}"

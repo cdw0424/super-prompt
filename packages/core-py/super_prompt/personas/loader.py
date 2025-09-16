@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 import os
+import sys
 from ..paths import package_root, cursor_assets_root
 
 
@@ -59,7 +60,6 @@ class PersonaLoader:
             return 0
 
         if yaml is None:
-            import sys
             print("-------- Warning: PyYAML not installed; skipping persona manifest load", file=sys.stderr, flush=True)
             return 0
 
@@ -68,15 +68,41 @@ class PersonaLoader:
                 data = yaml.safe_load(f)
 
             loaded_count = 0
-            for persona_data in data.get('personas', []):
-                persona = PersonaConfig(**persona_data)
-                self.personas[persona.name] = persona
-                loaded_count += 1
+            for persona_name, persona_data in data.get('personas', {}).items():
+                # Convert YAML structure to PersonaConfig format
+                try:
+                    # Extract fields that match PersonaConfig
+                    config_data = {
+                        'name': persona_data.get('name', persona_name),
+                        'role_type': persona_data.get('role_type', persona_data.get('category', 'specialist')),
+                        'expertise_level': persona_data.get('expertise_level', 'expert'),
+                        'goal_orientation': persona_data.get('goal_orientation', 'quality'),
+                        'interaction_style': persona_data.get('interaction_style', 'professional'),
+                        'specializations': persona_data.get('best_for', []),
+                        'auto_activate_patterns': persona_data.get('flags', []),
+                        'description': persona_data.get('description', '')
+                    }
 
+                    # Ensure lists are properly formatted
+                    if isinstance(config_data['specializations'], str):
+                        config_data['specializations'] = [config_data['specializations']]
+                    if isinstance(config_data['auto_activate_patterns'], str):
+                        config_data['auto_activate_patterns'] = [config_data['auto_activate_patterns']]
+
+                    persona = PersonaConfig(**config_data)
+                    self.personas[persona.name] = persona
+                    loaded_count += 1
+
+                    print(f"-------- persona: loaded '{persona.name}' ({persona.role_type})", file=sys.stderr, flush=True)
+
+                except Exception as persona_error:
+                    print(f"-------- persona: failed to load '{persona_name}': {persona_error}", file=sys.stderr, flush=True)
+                    continue
+
+            print(f"-------- persona: total {loaded_count} personas loaded successfully", file=sys.stderr, flush=True)
             return loaded_count
 
         except Exception as e:
-            import sys
             print(f"-------- Error loading persona manifest: {e}", file=sys.stderr, flush=True)
             return 0
 

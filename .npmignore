@@ -28,6 +28,9 @@ playwright-report/
 *.swp
 *.swo
 
+# User data (should never be packaged)
+.super-prompt/
+
 # OS
 .DS_Store
 Thumbs.db

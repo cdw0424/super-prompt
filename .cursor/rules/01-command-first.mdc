@@ -1,0 +1,45 @@
+---
+description: "Principle #1 — Command First Execution"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Principle #1: Command First
+
+**All prompts/queries/requests MUST check for command presence before any other processing, and if a command is detected, execute it immediately as priority #0.**
+
+## Application Timing
+- **Immediate upon prompt receipt** - first step
+- **Any context** - execute immediately when command detected
+- **Position agnostic**: applies regardless of where command appears in prompt
+
+## Command Identification Rules
+- **Explicit commands**: `/command`, `--flag`, `-option` formats
+- **Implicit commands**: patterns matching registered commands
+- **Context commands**: all command forms defined in SSOT
+
+## Execution Priority
+1. **Execute command immediately** (ignore all other logic)
+2. **Return to normal processing** after command completion
+3. **Continue to next step** if no command found
+
+## No Exceptions
+- This principle **always applies** with no exceptions
+- MCP function requests, general analysis, etc. only occur after command check
+- Command priority maintained even if command execution fails
+
+## Implementation Requirements
+- **All entry points** must check this principle first
+- **Bypass all other logic** when command detected
+- **Clear logging**: `----- command: detected and executing [command]`
+
+Without this principle, the system may miss commands and process them as generic MCP requests.
+
+## Current Implementation Limitations
+- **Cursor Commands**: Currently `.cursor/commands/` files all set `run: mcp` for MCP execution
+- **Lack of Direct Execution**: Commands go through MCP intermediary rather than direct execution
+- **Improvement Needed**: Future Cursor command system must implement this principle
+
+## Future Implementation Requirements
+- Add `run: direct` option to Cursor command files
+- Bypass MCP client for direct command execution
+- Apply command priority before MCP calls

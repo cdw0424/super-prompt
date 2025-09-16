@@ -1,6 +1,7 @@
 ---
 description: dev command
 run: mcp
+server: super-prompt
 tool: sp.dev
 args:
   query: "${input}"

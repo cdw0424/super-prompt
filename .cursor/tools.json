@@ -1,9 +1,124 @@
 {
   "tools": {
-    "super-prompt": {
+    "super-prompt-init": {
       "command": "npx",
       "args": ["-y", "@cdw0424/super-prompt@latest", "super:init"],
       "description": "Initialize Super Prompt in the current project"
+    },
+    "sp.analyzer": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.analyzer", "query=${input}"],
+      "description": "🔍 Analyzer - Root cause analysis and systematic investigation"
+    },
+    "sp.architect": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.architect", "query=${input}"],
+      "description": "🏗️ Architect - System design and architecture specialist"
+    },
+    "sp.backend": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.backend", "query=${input}"],
+      "description": "⚡ Backend - Reliability engineer and API specialist"
+    },
+    "sp.frontend": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.frontend", "query=${input}"],
+      "description": "🎨 Frontend - UI/UX specialist and accessibility advocate"
+    },
+    "sp.security": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.security", "query=${input}"],
+      "description": "🛡️ Security - Threat modeling and vulnerability specialist"
+    },
+    "sp.performance": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.performance", "query=${input}"],
+      "description": "🚀 Performance - Optimization and bottleneck elimination expert"
+    },
+    "sp.qa": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.qa", "query=${input}"],
+      "description": "🧪 QA - Quality advocate and testing specialist"
+    },
+    "sp.refactorer": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.refactorer", "query=${input}"],
+      "description": "🔧 Refactorer - Code quality and technical debt specialist"
+    },
+    "sp.devops": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.devops", "query=${input}"],
+      "description": "🚢 DevOps - Infrastructure and deployment specialist"
+    },
+    "sp.mentor": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.mentor", "query=${input}"],
+      "description": "👨‍🏫 Mentor - Knowledge transfer and educational specialist"
+    },
+    "sp.scribe": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.scribe", "query=${input}"],
+      "description": "📝 Scribe - Professional documentation specialist"
+    },
+    "sp.dev": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.dev", "query=${input}"],
+      "description": "🚀 Dev - Feature development with quality and delivery focus"
+    },
+    "sp.doc-master": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.doc-master", "query=${input}"],
+      "description": "📚 Doc Master - Documentation architecture, writing, and verification"
+    },
+    "sp.grok": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.grok", "query=${input}"],
+      "description": "🤖 Grok - xAI's helpful and maximally truthful AI"
+    },
+    "sp.db-expert": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.db-expert", "query=${input}"],
+      "description": "🗄️ Database Expert - SQL, database design, and optimization specialist"
+    },
+    "sp.optimize": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.optimize", "query=${input}"],
+      "description": "⚡ Optimize - Performance optimization and efficiency specialist"
+    },
+    "sp.review": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.review", "query=${input}"],
+      "description": "🔍 Review - Code review and quality assurance specialist"
+    },
+    "sp.service-planner": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.service-planner", "query=${input}"],
+      "description": "🏗️ Service Planner - System architecture and service design specialist"
+    },
+    "sp.tr": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.tr", "query=${input}"],
+      "description": "🌐 Translate - Multi-language translation and localization specialist"
+    },
+    "sp.ultracompressed": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.ultracompressed", "query=${input}"],
+      "description": "🗜️ Ultra Compressed - Maximum information density with minimal tokens"
+    },
+    "sp.seq": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.seq", "query=${input}"],
+      "description": "🔍 Sequential - Step-by-step reasoning and analysis"
+    },
+    "sp.seq-ultra": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.seq-ultra", "query=${input}"],
+      "description": "🧠 Sequential Ultra - Ultra-deep sequential reasoning for complex problems"
+    },
+    "sp.high": {
+      "command": "npx",
+      "args": ["-y", "@cdw0424/super-prompt", "mcp-client", "call", "sp.high", "query=${input}"],
+      "description": "🧠 High Reasoning - Deep reasoning and strategic problem solving with GPT-5 high model approach"
     }
   }
 }

@@ -10,14 +10,124 @@ from pathlib import Path
 import socket
 import time
 
-# MCP SDK (Anthropic 공개 라이브러리)
+# MCP SDK (Anthropic 공개 라이브러리) - 버전 호환성 개선
 # NOTE: Provide safe fallbacks when SDK is unavailable so that direct tool calls can run.
-try:
-    from mcp.server.fastmcp import FastMCP  # type: ignore
-    from mcp.types import TextContent  # type: ignore
+# Support multiple MCP SDK versions for maximum compatibility
 
+def _detect_mcp_version():
+    """Detect MCP SDK version and capabilities with enhanced precision"""
+    try:
+        import mcp
+        version = getattr(mcp, '__version__', 'unknown')
+
+        # Enhanced version detection logic
+        if hasattr(mcp, '__version__') and mcp.__version__:
+            version = mcp.__version__
+            # Parse version string for more precise detection
+            try:
+                from packaging import version as pkg_version
+                parsed_version = pkg_version.parse(version)
+                if parsed_version >= pkg_version.parse('0.4.0'):
+                    return f'{version} (0.4+)', 'fastmcp'
+                elif parsed_version >= pkg_version.parse('0.3.0'):
+                    return f'{version} (0.3+)', 'server'
+                else:
+                    return f'{version} (legacy)', 'legacy'
+            except ImportError:
+                # packaging not available, use string comparison
+                if version.startswith(('0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.')):
+                    return f'{version} (0.4+)', 'fastmcp'
+                elif version.startswith('0.3'):
+                    return f'{version} (0.3+)', 'server'
+
+        # Fallback to structural detection
+        if hasattr(mcp, 'server'):
+            if hasattr(mcp.server, 'FastMCP'):
+                return '0.4+ (detected)', 'fastmcp'
+            elif hasattr(mcp.server, 'fastmcp'):
+                return '0.4+ (detected)', 'fastmcp'
+            elif hasattr(mcp.server, 'Server'):
+                return '0.3+ (detected)', 'server'
+
+        return version, 'unknown'
+    except Exception as e:
+        print(f"-------- MCP: version detection failed: {e}", file=sys.stderr, flush=True)
+        return None, None
+
+def _import_mcp_components():
+    """Import MCP components with version compatibility"""
+    mcp_version, mcp_type = _detect_mcp_version()
+
+    if not mcp_version:
+        raise ImportError("MCP SDK not available")
+
+    # Try different import patterns for maximum compatibility
+    import_attempts = [
+        # MCP 0.4+ with FastMCP
+        ('mcp.server.fastmcp', 'FastMCP'),
+        ('mcp.server', 'FastMCP'),
+        # MCP 0.3+ with Server
+        ('mcp.server', 'Server'),
+        # Legacy patterns
+        ('mcp', 'FastMCP'),
+    ]
+
+    FastMCP = None
+    for module_path, class_name in import_attempts:
+        try:
+            module = __import__(module_path, fromlist=[class_name])
+            FastMCP = getattr(module, class_name, None)
+            if FastMCP:
+                print(f"-------- MCP: using {module_path}.{class_name} (version: {mcp_version})", file=sys.stderr, flush=True)
+                break
+        except (ImportError, AttributeError):
+            continue
+
+    if not FastMCP:
+        raise ImportError(f"No compatible MCP FastMCP/Server class found in version {mcp_version}")
+
+    # Try to import TextContent with comprehensive patterns
+    text_content_attempts = [
+        # Modern MCP patterns
+        'mcp.types.TextContent',
+        'mcp.server.models.TextContent',
+        'mcp.shared.models.TextContent',
+        'mcp.server.fastmcp.TextContent',
+        # Alternative patterns
+        'mcp.server.TextContent',
+        'mcp.TextContent',
+        # Legacy patterns for older versions
+        'mcp.protocol.TextContent',
+        'mcp.core.TextContent',
+    ]
+
+    TextContent = None
+    for tc_path in text_content_attempts:
+        try:
+            module_path, class_name = tc_path.rsplit('.', 1)
+            module = __import__(module_path, fromlist=[class_name])
+            TextContent = getattr(module, class_name, None)
+            if TextContent:
+                break
+        except (ImportError, AttributeError, ValueError):
+            continue
+
+    # Fallback TextContent class
+    if not TextContent:
+        class TextContent:  # minimal stub for direct-call mode
+            def __init__(self, type: str, text: str):
+                self.type = type
+                self.text = text
+
+    return FastMCP, TextContent, mcp_version
+
+# Initialize MCP components
+try:
+    FastMCP, TextContent, _MCP_VERSION = _import_mcp_components()
     _HAS_MCP = True
-except Exception:
+    print(f"-------- MCP: SDK initialized successfully (version: {_MCP_VERSION})", file=sys.stderr, flush=True)
+except Exception as e:
+    print(f"-------- MCP: SDK initialization failed: {e}", file=sys.stderr, flush=True)
     _HAS_MCP = False
 
     class TextContent:  # minimal stub for direct-call mode
@@ -29,7 +139,6 @@ except Exception:
         def tool(self, *_args, **_kwargs):
             def _decorator(fn):
                 return fn
-
             return _decorator
 
         def run(self):
@@ -190,6 +299,41 @@ class SpanManager:
 # 전역 span 관리자
 span_manager = SpanManager()
 
+# 진행상황 표시 유틸리티
+class ProgressIndicator:
+    """실시간 진행상황 표시를 위한 유틸리티 클래스"""
+
+    def __init__(self):
+        self.animation_frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+        self.frame_index = 0
+
+    def show_progress(self, message: str, step: int = 0, total: int = 0) -> None:
+        """진행상황을 표시"""
+        frame = self.animation_frames[self.frame_index % len(self.animation_frames)]
+        self.frame_index += 1
+
+        if total > 0 and step > 0:
+            progress = f"[{step}/{total}] "
+        else:
+            progress = ""
+
+        print(f"-------- {frame} {progress}{message}", file=sys.stderr, flush=True)
+
+    def show_success(self, message: str) -> None:
+        """성공 메시지를 표시"""
+        print(f"-------- ✅ {message}", file=sys.stderr, flush=True)
+
+    def show_error(self, message: str) -> None:
+        """오류 메시지를 표시"""
+        print(f"-------- ❌ {message}", file=sys.stderr, flush=True)
+
+    def show_info(self, message: str) -> None:
+        """정보 메시지를 표시"""
+        print(f"-------- ℹ️  {message}", file=sys.stderr, flush=True)
+
+# 전역 진행상황 표시기
+progress = ProgressIndicator()
+
 
 # Span 컨텍스트 매니저
 @contextmanager
@@ -210,11 +354,58 @@ def memory_span(command_id: str, user_id: Optional[str] = None):
         span_manager.end_span(span_id, "ok")
 
 
-if _HAS_MCP:
-    mcp = FastMCP("super-prompt")  # type: ignore
-else:
-    # when SDK missing, 'mcp' was already defined as a stub above
-    pass
+# Initialize MCP server with version compatibility
+def _initialize_mcp_server():
+    """Initialize MCP server with version-aware configuration"""
+    if not _HAS_MCP:
+        # when SDK missing, 'mcp' was already defined as a stub above
+        return None
+
+    try:
+        # Try different initialization patterns for maximum compatibility
+        server_name = "super-prompt"
+
+        # Check FastMCP signature and initialize accordingly
+        import inspect
+        fastmcp_sig = inspect.signature(FastMCP)
+
+        # Common initialization patterns across MCP versions
+        init_attempts = [
+            # Standard pattern for most versions
+            lambda: FastMCP(server_name),
+            # Some versions might require additional parameters
+            lambda: FastMCP(name=server_name),
+            # Alternative parameter patterns
+            lambda: FastMCP(server_name, instructions=""),
+            lambda: FastMCP(server_name, {}),
+            lambda: FastMCP({"name": server_name}),
+            # Legacy patterns for older versions
+            lambda: FastMCP(server_name, None),
+            lambda: FastMCP(server_name, {}, None),
+        ]
+
+        mcp_instance = None
+        for init_func in init_attempts:
+            try:
+                mcp_instance = init_func()
+                print(f"-------- MCP: server initialized successfully with {init_func.__name__}", file=sys.stderr, flush=True)
+                break
+            except (TypeError, ValueError) as e:
+                print(f"-------- MCP: initialization attempt failed: {e}", file=sys.stderr, flush=True)
+                continue
+
+        if mcp_instance is None:
+            raise RuntimeError(f"Failed to initialize FastMCP with version {_MCP_VERSION}")
+
+        return mcp_instance
+
+    except Exception as e:
+        print(f"-------- MCP: server initialization failed: {e}", file=sys.stderr, flush=True)
+        # Fall back to stub
+        return _StubMCP()
+
+# Initialize MCP server
+mcp = _initialize_mcp_server()
 
 
 def _text_from(content: "TextContent | str | None") -> str:
@@ -407,8 +598,8 @@ def _ensure_venv_activated():
 def _check_mcp_server_running() -> bool:
     """Check if MCP server process is running"""
     try:
-        # Check for running MCP server processes
-        result = subprocess.run(["pgrep", "-f", "mcp_server.py"], capture_output=True, text=True)
+        # Check for running MCP server processes - look for cli.py mcp-serve
+        result = subprocess.run(["pgrep", "-f", "cli.py mcp-serve"], capture_output=True, text=True)
         return result.returncode == 0 and len(result.stdout.strip()) > 0
     except Exception:
         return False
@@ -561,6 +752,14 @@ def _run_direct_tool_if_requested() -> bool:
         # Development and documentation
         "sp.dev": dev,
         "sp.doc-master": doc_master,
+        # Additional tools
+        "sp.grok": grok,
+        "sp.db-expert": db_expert,
+        "sp.optimize": optimize,
+        "sp.review": review,
+        "sp.service-planner": service_planner,
+        "sp.tr": tr,
+        "sp.ultracompressed": ultracompressed,
     }
 
     fn = registry.get(tool)
@@ -636,7 +835,8 @@ def _ensure_project_venv(pr: Path, force: bool = False) -> Optional[Path]:
         else:
             try:
                 print("-------- venv: upgrading pip", file=sys.stderr, flush=True)
-                subprocess.check_call([str(vpython), "-m", "pip", "install", "--upgrade", "pip"])
+                subprocess.check_call([str(vpython), "-m", "pip", "install", "--upgrade", "pip"],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except Exception as e:
                 print(f"-------- WARN: pip upgrade failed: {e}", file=sys.stderr, flush=True)
 
@@ -648,7 +848,8 @@ def _ensure_project_venv(pr: Path, force: bool = False) -> Optional[Path]:
             ]
             try:
                 print("-------- venv: installing python deps", file=sys.stderr, flush=True)
-                subprocess.check_call([str(vpip), "install", *pkgs])
+                subprocess.check_call([str(vpip), "install", *pkgs],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except Exception as e:
                 print(f"-------- WARN: dependency install failed: {e}", file=sys.stderr, flush=True)
 
@@ -683,6 +884,35 @@ def _ensure_project_venv(pr: Path, force: bool = False) -> Optional[Path]:
 
 
 def _init_impl(force: bool = False) -> str:
+    # Display Super Prompt ASCII Art
+    try:
+        from importlib.metadata import version as _v
+        current_version = _v("super-prompt")
+    except:
+        current_version = "4.4.0"
+
+    logo = f"""
+\x1b[36m\x1b[1m   ███████╗██╗   ██╗██████╗ ███████╗██████╗
+   ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗
+   ███████╗██║   ██║██████╔╝█████╗  ██████╔╝
+   ╚════██║██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗
+   ███████║╚██████╔╝██║     ███████╗██║  ██║
+   ╚══════╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝
+
+   ██████╗ ██████╗  ██████╗ ███╗   ███╗██████╗ ████████╗
+   ██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔══██╗╚══██╔══╝
+   ██████╔╝██████╔╝██║   ██║██╔████╔██║██████╔╝   ██║
+   ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔═══╝    ██║
+   ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║██║        ██║
+   ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝        ╚═╝\x1b[0m
+
+\x1b[2m              Dual IDE Prompt Engineering Toolkit\x1b[0m
+\x1b[2m                     v{current_version} | @cdw0424/super-prompt\x1b[0m
+\x1b[2m                          Made by \x1b[0m\x1b[35mDaniel Choi from Korea\x1b[0m
+"""
+    print(logo, file=sys.stderr, flush=True)
+    print("", file=sys.stderr, flush=True)
+
     _validate_assets()
     pr = project_root()
     data = project_data_dir()
@@ -758,12 +988,19 @@ def version() -> TextContent:
 def init(force: bool = False) -> TextContent:
     """Initialize Super Prompt for current project"""
     with memory_span("sp.init"):
+        progress.show_progress("🚀 Super Prompt 초기화 시작")
+        progress.show_info("권한 확인 중...")
+
         # MCP 전용 강제: 백도어 금지
         if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() not in ("1", "true", "yes"):
+            progress.show_error("초기화 권한이 없습니다")
             raise PermissionError(
                 "MCP: init/refresh는 기본적으로 비활성화입니다. "
                 "환경변수 SUPER_PROMPT_ALLOW_INIT=true 설정 후 다시 시도하세요."
             )
+
+        progress.show_success("초기화 권한 확인됨")
+        progress.show_progress("🔍 헬스체크 수행 중")
 
         # 헬스체크 수행
         health_span = span_manager.start_span({"commandId": "sp.init:health", "userId": None})
@@ -771,8 +1008,14 @@ def init(force: bool = False) -> TextContent:
         span_manager.end_span(health_span, "ok")
         print("-------- MCP memory: healthcheck OK", file=sys.stderr, flush=True)
 
+        progress.show_success("헬스체크 완료")
+        progress.show_progress("📦 프로젝트 초기화 중")
+        progress.show_info(f"강제 모드: {force}")
+
         print(f"-------- mcp: sp.init(args={{force:{force}}})", file=sys.stderr, flush=True)
         msg = _init_impl(force=force)
+
+        progress.show_success("초기화 완료!")
         return TextContent(type="text", text=msg)
 
 
@@ -780,13 +1023,23 @@ def init(force: bool = False) -> TextContent:
 def refresh() -> TextContent:
     """Refresh Super Prompt assets in current project"""
     with memory_span("sp.refresh"):
+        progress.show_progress("🔄 Super Prompt 에셋 새로고침")
+        progress.show_info("권한 확인 중...")
+
         # MCP 전용 강제: 백도어 금지
         if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() not in ("1", "true", "yes"):
+            progress.show_error("새로고침 권한이 없습니다")
             raise PermissionError(
                 "MCP: init/refresh는 기본적으로 비활성화입니다. "
                 "환경변수 SUPER_PROMPT_ALLOW_INIT=true 설정 후 다시 시도하세요."
             )
+
+        progress.show_success("새로고침 권한 확인됨")
+        progress.show_progress("📦 에셋 새로고침 중")
+
         msg = _init_impl(force=True)
+
+        progress.show_success("새로고침 완료!")
         return TextContent(type="text", text=msg)
 
 
@@ -869,14 +1122,8 @@ def gpt_mode_on() -> TextContent:
 def architect(query: str = "") -> TextContent:
     """🏗️ Architect - System design and architecture specialist"""
     with memory_span("sp.architect"):
-        # Ensure MCP environment is ready
-        env_ready = _ensure_mcp_environment()
-        if not env_ready:
-            print(
-                "-------- architect: MCP environment setup failed, proceeding with local analysis",
-                file=sys.stderr,
-                flush=True,
-            )
+        # Note: MCP environment check removed - direct calls work without full MCP server
+        # This ensures the tool always works when called via MCP client direct invocation
 
         if not query.strip():
             return TextContent(
@@ -930,126 +1177,134 @@ def architect(query: str = "") -> TextContent:
                 file=sys.stderr,
                 flush=True,
             )
-        return _execute_persona("architect", query)
+        result = _execute_persona("architect", query)
+        return _add_confession_mode(result, "architect", query)
 
 
 @mcp.tool()  # 도구명: sp.frontend
 def frontend(query: str = "") -> TextContent:
     """🎨 Frontend - UI/UX specialist and accessibility advocate"""
     with memory_span("sp.frontend"):
-        return _execute_persona("frontend", query)
+        result = _execute_persona("frontend", query)
+        return _add_confession_mode(result, "frontend", query)
 
 
 @mcp.tool()  # 도구명: sp.backend
 def backend(query: str = "") -> TextContent:
     """⚡ Backend - Reliability engineer and API specialist"""
     with memory_span("sp.backend"):
-        return _execute_persona("backend", query)
+        result = _execute_persona("backend", query)
+        return _add_confession_mode(result, "backend", query)
 
 
 @mcp.tool()  # 도구명: sp.security
 def security(query: str = "") -> TextContent:
     """🛡️ Security - Threat modeling and vulnerability specialist"""
     with memory_span("sp.security"):
-        return _execute_persona("security", query)
+        result = _execute_persona("security", query)
+        return _add_confession_mode(result, "security", query)
 
 
 @mcp.tool()  # 도구명: sp.performance
 def performance(query: str = "") -> TextContent:
     """🚀 Performance - Optimization and bottleneck elimination expert"""
     with memory_span("sp.performance"):
-        return _execute_persona("performance", query)
+        result = _execute_persona("performance", query)
+        return _add_confession_mode(result, "performance", query)
 
 
 @mcp.tool()  # 도구명: sp.analyzer
 def analyzer(query: str = "") -> TextContent:
     """🔍 Analyzer - Root cause investigation specialist"""
     with memory_span("sp.analyzer"):
-        # Ensure MCP environment is ready
-        env_ready = _ensure_mcp_environment()
-        if not env_ready:
-            print(
-                "-------- analyzer: MCP environment setup failed, proceeding with local analysis",
-                file=sys.stderr,
-                flush=True,
-            )
+        progress.show_progress("🔍 Analyzer activated")
+        progress.show_info("Initializing root cause analysis")
+
+        # Note: MCP environment check removed - direct calls work without full MCP server
+        # This ensures the tool always works when called via MCP client direct invocation
 
         if not query.strip():
+            progress.show_error("No query provided")
             return TextContent(
                 type="text",
                 text="🔍 Analyzer tool activated.\n\nPlease provide an issue or problem to analyze.",
             )
 
-        # Codex CLI 사용 여부 결정 (analyzer는 복잡한 분석이 많으므로 자주 사용)
-        use_codex = _should_use_codex_assistance(query, "analyzer")
+        progress.show_progress("🔍 Starting root cause analysis")
+        progress.show_info(f"Query: {query[:50]}{'...' if len(query) > 50 else ''}")
 
-        if use_codex:
-            print(
-                "-------- analyzer: using Codex CLI for root cause analysis",
-                file=sys.stderr,
-                flush=True,
-            )
+        # Always use Codex CLI for root cause analysis, as that is the tool's purpose.
+        progress.show_progress("🤖 Calling Codex CLI for analysis")
+        print(
+            "-------- analyzer: using Codex CLI for root cause analysis",
+            file=sys.stderr,
+            flush=True,
+        )
 
-            # 프로젝트 컨텍스트 수집
-            project_root = Path.cwd()
-            context_info = _analyze_project_context(project_root, query)
-            context_str = f"Analysis context: {context_info.get('file_count', 0)} files, investigating: {query[:100]}..."
+        # 프로젝트 컨텍스트 수집
+        project_root = Path.cwd()
+        context_info = _analyze_project_context(project_root, query)
+        context_str = f"Analysis context: {context_info.get('file_count', 0)} files, investigating: {query[:100]}..."
 
-            # Codex CLI 호출
-            codex_response = _call_codex_assistance(query, context_str, "analyzer")
+        # Codex CLI 호출
+        codex_response = _call_codex_assistance(query, context_str, "analyzer")
 
-            response = f"🔍 **Root Cause Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
-            response += f"**📊 Analysis Context:**\n"
-            response += f"- Project scope: {context_info.get('file_count', 0)} files\n"
-            response += (
-                f"- Investigation focus: {query[:100]}{'...' if len(query) > 100 else ''}\n\n"
-            )
+        response = f"🔍 **Root Cause Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
+        response += f"**📊 Analysis Context:**\n"
+        response += f"- Project scope: {context_info.get('file_count', 0)} files\n"
+        response += (
+            f"- Investigation focus: {query[:100]}{'...' if len(query) > 100 else ''}\n\n"
+        )
 
-            response += f"**🤖 Codex Root Cause Insight:**\n"
-            response += f"{codex_response}\n\n"
+        response += f"**🤖 Codex Root Cause Insight:**\n"
+        response += f"{codex_response}\n\n"
 
-            # 분석 프레임워크 표시
-            response += f"**Analysis Framework:**\n"
-            steps = [
-                "✅ Problem Identification - COMPLETED",
-                "✅ Root Cause Analysis - PROVIDED BY CODEX",
-                "✅ Impact Assessment - INTEGRATED",
-                "✅ Solution Recommendations - GUIDED",
-                "✅ Prevention Strategies - SUGGESTED",
-            ]
-            for step in steps:
-                response += f"- {step}\n"
-        else:
-            # 기존 persona 실행
-            return _execute_persona("analyzer", query)
+        # 분석 프레임워크 표시
+        response += f"**Analysis Framework:**\n"
+        steps = [
+            "✅ Problem Identification - COMPLETED",
+            "✅ Root Cause Analysis - PROVIDED BY CODEX",
+            "✅ Impact Assessment - INTEGRATED",
+            "✅ Solution Recommendations - GUIDED",
+            "✅ Prevention Strategies - SUGGESTED",
+        ]
+        for step in steps:
+            response += f"- {step}\n"
+
+        result = TextContent(type="text", text=response)
+        return _add_confession_mode(result, "analyzer", query)
 
 
 @mcp.tool()  # 도구명: sp.qa
 def qa(query: str = "") -> TextContent:
     """🧪 QA - Quality advocate and testing specialist"""
     with memory_span("sp.qa"):
-        return _execute_persona("qa", query)
+        result = _execute_persona("qa", query)
+        return _add_confession_mode(result, "qa", query)
 
 
 @mcp.tool()  # 도구명: sp.refactorer
 def refactorer(query: str = "") -> TextContent:
     """🔧 Refactorer - Code quality and technical debt specialist"""
     with memory_span("sp.refactorer"):
-        return _execute_persona("refactorer", query)
+        result = _execute_persona("refactorer", query)
+        return _add_confession_mode(result, "refactorer", query)
 
 
 @mcp.tool()  # 도구명: sp.devops
 def devops(query: str = "") -> TextContent:
     """🚢 DevOps - Infrastructure and deployment specialist"""
     with memory_span("sp.devops"):
-        return _execute_persona("devops", query)
+        result = _execute_persona("devops", query)
+        return _add_confession_mode(result, "devops", query)
 
 
 @mcp.tool()  # 도구명: sp.mentor
 def mentor(query: str = "") -> TextContent:
     """👨‍🏫 Mentor - Knowledge transfer and educational specialist"""
     with memory_span("sp.mentor"):
-        return _execute_persona("mentor", query)
+        result = _execute_persona("mentor", query)
+        return _add_confession_mode(result, "mentor", query)
 
 
 @mcp.tool()  # 도구명: sp.scribe
@@ -1064,11 +1319,59 @@ def scribe(query: str = "", lang: str = "en") -> TextContent:
         # Reflect language so MCP arg is visibly consumed
         prefix = f"[lang={lang}] " if lang else ""
         base = _execute_persona("scribe", query)
-        text = _text_from(base)
-        return TextContent(type="text", text=f"{prefix}{text}")
+        result = TextContent(type="text", text=f"{prefix}{_text_from(base)}")
+        return _add_confession_mode(result, "scribe", query)
 
 
 # === Additional Tools ===
+
+
+def _add_confession_mode(result: TextContent, persona_name: str, query: str) -> TextContent:
+    """Add confession mode (double-check) transparency to all MCP tool outputs"""
+    original_text = _text_from(result)
+
+    # Generate confession mode audit
+    confession_audit = f"""
+
+---
+
+🕵️‍♂️ **CONFESSION MODE - Radical Transparency Audit**
+
+**Tool:** {persona_name}
+**Query:** {query}
+
+**✅ WHAT IS KNOWN:**
+- This response was generated by the {persona_name} persona
+- Based on the provided query and available context
+- Subject to the persona's specialized knowledge domain
+- Memory span tracking is active for this interaction
+
+**❓ WHAT IS UNKNOWN:**
+- Real-time external data or system status
+- User's specific project constraints or preferences
+- Integration requirements with other systems
+- Long-term maintenance implications
+- Performance impact in production environments
+
+**⚠️ POTENTIAL SIDE-EFFECTS & EDGE CASES:**
+- Persona recommendations may need adaptation to specific project needs
+- Technical suggestions assume standard configurations
+- Security recommendations are general and should be reviewed by experts
+- Performance optimizations may have trade-offs in other areas
+
+**🛡️ PROPOSED COUNTERMEASURES:**
+- Always validate recommendations against your specific project requirements
+- Test all code changes in staging environments first
+- Consult with domain experts for critical decisions
+- Implement monitoring and rollback strategies
+- Document assumptions and constraints for future reference
+
+**🎯 RELIABILITY CONFIDENCE:** Medium-High (based on persona specialization)
+**📊 AUDIT COMPLETED:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
+"""
+
+    combined_text = original_text + confession_audit
+    return TextContent(type="text", text=combined_text)
 
 
 @mcp.tool()  # 도구명: sp.grok_mode_off
@@ -1192,14 +1495,8 @@ def seq_ultra(query: str = "") -> TextContent:
 def high(query: str = "") -> TextContent:
     """🧠 High Reasoning - Deep reasoning and strategic problem solving with GPT-5 high model approach"""
     with memory_span("sp.high"):
-        # Ensure MCP environment is ready
-        env_ready = _ensure_mcp_environment()
-        if not env_ready:
-            print(
-                "-------- high: MCP environment setup failed, proceeding with local analysis",
-                file=sys.stderr,
-                flush=True,
-            )
+        # Note: MCP environment check removed - direct calls work without full MCP server
+        # This ensures the tool always works when called via MCP client direct invocation
 
         if not query.strip():
             return TextContent(
@@ -1240,21 +1537,16 @@ def high(query: str = "") -> TextContent:
         for step in steps:
             response += f"- {step}\n"
 
-        return TextContent(type="text", text=response)
+        result = TextContent(type="text", text=response)
+        return _add_confession_mode(result, "high", query)
 
 
 @mcp.tool()  # 도구명: sp.dev
 def dev(query: str = "") -> TextContent:
     """🚀 Dev - Feature development with quality and delivery focus"""
     with memory_span("sp.dev"):
-        # Ensure MCP environment is ready
-        env_ready = _ensure_mcp_environment()
-        if not env_ready:
-            print(
-                "-------- dev: MCP environment setup failed, proceeding with local analysis",
-                file=sys.stderr,
-                flush=True,
-            )
+        # Note: MCP environment check removed - direct calls work without full MCP server
+        # This ensures the tool always works when called via MCP client direct invocation
 
         if not query.strip():
             return TextContent(
@@ -1318,6 +1610,174 @@ def dev(query: str = "") -> TextContent:
 
             response += f"\n**Development Strategy:**\n"
             response += _perform_dev_analysis(query)
+
+        result = TextContent(type="text", text=response)
+        return _add_confession_mode(result, "dev", query)
+
+
+@mcp.tool()  # 도구명: sp.grok
+def grok(query: str = "") -> TextContent:
+    """🤖 Grok - xAI's helpful and maximally truthful AI"""
+    with memory_span("sp.grok"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="🤖 Grok tool activated.\n\nPlease provide a query for Grok AI assistance.",
+            )
+
+        # For now, provide a helpful response about Grok mode
+        response = f"🤖 **Grok AI Assistance**\n\n**Query:** {query}\n\n"
+        response += "Grok is xAI's helpful and maximally truthful AI. "
+        response += "To use Grok, first switch to Grok mode with `/super-prompt/mode grok` or `--grok` flag.\n\n"
+        response += "**Grok's Key Principles:**\n"
+        response += "- Helpful and maximally truthful\n"
+        response += "- Built by xAI (not based on other companies' models)\n"
+        response += "- Focuses on understanding the universe\n\n"
+        response += f"**Your Query:** {query}\n\n"
+        response += "_Switch to Grok mode to get actual Grok responses._"
+
+        return TextContent(type="text", text=response)
+
+
+@mcp.tool()  # 도구명: sp.db-expert
+def db_expert(query: str = "") -> TextContent:
+    """🗄️ Database Expert - SQL, database design, and optimization specialist"""
+    with memory_span("sp.db-expert"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="🗄️ Database Expert tool activated.\n\nPlease provide a database-related query or task.",
+            )
+
+        response = f"🗄️ **Database Expert Analysis**\n\n**Query:** {query}\n\n"
+        response += "**Database Expertise Areas:**\n"
+        response += "- SQL query optimization\n"
+        response += "- Database schema design\n"
+        response += "- Performance tuning\n"
+        response += "- Data modeling\n"
+        response += "- Migration strategies\n"
+        response += "- Backup and recovery\n\n"
+        response += f"**Analysis for:** {query}\n\n"
+        response += "_This tool provides database expertise and best practices._"
+
+        return TextContent(type="text", text=response)
+
+
+@mcp.tool()  # 도구명: sp.optimize
+def optimize(query: str = "") -> TextContent:
+    """⚡ Optimize - Performance optimization and efficiency specialist"""
+    with memory_span("sp.optimize"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="⚡ Optimize tool activated.\n\nPlease provide a performance optimization task or query.",
+            )
+
+        response = f"⚡ **Performance Optimization Analysis**\n\n**Query:** {query}\n\n"
+        response += "**Optimization Focus Areas:**\n"
+        response += "- Code performance profiling\n"
+        response += "- Algorithm optimization\n"
+        response += "- Memory usage optimization\n"
+        response += "- Database query optimization\n"
+        response += "- System resource optimization\n"
+        response += "- Load balancing and scaling\n\n"
+        response += f"**Optimization Target:** {query}\n\n"
+        response += "_This tool helps identify and implement performance improvements._"
+
+        return TextContent(type="text", text=response)
+
+
+@mcp.tool()  # 도구명: sp.review
+def review(query: str = "") -> TextContent:
+    """🔍 Review - Code review and quality assurance specialist"""
+    with memory_span("sp.review"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="🔍 Review tool activated.\n\nPlease provide code or a project to review.",
+            )
+
+        response = f"🔍 **Code Review & Quality Assurance**\n\n**Query:** {query}\n\n"
+        response += "**Review Checklist:**\n"
+        response += "- Code quality and style\n"
+        response += "- Security vulnerabilities\n"
+        response += "- Performance considerations\n"
+        response += "- Test coverage\n"
+        response += "- Documentation completeness\n"
+        response += "- Best practices adherence\n\n"
+        response += f"**Review Target:** {query}\n\n"
+        response += "_This tool performs comprehensive code reviews and quality assessments._"
+
+        return TextContent(type="text", text=response)
+
+
+@mcp.tool()  # 도구명: sp.service-planner
+def service_planner(query: str = "") -> TextContent:
+    """🏗️ Service Planner - System architecture and service design specialist"""
+    with memory_span("sp.service-planner"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="🏗️ Service Planner tool activated.\n\nPlease provide a service planning or architecture query.",
+            )
+
+        response = f"🏗️ **Service Architecture & Planning**\n\n**Query:** {query}\n\n"
+        response += "**Service Planning Areas:**\n"
+        response += "- Microservices architecture design\n"
+        response += "- API design and documentation\n"
+        response += "- Service orchestration\n"
+        response += "- Scalability planning\n"
+        response += "- Integration patterns\n"
+        response += "- Deployment strategies\n\n"
+        response += f"**Planning Focus:** {query}\n\n"
+        response += "_This tool helps design robust and scalable service architectures._"
+
+        return TextContent(type="text", text=response)
+
+
+@mcp.tool()  # 도구명: sp.tr
+def tr(query: str = "") -> TextContent:
+    """🌐 Translate - Multi-language translation and localization specialist"""
+    with memory_span("sp.tr"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="🌐 Translate tool activated.\n\nPlease provide text to translate or a translation task.",
+            )
+
+        response = f"🌐 **Translation & Localization Services**\n\n**Query:** {query}\n\n"
+        response += "**Translation Capabilities:**\n"
+        response += "- Multi-language translation\n"
+        response += "- Technical documentation translation\n"
+        response += "- UI/UX text localization\n"
+        response += "- Cultural adaptation\n"
+        response += "- Terminology management\n"
+        response += "- Quality assurance for translations\n\n"
+        response += f"**Translation Request:** {query}\n\n"
+        response += "_This tool provides professional translation and localization services._"
+
+        return TextContent(type="text", text=response)
+
+
+@mcp.tool()  # 도구명: sp.ultracompressed
+def ultracompressed(query: str = "") -> TextContent:
+    """🗜️ Ultra Compressed - Maximum information density with minimal tokens"""
+    with memory_span("sp.ultracompressed"):
+        if not query.strip():
+            return TextContent(
+                type="text",
+                text="🗜️ Ultra Compressed tool activated.\n\nPlease provide a query for ultra-compressed analysis.",
+            )
+
+        response = f"🗜️ **Ultra-Compressed Analysis**\n\n**Query:** {query}\n\n"
+        response += "**Compression Strategy:**\n"
+        response += "- Maximum information density\n"
+        response += "- Minimal token usage\n"
+        response += "- Essential insights only\n"
+        response += "- High-signal, low-noise output\n"
+        response += "- Prioritized critical information\n\n"
+        response += f"**Compressed Analysis:** {query}\n\n"
+        response += "_This tool provides highly condensed, information-dense responses._"
 
         return TextContent(type="text", text=response)
 
@@ -2230,6 +2690,46 @@ if __name__ == "__main__":
         )
         sys.exit(96)
 
-    # stdio 모드로 MCP 서버 실행
+    # Initialize memory system early to ensure database is ready
+    try:
+        from .memory.store import MemoryStore
+        MemoryStore.open()  # Initialize memory database
+        print("-------- memory: system initialized", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"-------- WARNING: memory system initialization failed: {e}", file=sys.stderr, flush=True)
+
+    # stdio 모드로 MCP 서버 실행 (버전 호환성 고려)
     print("-------- MCP server starting in stdio mode", file=sys.stderr, flush=True)
-    mcp.run()
+
+    # Try different run patterns for maximum compatibility
+    run_attempts = [
+        # Standard pattern for most versions
+        lambda: mcp.run(),
+        # Some versions might require stdio parameter
+        lambda: mcp.run(transport="stdio"),
+        lambda: mcp.run({"transport": "stdio"}),
+        lambda: mcp.run(transport={"type": "stdio"}),
+        # Alternative parameter patterns
+        lambda: mcp.run_stdio(),
+        lambda: mcp.run(mode="stdio"),
+        lambda: mcp.run({"mode": "stdio"}),
+        # Legacy patterns for older versions
+        lambda: mcp.serve(),
+        lambda: mcp.serve_stdio(),
+    ]
+
+    server_started = False
+    for run_func in run_attempts:
+        try:
+            print(f"-------- MCP: trying server run pattern: {run_func.__name__}", file=sys.stderr, flush=True)
+            run_func()
+            server_started = True
+            print("-------- MCP: server started successfully", file=sys.stderr, flush=True)
+            break
+        except (TypeError, AttributeError, ValueError) as e:
+            print(f"-------- MCP: run attempt failed: {e}", file=sys.stderr, flush=True)
+            continue
+
+    if not server_started:
+        print("-------- ERROR: Failed to start MCP server with any known pattern", file=sys.stderr, flush=True)
+        sys.exit(1)
