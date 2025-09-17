@@ -913,10 +913,36 @@ def register_tool(tool_name: str):
 
         REGISTERED_TOOL_ANNOTATIONS[tool_name] = annotations
 
+        # Post-execution confession double-check runner (defined early for both MCP and direct paths)
+        def _run_post_exec_confession(name: str) -> None:
+            try:
+                # Lazy import to avoid import cycles at module load
+                from .commands.validate_tools import validate_check  # type: ignore
+            except Exception:
+                return
+            try:
+                result = validate_check()
+                logs = (result or {}).get("logs") or []
+                for line in logs:
+                    print(f"-------- confession: {line}", flush=True)
+            except Exception as e:  # best-effort; never break main tool result
+                try:
+                    print(f"-------- confession: error during validation: {e}", file=sys.stderr, flush=True)
+                except Exception:
+                    pass
+
         tool_callable = getattr(mcp, "tool", None)
         if not callable(tool_callable):
-            setattr(fn, "_sp_annotations", annotations)
-            return fn
+            # Direct mode: manually wrap to ensure confession runs
+            def _tool_with_confession_direct(*a, **k):
+                try:
+                    return fn(*a, **k)
+                finally:
+                    if tool_name not in {"sp.analyzer"}:
+                        _run_post_exec_confession(tool_name)
+
+            setattr(_tool_with_confession_direct, "_sp_annotations", annotations)
+            return _tool_with_confession_direct
 
         try:
             params = inspect.signature(tool_callable).parameters
@@ -948,7 +974,16 @@ def register_tool(tool_name: str):
         except TypeError:
             decorated = tool_callable()
 
-        wrapped = decorated(fn)
+        # Wrap original tool to always run the confession check at the end
+        def _tool_with_confession(*a, **k):
+            try:
+                return fn(*a, **k)
+            finally:
+                # Avoid recursion or undesired re-entry for analyzer itself
+                if tool_name not in {"sp.analyzer"}:
+                    _run_post_exec_confession(tool_name)
+
+        wrapped = decorated(_tool_with_confession)
         setattr(wrapped, "_sp_annotations", annotations)
         setattr(fn, "_sp_annotations", annotations)
         return wrapped
@@ -1705,54 +1740,112 @@ Example: "Design a scalable e-commerce platform using React and Node.js"
 Please provide your architecture question or requirements.""",
             )
 
-        # Codex CLI 사용 여부 결정
-        use_codex = _should_use_codex_assistance(query, "architect")
+        # Enforce pipeline: [프롬프트 분석 -> 사전 사료 조사 -> 메모리 db체크 -> 페르소나/커맨드 호출 -> 추론/Plan -> Plan실행 -> 고해성사 더블체크 -> 메모리 db업데이트 -> 결론]
+        # 1) 프롬프트 분석
+        prompt_summary = _summarize_situation_for_codex(query, "", "architect")
 
-        if use_codex:
-            print(
-                "-------- architect: using Codex CLI for complex architecture analysis",
-                file=sys.stderr,
-                flush=True,
+        # 2) 사전 사료 조사
+        project_root = Path.cwd()
+        context_info = _analyze_project_context(project_root, query)
+
+        # 3) 메모리 db체크
+        confession_logs: list[str] = []
+        mem_overview: str = ""
+        try:
+            from .memory.store import MemoryStore  # type: ignore
+            store = MemoryStore.open(project_root)
+            recent = store.recent_events(limit=10)
+            mem_overview = f"recent_events={len(recent)}; task_tag={store.get_task_tag()!s}"
+        except Exception as e:
+            confession_logs.append(f"memory check skipped ({e})")
+
+        # 4) 페르소나 및 커맨드 mcp 호출 및 자료 전달
+        codex_response: str | None = None
+        if _should_use_codex_assistance(query, "architect"):
+            print("-------- architect: using Codex assistance per pipeline", file=sys.stderr, flush=True)
+            ctx_str = f"Architecture context: {', '.join(context_info.get('patterns', []))}"
+            codex_response = _call_codex_assistance(query, ctx_str, "architect")
+
+        persona_result = _execute_persona("architect", query)
+
+        # 5) 추론 및 Plan 설계
+        plan_lines = [
+            "- Define system boundaries and core services",
+            "- Choose data storage strategies and cache layers",
+            "- Establish API contracts and integration points",
+            "- Address scalability, observability, and security baselines",
+        ]
+
+        # 6) Plan 실행 (지침)
+        exec_lines = [
+            "- Create ADR for chosen architecture",
+            "- Scaffold services and CI with templates",
+            "- Add dashboards and SLOs; implement tracing",
+        ]
+
+        # 7) 고해성사모드 더블체크
+        try:
+            from .commands.validate_tools import validate_check  # type: ignore
+            v = validate_check()
+            for ln in (v or {}).get("logs", []) or []:
+                confession_logs.append(ln)
+        except Exception as e:
+            confession_logs.append(f"validation error: {e}")
+
+        # 8) 메모리 db업데이트
+        try:
+            from .memory.store import MemoryStore  # type: ignore
+            store2 = MemoryStore.open(project_root)
+            store2.append_event(
+                "architect_pipeline",
+                {
+                    "query": query,
+                    "context_patterns": context_info.get("patterns", []),
+                    "plan": plan_lines,
+                    "execution": exec_lines,
+                    "codex_used": bool(codex_response),
+                },
             )
+        except Exception as e:
+            confession_logs.append(f"memory update skipped ({e})")
 
-            # 프로젝트 컨텍스트 수집
-            project_root = Path.cwd()
-            context_info = _analyze_project_context(project_root, query)
-            context_str = (
-                f"Architecture context: {', '.join(context_info.get('patterns', []))} tech stack"
-            )
+        # 9) 결론
+        out: list[str] = []
+        out.append("🏗️ Architect Pipeline Result")
+        out.append("")
+        out.append("1) 프롬프트 분석")
+        out.append(prompt_summary)
+        out.append("")
+        out.append("2) 사전 사료 조사")
+        out.append(f"- Tech stack hints: {', '.join(context_info.get('patterns', [])) or 'n/a'}")
+        out.append(f"- Relevance: {', '.join(context_info.get('query_relevance', [])) or 'n/a'}")
+        out.append("")
+        out.append("3) 메모리 DB 체크")
+        out.append(f"- {mem_overview or 'no memory available'}")
+        out.append("")
+        out.append("4) 페르소나 및 커맨드 호출")
+        if codex_response:
+            out.append("- Codex Insight:")
+            out.append(codex_response)
+        out.append("- Persona Execution: done")
+        out.append("")
+        out.append("5) 추론 및 Plan 설계")
+        out.extend(plan_lines)
+        out.append("")
+        out.append("6) Plan 실행 지침")
+        out.extend(exec_lines)
+        out.append("")
+        out.append("7) 고해성사 더블체크")
+        for ln in confession_logs:
+            out.append(f"- {ln}")
+        out.append("")
+        out.append("8) 메모리 DB 업데이트")
+        out.append("- recorded pipeline event")
+        out.append("")
+        out.append("9) 결론")
+        out.append(_text_from(persona_result))
 
-            # Codex CLI 호출
-            codex_response = _call_codex_assistance(query, context_str, "architect")
-
-            response = f"🏗️ **Architecture Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
-            response += f"**📊 Architecture Context:**\n"
-            response += f"- Tech stack: {', '.join(context_info.get('patterns', []))}\n"
-            response += f"- Context clues: {', '.join(context_info.get('query_relevance', []))}\n\n"
-
-            response += f"**🤖 Codex Architecture Insight:**\n"
-            response += f"{codex_response}\n\n"
-
-            # 아키텍처 프레임워크 표시
-            response += f"**Architecture Framework:**\n"
-            steps = [
-                "✅ System Analysis - COMPLETED",
-                "✅ Design Patterns - RECOMMENDED",
-                "✅ Scalability Planning - GUIDED",
-                "✅ Risk Assessment - INTEGRATED",
-                "✅ Implementation Strategy - PROVIDED",
-            ]
-            for step in steps:
-                response += f"- {step}\n"
-        else:
-            # 기존 persona 실행
-            print(
-                f"-------- mcp: sp.architect(args={{query_len:{len(query)}}})",
-                file=sys.stderr,
-                flush=True,
-            )
-        result = _execute_persona("architect", query)
-        return _add_confession_mode(result, "architect", query)
+        return TextContent(type="text", text="\n".join(out))
 
 
 @register_tool("sp.frontend")  # 도구명: sp.frontend - 읽기 전용 프론트엔드 UI/UX 분석 및 조언

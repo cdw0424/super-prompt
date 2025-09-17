@@ -1,5 +1,23 @@
 # Changelog
 
+## v4.6.7 - 2025-09-17
+
+### ✨ Features
+
+- Global post-exec confession double-check for all MCP tools via `register_tool` wrapper (prints `-------- confession:` logs)
+- Architect pipeline enforced: [프롬프트 분석 → 사전 사료 조사 → 메모리 DB 체크 → 페르소나/커맨드 호출 → 추론/Plan 설계 → Plan 실행 지침 → 고해성사 더블체크 → 메모리 DB 업데이트 → 결론]
+
+### 🔧 Internals
+
+- Ensure confession hook also runs on direct-call path (`SP_DIRECT_TOOL`)
+- Memory store used to append `architect_pipeline` events
+
+### 🔖 Version
+
+- Bump root and Python core to 4.6.7
+
+---
+
 ## v4.6.6 - 2025-09-17
 
 ### ✨ New Persona & Tool
