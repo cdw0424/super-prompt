@@ -1053,8 +1053,8 @@ Brief description of the feature.
 
         # MCP 서버 자동 등록 (.cursor/mcp.json 병합) 및 Codex 등록
         try:
-            # Prefer exact npm spec to avoid drift
-            npm_spec = f"@cdw0424/super-prompt@{current_version}"
+            # Use explicit override when provided; default to latest tag
+            npm_spec = os.environ.get("SUPER_PROMPT_NPM_SPEC", "@cdw0424/super-prompt@latest")
             cfg_path = ensure_cursor_mcp_registered(target_dir, npm_spec)
             typer.echo(f"✅ Cursor MCP server registered: {cfg_path}")
         except Exception as e:

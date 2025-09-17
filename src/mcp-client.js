@@ -318,6 +318,6 @@ async function generateCursorAssets(projectRoot, appHome) {
 
 function getPinnedSpec() {
   const env = process.env.SUPER_PROMPT_NPM_SPEC;
-  if (env && /^@cdw0424\/super-prompt@/.test(env)) return env;
-  return `@cdw0424/super-prompt@${safePkgVersion()}`;
+  if (env) return env;
+  return '@cdw0424/super-prompt@latest';
 }

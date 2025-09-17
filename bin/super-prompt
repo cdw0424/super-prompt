@@ -91,13 +91,8 @@ fi
 
 # Set package root for server usage
 export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
-# Get current package version for mcp.json registration
-PKG_VERSION="$(node -p "require('$APP_HOME/package.json').version" 2>/dev/null || echo "")"
-if [ -n "$PKG_VERSION" ]; then
-  export SUPER_PROMPT_NPM_SPEC="@cdw0424/super-prompt@$PKG_VERSION"
-else
-  export SUPER_PROMPT_NPM_SPEC="@cdw0424/super-prompt@latest"
-fi
+# Ensure MCP clients default to the latest published package
+export SUPER_PROMPT_NPM_SPEC="@cdw0424/super-prompt@latest"
 
 # Mode toggle validation and setup
 resolve_mode() {
@@ -220,6 +215,56 @@ route_codex_flags() {
 
 route_codex_flags "$@"
 
+resolve_direct_tool() {
+  case "$1" in
+    architect) echo "sp.architect" ;;
+    backend) echo "sp.backend" ;;
+    frontend) echo "sp.frontend" ;;
+    security) echo "sp.security" ;;
+    performance) echo "sp.performance" ;;
+    analyzer) echo "sp.analyzer" ;;
+    qa) echo "sp.qa" ;;
+    refactorer) echo "sp.refactorer" ;;
+    devops) echo "sp.devops" ;;
+    mentor) echo "sp.mentor" ;;
+    scribe) echo "sp.scribe" ;;
+    grok) echo "sp.grok" ;;
+    db-expert) echo "sp.db-expert" ;;
+    optimize) echo "sp.optimize" ;;
+    review) echo "sp.review" ;;
+    dev) echo "sp.dev" ;;
+    doc-master) echo "sp.doc-master" ;;
+    service-planner) echo "sp.service-planner" ;;
+    debate) echo "sp.debate" ;;
+    specify) echo "sp.specify" ;;
+    plan) echo "sp.plan" ;;
+    tasks) echo "sp.tasks" ;;
+    implement) echo "sp.implement" ;;
+    seq) echo "sp.seq" ;;
+    seq-ultra) echo "sp.seq-ultra" ;;
+    high) echo "sp.high" ;;
+    translate|tr) echo "sp.tr" ;;
+    wave) echo "sp.service-planner" ;;
+    gpt-mode-on) echo "sp.gpt_mode_on" ;;
+    gpt-mode-off) echo "sp.gpt_mode_off" ;;
+    grok-mode-on) echo "sp.grok_mode_on" ;;
+    grok-mode-off) echo "sp.grok_mode_off" ;;
+    ultracompressed) echo "sp.ultracompressed" ;;
+    *) echo "" ;;
+  esac
+}
+
+exec_mcp_tool() {
+  local tool="$1"
+  shift
+  if [ $# -gt 0 ]; then
+    local query="$*"
+    exec node "$APP_HOME/src/mcp-client.js" call "$tool" "--query=$query"
+  else
+    exec node "$APP_HOME/src/mcp-client.js" call "$tool"
+  fi
+}
+
 case "$CMD" in
   mcp-serve)
     shift
@@ -242,11 +287,8 @@ case "$CMD" in
     shift
     exec node "$APP_HOME/src/mcp-client.js" call sp.refresh "$@"
     ;;
-  grok-mode-on)
-    exec node "$APP_HOME/src/mode/set.js" grok
-    ;;
-  gpt-mode-on|codex-mode-on)
-    exec node "$APP_HOME/src/mode/set.js" gpt
+  codex-mode-on)
+    exec_mcp_tool "sp.gpt_mode_on" "$@"
     ;;
   doctor)
     # Run installation and project readiness checks
@@ -254,6 +296,14 @@ case "$CMD" in
     ;;
   --version|-v|version)
     exec node "$APP_HOME/src/mcp-client.js" call sp.version
+    ;;
+  architect|backend|frontend|security|performance|analyzer|qa|refactorer|devops|mentor|scribe|grok|db-expert|optimize|review|dev|doc-master|service-planner|debate|specify|plan|tasks|implement|seq|seq-ultra|high|translate|tr|wave|ultracompressed)
+    TOOL=$(resolve_direct_tool "$CMD")
+    exec_mcp_tool "$TOOL" "$@"
+    ;;
+  gpt-mode-on|gpt-mode-off|grok-mode-on|grok-mode-off)
+    TOOL=$(resolve_direct_tool "$CMD")
+    exec_mcp_tool "$TOOL" "$@"
     ;;
   *)
     echo "-------- Unknown command. Try: super:init | super:refresh | --version"
