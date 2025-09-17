@@ -1,6 +1,6 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "4.6.2",
+  "version": "4.6.3",
   "description": "Super Prompt v4.6.1 - Ultimate Dual IDE Prompt Engineering Toolkit with Enhanced MCP Support",
   "bin": {
     "super-prompt": "bin/super-prompt",
