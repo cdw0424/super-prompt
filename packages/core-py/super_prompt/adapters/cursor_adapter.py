@@ -7,19 +7,36 @@ installation processes. All persona commands and user operations MUST NEVER modi
 """
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional, Tuple
 import os
-import json
 import yaml
-from ..paths import package_root, cursor_assets_root
+from ..paths import cursor_assets_root
 
 
 class CursorAdapter:
     """Adapter for Cursor IDE integration"""
 
     def __init__(self):
-        self.project_root = package_root()
         self.assets_root = cursor_assets_root()
+        self.tool_overrides = {
+            "gpt-mode-on": "gpt_mode_on",
+            "gpt-mode-off": "gpt_mode_off",
+            "grok-mode-on": "grok_mode_on",
+            "grok-mode-off": "grok_mode_off",
+            "translate": "tr",
+            "wave": "service-planner",
+        }
+        self.no_query_personas = {
+            "gpt-mode-on",
+            "gpt-mode-off",
+            "grok-mode-on",
+            "grok-mode-off",
+        }
+
+    def _resolve_tool_name(self, persona_key: str) -> str:
+        """Map persona key to the actual MCP tool identifier."""
+        slug = self.tool_overrides.get(persona_key, persona_key)
+        return f"sp.{slug}"
 
     def log(self, message: str) -> None:
         """Uniform adapter log output with required prefix."""
@@ -47,7 +64,7 @@ class CursorAdapter:
 
     def generate_commands(self, project_root: Path) -> None:
         """Generate Cursor slash commands from manifests and copy existing templates"""
-        debug = __import__("os").environ.get("SUPER_PROMPT_DEBUG") == "1"
+        debug = os.environ.get("SUPER_PROMPT_DEBUG") == "1"
         def d(msg: str) -> None:
             if debug:
                 print(msg)
@@ -67,16 +84,8 @@ class CursorAdapter:
 
             # Copy other template files
             for template_file in templates_dir.glob("*"):
-                if template_file.name.endswith(('.json', '.txt', '.md')) and not template_file.name.endswith('.sh'):
+                if template_file.name.endswith((".json", ".txt", ".md")):
                     shutil.copy2(template_file, commands_dir / template_file.name)
-
-            # Also copy the tag-executor.sh script from templates (advanced version)
-            tag_executor = self.assets_root / "templates" / "tag-executor.sh"
-            if tag_executor.exists():
-                shutil.copy2(tag_executor, commands_dir / "tag-executor.sh")
-                # Make it executable
-                import os
-                os.chmod(commands_dir / "tag-executor.sh", 0o755)
 
         # Note: We no longer auto-generate commands from arbitrary processors.
         # Personas and commands are pre-defined via manifest/templates only.
@@ -92,6 +101,7 @@ class CursorAdapter:
             # Also generate aliases if defined
             aliases = persona_config.get('aliases', []) if isinstance(persona_config, dict) else []
             aliases = aliases or []
+            tool_name = self._resolve_tool_name(persona_key)
             for alias in aliases:
                 alias_file = commands_dir / f"{alias}.md"
                 if not alias_file.exists():
@@ -99,21 +109,30 @@ class CursorAdapter:
                     name = persona_config.get("name", persona_key.title())
                     icon = persona_config.get("icon", "🤖")
                     description = persona_config.get("description", f"{name} persona")
-                    content = f'''---
-description: {alias} command (alias of {persona_key})
-run: mcp
-tool: sp.{persona_key}
-args:
-  query: "${{input}}"
----
+                    front_lines = [
+                        "---",
+                        f"description: {alias} command (alias of {persona_key})",
+                        "run: mcp",
+                        "server: super-prompt",
+                        f"tool: {tool_name}",
+                    ]
+                    if persona_key not in self.no_query_personas:
+                        front_lines.extend([
+                            "args:",
+                            '  query: "${input}"',
+                        ])
+                    front_lines.append("---")
 
-{icon} {name}
-{description}
-'''
+                    content = "\n".join(front_lines)
+                    content += f"\n\n{icon} {name}\n{description}\n"
                     alias_file.write_text(content)
 
         # Generate SDD commands
         self._generate_sdd_commands(commands_dir)
+
+        # Ensure MCP commands bind explicitly to the Super Prompt server
+        for md_file in commands_dir.glob("*.md"):
+            self._ensure_super_prompt_server_binding(md_file)
 
     def _generate_persona_command(self, commands_dir: Path, persona: str, persona_config: Dict[str, Any]) -> None:
         """Generate a persona command file from manifest data or template"""
@@ -126,89 +145,104 @@ args:
             shutil.copy2(str(template_file), str(command_file))
             return
 
-        # Fallback: Generate from manifest data using python runner (no tag-executor dependency)
+        # Fallback: Generate from manifest data using native MCP invocation
         name = persona_config.get("name", persona.title())
         icon = persona_config.get("icon", "🤖")
         description = persona_config.get("description", f"{name} persona")
+        tool_name = self._resolve_tool_name(persona)
 
-        content = f'''---
-description: {persona} command
-run: mcp
-tool: sp.{persona}
-args:
-  query: "${{input}}"
----
+        front_lines = [
+            "---",
+            f"description: {persona} command",
+            "run: mcp",
+            "server: super-prompt",
+            f"tool: {tool_name}",
+        ]
+        if persona not in self.no_query_personas:
+            front_lines.extend([
+                "args:",
+                '  query: "${input}"',
+            ])
+        front_lines.append("---")
 
-{icon} {name}
-{description}
-'''
+        content = "\n".join(front_lines)
+        content += f"\n\n{icon} {name}\n{description}\n"
 
         command_file.write_text(content)
 
-    def _generate_processor_command(self, commands_dir: Path, processor_name: str) -> None:
-        """Generate a .md command file for a processor using template if available"""
-        command_file = commands_dir / f"{processor_name}.md"
-
-        # Try to use template from packages/cursor-assets/templates first
-        template_file = self.assets_root / "templates" / f"{processor_name}.md"
-        if template_file.exists():
-            import shutil
-            shutil.copy2(str(template_file), str(command_file))
+    def _ensure_super_prompt_server_binding(self, command_file: Path) -> None:
+        """Ensure command front matter binds MCP execution to Super Prompt server."""
+        try:
+            content = command_file.read_text(encoding="utf-8")
+        except Exception:
             return
 
-        # Fallback: Create human-readable name from processor name
-        display_name = processor_name.replace("-", " ").replace("_", " ").title()
-        icon = self._get_processor_icon(processor_name)
+        if not content.startswith("---"):
+            return
 
-        content = f'''---
-description: {processor_name} command
-run: "./.cursor/commands/super-prompt/tag-executor.sh"
-args: ["${{input}} /{processor_name}"]
----
+        parts = self._split_front_matter(content)
+        if not parts:
+            return
 
-{icon} {display_name}\\nSpecialized processor for {processor_name.replace("-", " ").replace("_", " ")} operations.'''
+        front_matter, body = parts
+        front_lines = front_matter.strip("\n").splitlines()
+        if not front_lines:
+            return
 
-        command_file.write_text(content)
+        run_idx: Optional[int] = None
+        for idx, line in enumerate(front_lines):
+            stripped = line.strip()
+            if not stripped.startswith("run:"):
+                continue
+            _, _, value = stripped.partition(":")
+            if value.strip() == "mcp":
+                run_idx = idx
+            break
 
-    def _get_processor_icon(self, processor_name: str) -> str:
-        """Get appropriate icon for processor"""
-        icon_map = {
-            "analyzer": "🔍",
-            "architect": "🏗️",
-            "backend": "⚙️",
-            "frontend": "🎨",
-            "frontend-ultra": "🎨✨",
-            "security": "🛡️",
-            "performance": "⚡",
-            "qa": "✅",
-            "devops": "🚀",
-            "mentor": "👨‍🏫",
-            "debate": "💬",
-            "review": "📋",
-            "scribe": "✍️",
-            "refactorer": "🔧",
-            "tr": "🌐",
-            "ultracompressed": "📦",
-            "wave": "🌊",
-            "implement": "🔨",
-            "optimize": "🎯",
-            "docs-refector": "📚",
-            "doc-master": "📖",
-            "auto-setup": "⚙️",
-            "emergency-recovery": "🚨",
-            "enhanced-auto-setup": "⚙️✨",
-            "enhanced-persona-processor": "🤖✨",
-            "health-check": "🏥",
-            "db-expert-tools": "🗄️",
-            "simple-persona-generator": "🤖",
-            "tag-executor": "🏃‍♂️",
-            "high": "🔥",
-            "seq": "🔢",
-            "seq-ultra": "🔢✨",
-            "dev": "💻",
-            "grok": "🧠"
-        }
-        return icon_map.get(processor_name, "🤖")
+        if run_idx is None:
+            return
+
+        changed = False
+        server_idx: Optional[int] = None
+        for idx, line in enumerate(front_lines):
+            stripped = line.strip()
+            if not stripped.startswith("server:"):
+                continue
+            server_idx = idx
+            indent = line[: len(line) - len(line.lstrip())]
+            desired = f"{indent}server: super-prompt"
+            if line != desired:
+                front_lines[idx] = desired
+                changed = True
+            break
+
+        if server_idx is None:
+            indent = front_lines[run_idx][: len(front_lines[run_idx]) - len(front_lines[run_idx].lstrip())]
+            insert_at = run_idx + 1
+            front_lines.insert(insert_at, f"{indent}server: super-prompt")
+            changed = True
+
+        if not changed:
+            return
+
+        new_front = "\n".join(front_lines)
+        updated = f"---\n{new_front}\n---{body}"
+        command_file.write_text(updated, encoding="utf-8")
+
+    @staticmethod
+    def _split_front_matter(content: str) -> Optional[Tuple[str, str]]:
+        """Split Markdown file into front matter and remaining body."""
+        if not content.startswith("---"):
+            return None
+
+        remainder = content[3:]
+        end_marker = remainder.find("\n---")
+        if end_marker == -1:
+            return None
+
+        front = remainder[:end_marker]
+        body = remainder[end_marker + 4:]
+        return front, body
 
     def _generate_sdd_commands(self, commands_dir: Path) -> None:
         """Generate SDD workflow commands using templates if available"""
@@ -233,6 +267,7 @@ args: ["${{input}} /{processor_name}"]
             content = f'''---
 description: {cmd_name} command
 run: mcp
+server: super-prompt
 tool: sp.{cmd_name}
 args:
   query: "${{input}}"

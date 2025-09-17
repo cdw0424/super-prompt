@@ -1,8 +1,10 @@
 ---
 description: implement command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'implement'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
+run: mcp
+server: super-prompt
+tool: sp.implement
+args:
+  query: "${input}"
 ---
 
-📋 Implement
-Execute Implementation.
+📋 Implement Execute Implementation.

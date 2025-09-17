@@ -1,6 +1,7 @@
 ---
 description: mentor command
 run: mcp
+server: super-prompt
 tool: sp.mentor
 args:
   query: "${input}"

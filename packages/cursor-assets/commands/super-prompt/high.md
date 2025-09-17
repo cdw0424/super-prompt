@@ -1,6 +1,7 @@
 ---
 description: high command
 run: mcp
+server: super-prompt
 tool: sp.high
 args:
   query: "${input}"

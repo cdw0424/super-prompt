@@ -1,7 +1,10 @@
 ---
 description: specify command
-run: "python3"
-args: ["-c", "import subprocess; subprocess.run(['super-prompt', 'specify'] + __import__('sys').argv[1:], input='${input}', text=True, check=False)"]
+run: mcp
+server: super-prompt
+tool: sp.specify
+args:
+  query: "${input}"
 ---
 
 📋 Specify

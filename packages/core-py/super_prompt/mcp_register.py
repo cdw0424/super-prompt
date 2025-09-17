@@ -1,6 +1,68 @@
 from __future__ import annotations
-import json, os
+
+import json
+import os
 from pathlib import Path
+
+
+def _render_codex_config_block(project_root: Path,
+                               server_name: str,
+                               npm_spec: str,
+                               python_exec: str) -> str:
+    """Render canonical Codex MCP config block for super:init."""
+    project_path = str(project_root).replace("\\", "\\\\").replace('"', '\\"')
+    python_exec = python_exec or "python3"
+    env_entries = [
+        'SUPER_PROMPT_ALLOW_INIT = "true"',
+        f'SUPER_PROMPT_PROJECT_ROOT = "{project_path}"',
+        f'PYTHON = "{python_exec}"',
+    ]
+    env_inline = ", ".join(env_entries)
+    return (
+        f"[mcp_servers.{server_name}]\n"
+        'command = "npx"\n'
+        f'args = ["-y", "{npm_spec}", "sp-mcp"]\n'
+        f"env = {{ {env_inline} }}\n"
+    )
+
+
+def _ensure_codex_web_search_enabled(body: str) -> str:
+    lines = body.splitlines()
+    tools_idx = None
+    for idx, line in enumerate(lines):
+        if line.strip() == "[tools]":
+            tools_idx = idx
+            break
+
+    if tools_idx is None:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append("[tools]")
+        lines.append("web_search = true")
+    else:
+        end_idx = len(lines)
+        for i in range(tools_idx + 1, len(lines)):
+            stripped = lines[i].strip()
+            if stripped.startswith("[") and stripped.endswith("]"):
+                end_idx = i
+                break
+
+        web_idx = None
+        for i in range(tools_idx + 1, end_idx):
+            stripped = lines[i].strip()
+            if stripped.startswith("web_search"):
+                leading_ws = lines[i][: len(lines[i]) - len(lines[i].lstrip())]
+                lines[i] = f"{leading_ws}web_search = true"
+                web_idx = i
+                break
+
+        if web_idx is None:
+            lines.insert(end_idx, "web_search = true")
+
+    body = "\n".join(lines)
+    if body and not body.endswith("\n"):
+        body += "\n"
+    return body
 
 def ensure_cursor_mcp_registered(project_root: Path,
                                  npm_spec: str | None = None,
@@ -55,40 +117,36 @@ def ensure_cursor_mcp_registered(project_root: Path,
     return cfg_path
 
 def ensure_codex_mcp_registered(project_root: Path,
-                                server_name: str = "super-prompt") -> Path:
-    # ~/.codex/config.toml 병합 ([mcp_servers.<name>])
+                                server_name: str = "super-prompt",
+                                overwrite: bool = False) -> Path:
+    # ~/.codex/config.toml 갱신 (overwrite=True 시 완전 재작성)
     home = Path(os.environ.get("HOME") or "~").expanduser()
     codex_dir = Path(os.environ.get("CODEX_HOME") or (home / ".codex"))
     codex_dir.mkdir(parents=True, exist_ok=True)
     cfg = codex_dir / "config.toml"
 
     npm_spec = os.environ.get("SUPER_PROMPT_NPM_SPEC") or "@cdw0424/super-prompt@latest"
-    block = (
-        f"[mcp_servers.{server_name}]\n"
-        f'command = "npx"\n'
-        f'args = ["-y", "{npm_spec}", "sp-mcp"]\n'
-        f'env = {{"SUPER_PROMPT_ALLOW_INIT" = "true", "SUPER_PROMPT_PROJECT_ROOT" = "{str(project_root)}", "PYTHON" = "{os.environ.get("PYTHON","python3")}"}}\n'
-    )
+    python_exec = os.environ.get("PYTHON", "python3")
+    block = _render_codex_config_block(project_root, server_name, npm_spec, python_exec)
 
-    if not cfg.exists():
-        cfg.write_text(block, encoding="utf-8")
-        return cfg
-
-    body = cfg.read_text(encoding="utf-8")
-    header = f"[mcp_servers.{server_name}]"
-    if header in body:
-        # 매우 단순한 치환(정교한 TOML 파서는 생략)
-        pre, _, _rest = body.partition(header)
-        # 블록 끝 추정: 다음 [ 로 시작하는 섹션 전까지
-        post = body[len(pre):]
-        next_idx = post.find("\n[")
-        if next_idx != -1:
-            post = post[next_idx:]  # 다음 섹션부터
-            body = pre + block + post
-        else:
-            body = pre + block
+    if overwrite or not cfg.exists():
+        body = block
     else:
-        if not body.endswith("\n"): body += "\n"
-        body += block
+        body = cfg.read_text(encoding="utf-8")
+        header = f"[mcp_servers.{server_name}]"
+        if header in body:
+            start_idx = body.index(header)
+            search_start = start_idx + len(header)
+            next_idx = body.find("\n[", search_start)
+            end_idx = next_idx if next_idx != -1 else len(body)
+            body = body[:start_idx] + block + body[end_idx:]
+        else:
+            if body and not body.endswith("\n"):
+                body += "\n"
+            body += block
+
+    body = _ensure_codex_web_search_enabled(body)
+    if body and not body.endswith("\n"):
+        body += "\n"
     cfg.write_text(body, encoding="utf-8")
     return cfg

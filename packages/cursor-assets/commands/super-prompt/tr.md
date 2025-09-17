@@ -1,10 +1,11 @@
 ---
-description: tr command
+description: translate command (alias of translate)
 run: mcp
+server: super-prompt
 tool: sp.tr
 args:
   query: "${input}"
 ---
 
-🔧 Troubleshooter
-Rapid issue diagnosis and resolution
+🔀 Translate
+Code translation and format conversion

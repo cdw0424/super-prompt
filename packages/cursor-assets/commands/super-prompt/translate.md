@@ -1,7 +1,8 @@
 ---
 description: translate command
 run: mcp
-tool: sp.translate
+server: super-prompt
+tool: sp.tr
 args:
   query: "${input}"
 ---

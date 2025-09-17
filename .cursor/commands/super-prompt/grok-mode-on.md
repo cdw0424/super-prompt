@@ -1,8 +1,8 @@
 ---
 description: grok-mode-on command
-run: "bash"
-args: ["-lc", "super-prompt grok-mode-on || npx -y @cdw0424/super-prompt grok-mode-on"]
+run: mcp
+server: super-prompt
+tool: sp.grok_mode_on
 ---
 
-🤖 Grok Mode On
-Enable Grok mode instantly and persist for this project
+🤖 Grok Mode On Enable Grok mode instantly and persist for this project

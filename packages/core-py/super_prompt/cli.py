@@ -1061,7 +1061,7 @@ Brief description of the feature.
             typer.echo(f"⚠️  MCP registration skipped: {e}")
 
         try:
-            codex_cfg = ensure_codex_mcp_registered(target_dir)
+            codex_cfg = ensure_codex_mcp_registered(target_dir, overwrite=True)
             typer.echo(f"✅ Codex MCP server registered: {codex_cfg}")
         except Exception as e:
             typer.echo(f"⚠️  Codex registration skipped: {e}")

@@ -1,9 +1,8 @@
 ---
 description: grok-mode-off command
 run: mcp
-tool: sp.grok-mode-off
-args:
-  query: "${input}"
+server: super-prompt
+tool: sp.grok_mode_off
 ---
 
 🔴 Grok Mode Off

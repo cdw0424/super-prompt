@@ -1,6 +1,0 @@
-Collecting typer
-  Using cached typer-0.17.4-py3-none-any.whl.metadata (15 kB)
-Collecting pyyaml
-  Using cached PyYAML-6.0.2-cp39-cp39-macosx_11_0_arm64.whl.metadata (2.1 kB)
-Collecting pathspec
-  Using cached pathspec-0.12.1-py3-none-any.whl.metadata (21 kB)

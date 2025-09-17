@@ -1,6 +1,7 @@
 ---
 description: architect command
 run: mcp
+server: super-prompt
 tool: sp.architect
 args:
   query: "${input}"

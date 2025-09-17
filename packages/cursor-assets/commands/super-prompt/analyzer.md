@@ -1,6 +1,7 @@
 ---
 description: analyzer command
 run: mcp
+server: super-prompt
 tool: sp.analyzer
 args:
   query: "${input}"

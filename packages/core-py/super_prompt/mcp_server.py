@@ -569,6 +569,7 @@ TOOL_METADATA: Dict[str, Dict[str, Any]] = {
     "sp.qa": {"category": "persona", "persona": "QA", "tags": ["persona", "quality"]},
     "sp.refactorer": {"category": "persona", "persona": "Refactorer", "tags": ["persona", "refactoring"]},
     "sp.devops": {"category": "persona", "persona": "DevOps", "tags": ["persona", "devops"]},
+    "sp.debate": {"category": "persona", "persona": "Debate", "tags": ["persona", "analysis"]},
     "sp.mentor": {"category": "persona", "persona": "Mentor", "tags": ["persona", "guidance"]},
     "sp.scribe": {"category": "persona", "persona": "Scribe", "tags": ["persona", "documentation"]},
     "sp.doc-master": {"category": "persona", "persona": "Doc Master", "tags": ["persona", "documentation"]},
@@ -1416,7 +1417,7 @@ def _init_impl(force: bool = False) -> str:
     # MCP/Codex 자동 등록
     ensure_cursor_mcp_registered(pr)  # .cursor/mcp.json 병합
     try:
-        ensure_codex_mcp_registered(pr)  # 선택: ~/.codex/config.toml 병합
+        ensure_codex_mcp_registered(pr, overwrite=True)  # 선택: ~/.codex/config.toml 재작성
     except Exception:
         pass
 
@@ -1871,6 +1872,14 @@ def devops(query: str = "") -> TextContent:
     with memory_span("sp.devops"):
         result = _execute_persona("devops", query)
         return _add_confession_mode(result, "devops", query)
+
+@register_tool("sp.debate")  # 도구명: sp.debate - 읽기 전용 내부 토론 분석
+def debate(query: str = "") -> TextContent:
+    """💬 Debate - Positive vs. critical internal debate facilitation"""
+    with memory_span("sp.debate"):
+        result = _execute_persona("debate", query)
+        return _add_confession_mode(result, "debate", query)
+
 
 
 @register_tool("sp.mentor")  # 도구명: sp.mentor - 읽기 전용 교육 및 멘토링 조언
