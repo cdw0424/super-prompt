@@ -14,6 +14,7 @@ from textwrap import dedent
 
 try:
     from importlib.metadata import version as _pkg_version
+
     _PACKAGE_VERSION = _pkg_version("super-prompt")
 except Exception:
     _PACKAGE_VERSION = "dev"
@@ -22,45 +23,49 @@ except Exception:
 # NOTE: Provide safe fallbacks when SDK is unavailable so that direct tool calls can run.
 # Support multiple MCP SDK versions for maximum compatibility
 
+
 def _detect_mcp_version():
     """Detect MCP SDK version and capabilities with enhanced precision"""
     try:
         import mcp
-        version = getattr(mcp, '__version__', 'unknown')
+
+        version = getattr(mcp, "__version__", "unknown")
 
         # Enhanced version detection logic
-        if hasattr(mcp, '__version__') and mcp.__version__:
+        if hasattr(mcp, "__version__") and mcp.__version__:
             version = mcp.__version__
             # Parse version string for more precise detection
             try:
                 from packaging import version as pkg_version
+
                 parsed_version = pkg_version.parse(version)
-                if parsed_version >= pkg_version.parse('0.4.0'):
-                    return f'{version} (0.4+)', 'fastmcp'
-                elif parsed_version >= pkg_version.parse('0.3.0'):
-                    return f'{version} (0.3+)', 'server'
+                if parsed_version >= pkg_version.parse("0.4.0"):
+                    return f"{version} (0.4+)", "fastmcp"
+                elif parsed_version >= pkg_version.parse("0.3.0"):
+                    return f"{version} (0.3+)", "server"
                 else:
-                    return f'{version} (legacy)', 'legacy'
+                    return f"{version} (legacy)", "legacy"
             except ImportError:
                 # packaging not available, use string comparison
-                if version.startswith(('0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.')):
-                    return f'{version} (0.4+)', 'fastmcp'
-                elif version.startswith('0.3'):
-                    return f'{version} (0.3+)', 'server'
+                if version.startswith(("0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.")):
+                    return f"{version} (0.4+)", "fastmcp"
+                elif version.startswith("0.3"):
+                    return f"{version} (0.3+)", "server"
 
         # Fallback to structural detection
-        if hasattr(mcp, 'server'):
-            if hasattr(mcp.server, 'FastMCP'):
-                return '0.4+ (detected)', 'fastmcp'
-            elif hasattr(mcp.server, 'fastmcp'):
-                return '0.4+ (detected)', 'fastmcp'
-            elif hasattr(mcp.server, 'Server'):
-                return '0.3+ (detected)', 'server'
+        if hasattr(mcp, "server"):
+            if hasattr(mcp.server, "FastMCP"):
+                return "0.4+ (detected)", "fastmcp"
+            elif hasattr(mcp.server, "fastmcp"):
+                return "0.4+ (detected)", "fastmcp"
+            elif hasattr(mcp.server, "Server"):
+                return "0.3+ (detected)", "server"
 
-        return version, 'unknown'
+        return version, "unknown"
     except Exception as e:
         print(f"-------- MCP: version detection failed: {e}", file=sys.stderr, flush=True)
         return None, None
+
 
 def _import_mcp_components():
     """Import MCP components with version compatibility"""
@@ -72,12 +77,12 @@ def _import_mcp_components():
     # Try different import patterns for maximum compatibility
     import_attempts = [
         # MCP 0.4+ with FastMCP
-        ('mcp.server.fastmcp', 'FastMCP'),
-        ('mcp.server', 'FastMCP'),
+        ("mcp.server.fastmcp", "FastMCP"),
+        ("mcp.server", "FastMCP"),
         # MCP 0.3+ with Server
-        ('mcp.server', 'Server'),
+        ("mcp.server", "Server"),
         # Legacy patterns
-        ('mcp', 'FastMCP'),
+        ("mcp", "FastMCP"),
     ]
 
     FastMCP = None
@@ -86,7 +91,11 @@ def _import_mcp_components():
             module = __import__(module_path, fromlist=[class_name])
             FastMCP = getattr(module, class_name, None)
             if FastMCP:
-                print(f"-------- MCP: using {module_path}.{class_name} (version: {mcp_version})", file=sys.stderr, flush=True)
+                print(
+                    f"-------- MCP: using {module_path}.{class_name} (version: {mcp_version})",
+                    file=sys.stderr,
+                    flush=True,
+                )
                 break
         except (ImportError, AttributeError):
             continue
@@ -97,22 +106,22 @@ def _import_mcp_components():
     # Try to import TextContent with comprehensive patterns
     text_content_attempts = [
         # Modern MCP patterns
-        'mcp.types.TextContent',
-        'mcp.server.models.TextContent',
-        'mcp.shared.models.TextContent',
-        'mcp.server.fastmcp.TextContent',
+        "mcp.types.TextContent",
+        "mcp.server.models.TextContent",
+        "mcp.shared.models.TextContent",
+        "mcp.server.fastmcp.TextContent",
         # Alternative patterns
-        'mcp.server.TextContent',
-        'mcp.TextContent',
+        "mcp.server.TextContent",
+        "mcp.TextContent",
         # Legacy patterns for older versions
-        'mcp.protocol.TextContent',
-        'mcp.core.TextContent',
+        "mcp.protocol.TextContent",
+        "mcp.core.TextContent",
     ]
 
     TextContent = None
     for tc_path in text_content_attempts:
         try:
-            module_path, class_name = tc_path.rsplit('.', 1)
+            module_path, class_name = tc_path.rsplit(".", 1)
             module = __import__(module_path, fromlist=[class_name])
             TextContent = getattr(module, class_name, None)
             if TextContent:
@@ -122,6 +131,7 @@ def _import_mcp_components():
 
     # Fallback TextContent class
     if not TextContent:
+
         class TextContent:  # minimal stub for direct-call mode
             def __init__(self, type: str, text: str):
                 self.type = type
@@ -129,11 +139,16 @@ def _import_mcp_components():
 
     return FastMCP, TextContent, mcp_version
 
+
 # Initialize MCP components
 try:
     FastMCP, TextContent, _MCP_VERSION = _import_mcp_components()
     _HAS_MCP = True
-    print(f"-------- MCP: SDK initialized successfully (version: {_MCP_VERSION})", file=sys.stderr, flush=True)
+    print(
+        f"-------- MCP: SDK initialized successfully (version: {_MCP_VERSION})",
+        file=sys.stderr,
+        flush=True,
+    )
 except Exception as e:
     print(f"-------- MCP: SDK initialization failed: {e}", file=sys.stderr, flush=True)
     _HAS_MCP = False
@@ -147,6 +162,7 @@ except Exception as e:
         def tool(self, *_args, **_kwargs):
             def _decorator(fn):
                 return fn
+
             return _decorator
 
         def run(self):
@@ -307,12 +323,13 @@ class SpanManager:
 # 전역 span 관리자
 span_manager = SpanManager()
 
+
 # 진행상황 표시 유틸리티
 class ProgressIndicator:
     """실시간 진행상황 표시를 위한 유틸리티 클래스"""
 
     def __init__(self):
-        self.animation_frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+        self.animation_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self.frame_index = 0
 
     def show_progress(self, message: str, step: int = 0, total: int = 0) -> None:
@@ -339,6 +356,7 @@ class ProgressIndicator:
         """정보 메시지를 표시"""
         print(f"-------- ℹ️  {message}", file=sys.stderr, flush=True)
 
+
 # 전역 진행상황 표시기
 progress = ProgressIndicator()
 
@@ -348,9 +366,9 @@ class MCPAuthorization:
     """MCP Authorization Framework for tool access control"""
 
     PERMISSION_LEVELS = {
-        "read": 1,      # 읽기 전용 도구들
-        "write": 2,     # 설정 변경 도구들
-        "admin": 3,     # 시스템 관리 도구들
+        "read": 1,  # 읽기 전용 도구들
+        "write": 2,  # 설정 변경 도구들
+        "admin": 3,  # 시스템 관리 도구들
     }
 
     TOOL_PERMISSIONS = {
@@ -382,14 +400,12 @@ class MCPAuthorization:
         "seq": "read",
         "seq-ultra": "read",
         "high": "read",
-
         # Write tools (configuration changes)
         "mode_set": "write",
         "grok_mode_on": "write",
         "gpt_mode_on": "write",
         "grok_mode_off": "write",
         "gpt_mode_off": "write",
-
         # Admin tools (system modifications)
         "init": "admin",
         "refresh": "admin",
@@ -507,6 +523,7 @@ def _initialize_mcp_server():
 
         # Check FastMCP signature and initialize accordingly
         import inspect
+
         fastmcp_sig = inspect.signature(FastMCP)
 
         # Common initialization patterns across MCP versions
@@ -528,10 +545,16 @@ def _initialize_mcp_server():
         for init_func in init_attempts:
             try:
                 mcp_instance = init_func()
-                print(f"-------- MCP: server initialized successfully with {init_func.__name__}", file=sys.stderr, flush=True)
+                print(
+                    f"-------- MCP: server initialized successfully with {init_func.__name__}",
+                    file=sys.stderr,
+                    flush=True,
+                )
                 break
             except (TypeError, ValueError) as e:
-                print(f"-------- MCP: initialization attempt failed: {e}", file=sys.stderr, flush=True)
+                print(
+                    f"-------- MCP: initialization attempt failed: {e}", file=sys.stderr, flush=True
+                )
                 continue
 
         if mcp_instance is None:
@@ -543,6 +566,7 @@ def _initialize_mcp_server():
         print(f"-------- MCP: server initialization failed: {e}", file=sys.stderr, flush=True)
         # Fall back to stub
         return _StubMCP()
+
 
 # Initialize MCP server
 mcp = _initialize_mcp_server()
@@ -560,25 +584,58 @@ TOOL_METADATA: Dict[str, Dict[str, Any]] = {
     "sp.gpt_mode_on": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.grok_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.gpt_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
-    "sp.architect": {"category": "persona", "persona": "Architect", "tags": ["persona", "architecture"]},
+    "sp.architect": {
+        "category": "persona",
+        "persona": "Architect",
+        "tags": ["persona", "architecture"],
+    },
     "sp.frontend": {"category": "persona", "persona": "Frontend", "tags": ["persona", "frontend"]},
     "sp.backend": {"category": "persona", "persona": "Backend", "tags": ["persona", "backend"]},
     "sp.security": {"category": "persona", "persona": "Security", "tags": ["persona", "security"]},
-    "sp.performance": {"category": "persona", "persona": "Performance", "tags": ["persona", "performance"]},
+    "sp.performance": {
+        "category": "persona",
+        "persona": "Performance",
+        "tags": ["persona", "performance"],
+    },
     "sp.analyzer": {"category": "persona", "persona": "Analyzer", "tags": ["persona", "analysis"]},
     "sp.qa": {"category": "persona", "persona": "QA", "tags": ["persona", "quality"]},
-    "sp.refactorer": {"category": "persona", "persona": "Refactorer", "tags": ["persona", "refactoring"]},
+    "sp.refactorer": {
+        "category": "persona",
+        "persona": "Refactorer",
+        "tags": ["persona", "refactoring"],
+    },
     "sp.devops": {"category": "persona", "persona": "DevOps", "tags": ["persona", "devops"]},
     "sp.debate": {"category": "persona", "persona": "Debate", "tags": ["persona", "analysis"]},
     "sp.mentor": {"category": "persona", "persona": "Mentor", "tags": ["persona", "guidance"]},
     "sp.scribe": {"category": "persona", "persona": "Scribe", "tags": ["persona", "documentation"]},
-    "sp.doc-master": {"category": "persona", "persona": "Doc Master", "tags": ["persona", "documentation"]},
-    "sp.service-planner": {"category": "persona", "persona": "Service Planner", "tags": ["persona", "strategy"]},
+    "sp.doc-master": {
+        "category": "persona",
+        "persona": "Doc Master",
+        "tags": ["persona", "documentation"],
+    },
+    "sp.docs-refector": {
+        "category": "persona",
+        "persona": "Docs Refector",
+        "tags": ["persona", "documentation", "refactor"],
+    },
+    "sp.service-planner": {
+        "category": "persona",
+        "persona": "Service Planner",
+        "tags": ["persona", "strategy"],
+    },
     "sp.dev": {"category": "persona", "persona": "Dev", "tags": ["persona", "development"]},
     "sp.review": {"category": "persona", "persona": "Review", "tags": ["persona", "review"]},
-    "sp.optimize": {"category": "persona", "persona": "Optimize", "tags": ["persona", "optimization"]},
+    "sp.optimize": {
+        "category": "persona",
+        "persona": "Optimize",
+        "tags": ["persona", "optimization"],
+    },
     "sp.grok": {"category": "persona", "persona": "Grok", "tags": ["persona", "grok"]},
-    "sp.db-expert": {"category": "persona", "persona": "DB Expert", "tags": ["persona", "database"]},
+    "sp.db-expert": {
+        "category": "persona",
+        "persona": "DB Expert",
+        "tags": ["persona", "database"],
+    },
     "sp.specify": {"category": "sdd", "tags": ["sdd", "spec"]},
     "sp.plan": {"category": "sdd", "tags": ["sdd", "plan"]},
     "sp.tasks": {"category": "sdd", "tags": ["sdd", "tasks"]},
@@ -1231,6 +1288,7 @@ def _run_direct_tool_if_requested() -> bool:
         # Development and documentation
         "sp.dev": dev,
         "sp.doc-master": doc_master,
+        "sp.docs-refector": docs_refector,
         # Additional tools
         "sp.grok": grok,
         "sp.db-expert": db_expert,
@@ -1314,8 +1372,11 @@ def _ensure_project_venv(pr: Path, force: bool = False) -> Optional[Path]:
         else:
             try:
                 print("-------- venv: upgrading pip", file=sys.stderr, flush=True)
-                subprocess.check_call([str(vpython), "-m", "pip", "install", "--upgrade", "pip"],
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.check_call(
+                    [str(vpython), "-m", "pip", "install", "--upgrade", "pip"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             except Exception as e:
                 print(f"-------- WARN: pip upgrade failed: {e}", file=sys.stderr, flush=True)
 
@@ -1327,8 +1388,11 @@ def _ensure_project_venv(pr: Path, force: bool = False) -> Optional[Path]:
             ]
             try:
                 print("-------- venv: installing python deps", file=sys.stderr, flush=True)
-                subprocess.check_call([str(vpip), "install", *pkgs],
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.check_call(
+                    [str(vpip), "install", *pkgs],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
             except Exception as e:
                 print(f"-------- WARN: dependency install failed: {e}", file=sys.stderr, flush=True)
 
@@ -1366,6 +1430,7 @@ def _init_impl(force: bool = False) -> str:
     # Display Super Prompt ASCII Art
     try:
         from importlib.metadata import version as _v
+
         current_version = _v("super-prompt")
     except:
         current_version = "4.4.0"
@@ -1827,9 +1892,7 @@ Please provide the problem description for analysis.""",
         response = f"🔍 **Root Cause Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
         response += f"**📊 Analysis Context:**\n"
         response += f"- Project scope: {context_info.get('file_count', 0)} files\n"
-        response += (
-            f"- Investigation focus: {query[:100]}{'...' if len(query) > 100 else ''}\n\n"
-        )
+        response += f"- Investigation focus: {query[:100]}{'...' if len(query) > 100 else ''}\n\n"
 
         response += f"**🤖 Codex Root Cause Insight:**\n"
         response += f"{codex_response}\n\n"
@@ -1873,13 +1936,13 @@ def devops(query: str = "") -> TextContent:
         result = _execute_persona("devops", query)
         return _add_confession_mode(result, "devops", query)
 
+
 @register_tool("sp.debate")  # 도구명: sp.debate - 읽기 전용 내부 토론 분석
 def debate(query: str = "") -> TextContent:
     """💬 Debate - Positive vs. critical internal debate facilitation"""
     with memory_span("sp.debate"):
         result = _execute_persona("debate", query)
         return _add_confession_mode(result, "debate", query)
-
 
 
 @register_tool("sp.mentor")  # 도구명: sp.mentor - 읽기 전용 교육 및 멘토링 조언
@@ -2439,6 +2502,81 @@ def doc_master(query: str = "") -> TextContent:
             response += _perform_doc_master_analysis(query)
 
         return TextContent(type="text", text=response)
+
+
+@register_tool("sp.docs-refector")  # 도구명: sp.docs-refector
+def docs_refector(query: str = "") -> TextContent:
+    """🧹 Docs Refector - Repository-wide documentation audit, de-duplication, and consolidation"""
+    with memory_span("sp.docs-refector"):
+        # Analyze repository markdown/docs to propose a consolidation plan
+        project_root = Path.cwd()
+        md_files: list[Path] = []
+        for pattern in ["**/*.md", "**/*.mdx"]:
+            md_files.extend(project_root.glob(pattern))
+
+        # Build simple indices: by filename stem and first heading
+        name_index: dict[str, list[Path]] = {}
+        heading_index: dict[str, list[Path]] = {}
+        for path in md_files:
+            if not path.is_file():
+                continue
+            stem = path.stem.lower()
+            name_index.setdefault(stem, []).append(path)
+            try:
+                first_line = path.read_text(encoding="utf-8", errors="ignore").splitlines()[:10]
+                heading = next(
+                    (l.strip("# ") for l in first_line if l.lstrip().startswith("#")), ""
+                )
+                if heading:
+                    heading_index.setdefault(heading.lower(), []).append(path)
+            except Exception:
+                # Ignore unreadable files
+                continue
+
+        duplicates_by_name = {k: v for k, v in name_index.items() if len(v) > 1}
+        duplicates_by_heading = {k: v for k, v in heading_index.items() if len(v) > 1}
+
+        docs_dirs = [
+            p
+            for p in [project_root / "docs", project_root / "packages", project_root / "specs"]
+            if p.exists()
+        ]
+
+        response = ["🧹 **Docs Refector Audit & Consolidation Plan**\n"]
+        response.append(f"Total markdown-like files: {len(md_files)}\n")
+
+        if duplicates_by_name:
+            response.append("\n### Potential Duplicates (by filename)\n")
+            for stem, paths in list(duplicates_by_name.items())[:20]:
+                shown = "\n".join(f"- {p.as_posix()}" for p in paths[:6])
+                more = " (and more)" if len(paths) > 6 else ""
+                response.append(f"- {stem}:{more}\n{shown}\n")
+
+        if duplicates_by_heading:
+            response.append("\n### Potential Duplicates (by top-level heading)\n")
+            for heading, paths in list(duplicates_by_heading.items())[:20]:
+                shown = "\n".join(f"- {p.as_posix()}" for p in paths[:6])
+                more = " (and more)" if len(paths) > 6 else ""
+                response.append(f"- {heading}:{more}\n{shown}\n")
+
+        if docs_dirs:
+            response.append("\n### Documentation Areas Scanned\n")
+            for d in docs_dirs:
+                response.append(f"- {d.as_posix()}\n")
+
+        # High-level refactor plan
+        response.append("\n### Proposed Consolidation Strategy\n")
+        response.append("- Build a canonical information architecture (IA) with sources of truth\n")
+        response.append("- Merge duplicates; create redirects or cross-links where necessary\n")
+        response.append("- Remove obsolete/legacy files; update internal links\n")
+        response.append("- Normalize style (headings, frontmatter, tone)\n")
+        response.append("- Add verification checklist and ownership for sustained maintenance\n")
+
+        if query.strip():
+            response.append("\n### Focus Area\n")
+            response.append(f"- User request: {query}\n")
+
+        return TextContent(type="text", text="".join(response))
 
 
 def _perform_sequential_analysis(query: str) -> str:
@@ -3281,10 +3419,15 @@ if __name__ == "__main__":
     # Initialize memory system early to ensure database is ready
     try:
         from .memory.store import MemoryStore
+
         MemoryStore.open()  # Initialize memory database
         print("-------- memory: system initialized", file=sys.stderr, flush=True)
     except Exception as e:
-        print(f"-------- WARNING: memory system initialization failed: {e}", file=sys.stderr, flush=True)
+        print(
+            f"-------- WARNING: memory system initialization failed: {e}",
+            file=sys.stderr,
+            flush=True,
+        )
 
     # stdio 모드로 MCP 서버 실행 (버전 호환성 고려)
     print("-------- MCP server starting in stdio mode", file=sys.stderr, flush=True)
@@ -3309,7 +3452,11 @@ if __name__ == "__main__":
     server_started = False
     for run_func in run_attempts:
         try:
-            print(f"-------- MCP: trying server run pattern: {run_func.__name__}", file=sys.stderr, flush=True)
+            print(
+                f"-------- MCP: trying server run pattern: {run_func.__name__}",
+                file=sys.stderr,
+                flush=True,
+            )
             run_func()
             server_started = True
             print("-------- MCP: server started successfully", file=sys.stderr, flush=True)
@@ -3319,5 +3466,9 @@ if __name__ == "__main__":
             continue
 
     if not server_started:
-        print("-------- ERROR: Failed to start MCP server with any known pattern", file=sys.stderr, flush=True)
+        print(
+            "-------- ERROR: Failed to start MCP server with any known pattern",
+            file=sys.stderr,
+            flush=True,
+        )
         sys.exit(1)

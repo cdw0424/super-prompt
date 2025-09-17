@@ -78,8 +78,9 @@ agents:
       flags: ["--doc-master", "--sp-doc-master"]
     docs-refector:
       name: Docs Refector
-      description: Documentation consolidation and refactoring
+      description: Repository-wide documentation audit, de-duplication, and consolidation
       flags: ["--docs-refector", "--sp-docs-refector"]
+    # docs-refector (legacy/typo) removed; use doc-master instead
 
   sdd_workflow:
     spec:

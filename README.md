@@ -1,4 +1,4 @@
-# Super Prompt v4.6.5: Ultimate Dual IDE Prompt Engineering Toolkit
+# Super Prompt v4.6.6: Ultimate Dual IDE Prompt Engineering Toolkit
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)

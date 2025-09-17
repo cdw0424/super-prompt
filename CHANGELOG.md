@@ -1,5 +1,29 @@
 # Changelog
 
+## v4.6.6 - 2025-09-17
+
+### ✨ New Persona & Tool
+
+- Add `docs-refector` persona for repo-wide documentation audit and
+  consolidation
+  - Cursor personas: full guidance referencing `docs/gpt_prompt_guide.md` and
+    `docs/grok_prompt_guide.md`
+  - MCP tool: `sp.docs-refector` scans markdown, detects duplicates by
+    filename/heading, proposes consolidation plan
+  - CLI routing: supports `--docs-refector` / `--sp-docs-refector` and direct
+    `docs-refector`
+  - Codex agents: reintroduced with correct description and flags
+
+### 📝 Docs
+
+- README: previous init fix retained
+
+### 🔧 Version
+
+- Bump to 4.6.6 (root, Python core, README header)
+
+---
+
 ## v4.6.5 - 2025-09-17
 
 ### 📝 Docs

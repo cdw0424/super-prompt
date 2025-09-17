@@ -197,6 +197,7 @@ route_codex_flags() {
     --dev|--sp-dev) TOOL="sp.dev" ;;
     --review|--sp-review) TOOL="sp.review" ;;
     --service-planner|--sp-service-planner) TOOL="sp.service-planner" ;;
+    --docs-refector|--sp-docs-refector) TOOL="sp.docs-refector" ;;
     --doc-master|--sp-doc-master) TOOL="sp.doc-master" ;;
     # SDD
     --sp-sdd-spec|--specify|--sp-specify) TOOL="sp.specify" ;;
@@ -235,6 +236,7 @@ resolve_direct_tool() {
     dev) echo "sp.dev" ;;
     doc-master) echo "sp.doc-master" ;;
     service-planner) echo "sp.service-planner" ;;
+  docs-refector) echo "sp.docs-refector" ;;
     debate) echo "sp.debate" ;;
     specify) echo "sp.specify" ;;
     plan) echo "sp.plan" ;;
