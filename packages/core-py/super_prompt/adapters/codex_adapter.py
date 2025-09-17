@@ -78,10 +78,12 @@ Use flag-based personas (no slash commands in Codex). Each persona supports a lo
 # Architecture planning
 super-prompt --architect "Propose modular structure for feature X"
 super-prompt --sp-architect "Propose modular structure for feature X"
+sp --architect "Propose modular structure for feature X"
 
 # Root cause analysis
 super-prompt --analyzer "Audit error handling and logging"
 super-prompt --sp-analyzer --out ~/.codex/reports/analysis.md "Audit error handling and logging"
+sp --analyzer "Audit error handling and logging"
 ```
 
 ## SDD Workflow (flag-based)

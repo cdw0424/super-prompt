@@ -1,6 +1,36 @@
 # Changelog
 
-## v4.6.3 - 2025-09-17
+## v4.6.5 - 2025-09-17
+
+### 📝 Docs
+
+- README: Fix Quick Start init to use `super-prompt super:init` and add npx
+  fallback.
+
+### 🔧 Version
+
+- Bump to 4.6.5 (root, Python core, README header)
+
+---
+
+## v4.6.4 - 2025-09-17
+
+### 📝 Docs & UX
+
+- README: Add Philosophy section (Command First, SSOT, SDD, AMR, Safety)
+- README: Recommend dual-model setup in Cursor (GPT‑5 Codex low fast max + Grok
+  Code fast max)
+- README: Simplify Cursor usage (slash commands only; no manual MCP steps)
+- README: Clarify Codex usage (flags in chat; `--sp-` prefix; add `sp` alias)
+- README: Add mode toggles (on/off) for Cursor and Codex; explain effects and
+  persistence to `.super-prompt/mode.json`
+- Codex: Update `~/.codex/agents.md` to use `gpt-mode-on/off`, align examples to
+  `--sp-*`
+
+### 🔧 Version
+
+- Bump root package to 4.6.4
+- Bump Python core `pyproject.toml` to 4.6.4
 
 ### 🧼 Documentation & Metadata Updates
 
@@ -10,7 +40,7 @@
 
 ---
 
-## v4.6.1 - 2025-09-17
+## v4.6.3 - 2025-09-17
 
 ### 📝 **Documentation Simplification**
 
