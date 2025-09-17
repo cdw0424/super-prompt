@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.6.3 - 2025-09-17
+
+### 🧼 Documentation & Metadata Updates
+
+- Update README title and package description to v4.6.3 (English-only)
+- Align Python core `pyproject.toml` version and description
+- Ensure MCP/Codex integration notes are up-to-date
+
+---
+
 ## v4.6.1 - 2025-09-17
 
 ### 📝 **Documentation Simplification**
