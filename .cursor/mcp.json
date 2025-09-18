@@ -3,8 +3,8 @@
     "super-prompt": {
       "command": "npx",
       "args": [
-        "-y",
-        "@cdw0424/super-prompt@4.6.9",
+        "--yes",
+        "--package=@cdw0424/super-prompt@latest",
         "sp-mcp"
       ],
       "env": {
