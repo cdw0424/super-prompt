@@ -2,7 +2,7 @@
   "tools": {
     "super-prompt": {
       "command": "npx",
-      "args": ["-y", "@cdw0424/super-prompt@latest", "super:init"],
+      "args": ["-y", "@cdw0424/super-prompt@4.6.9", "super:init"],
       "description": "Initialize Super Prompt in the current project"
     }
   }
