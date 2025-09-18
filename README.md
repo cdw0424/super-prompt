@@ -97,10 +97,10 @@ npm install @cdw0424/super-prompt@latest
 npx -y @cdw0424/super-prompt@latest super:init
 ```
 
-> ℹ️ **Why `npx`?** `super-prompt` isn’t installed globally by default, so running
-> `super-prompt super:init` directly will usually show `command not found`. The
-> one-off `npx` call (or the local npm script below) is the supported way to run
-> the init command.
+> ℹ️ **Why `npx`?** `super-prompt` isn’t installed globally by default, so
+> running `super-prompt super:init` directly will usually show
+> `command not found`. The one-off `npx` call (or the local npm script below) is
+> the supported way to run the init command.
 
 If you installed the package locally, you can also use the bundled npm script:
 
