@@ -21,7 +21,9 @@ def validate_todo(task_id: str, project_root: Optional[Path] = None) -> Dict[str
     return {"ok": ok, "logs": logs}
 
 
-def validate_check(project_root: Optional[Path] = None, target: Optional[str] = None) -> Dict[str, Any]:
+def validate_check(
+    project_root: Optional[Path] = None, target: Optional[str] = None
+) -> Dict[str, Any]:
     root = str(project_root) if project_root else "."
     logs: List[str] = ["Running validation checks:"]
     all_passed = True
@@ -35,18 +37,22 @@ def validate_check(project_root: Optional[Path] = None, target: Optional[str] = 
 
     try:
         sdd_ok = check_implementation_ready(target or "default", root)
-        passed = sdd_ok.ok if hasattr(sdd_ok, 'ok') else bool(sdd_ok)
-        details = f" ({len(sdd_ok.missing)} issues)" if hasattr(sdd_ok, 'missing') and sdd_ok.missing else ""
+        passed = sdd_ok.ok if hasattr(sdd_ok, "ok") else bool(sdd_ok)
+        details = (
+            f" ({len(sdd_ok.missing)} issues)"
+            if hasattr(sdd_ok, "missing") and sdd_ok.missing
+            else ""
+        )
         log_status("SDD gates", passed, details)
     except Exception as e:
-        log_status("SDD gates", False, f" (error: {e}")
+        log_status("SDD gates", False, f" (error: {e})")
 
     try:
         ctx = ContextCollector(root)
         count = len(ctx.collect_context("test")["files"]) > 0
         log_status("Context collection", bool(count))
     except Exception as e:
-        log_status("Context collection", False, f" (error: {e}")
+        log_status("Context collection", False, f" (error: {e})")
 
     if all_passed:
         logs.append("🎉 All validation checks passed!")
@@ -54,4 +60,3 @@ def validate_check(project_root: Optional[Path] = None, target: Optional[str] = 
         logs.append("⚠️  Some validation checks failed")
 
     return {"ok": all_passed, "logs": logs}
-

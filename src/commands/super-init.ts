@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { createMemoryClient } from '../mcp/memory';
 
 function ensureDir(p: string) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
@@ -9,6 +10,40 @@ function copyIfMissing(src: string, dst: string) {
   if (!fs.existsSync(dst)) {
     fs.copyFileSync(src, dst);
     console.log(`-------- copied: ${path.relative(process.cwd(), dst)}`);
+  }
+}
+
+function ensurePythonVenv(projectRoot: string) {
+  const candidates = process.platform === 'win32' ? ['python', 'py'] : ['python3', 'python'];
+  let pythonCmd: string | undefined;
+  for (const candidate of candidates) {
+    const probe = spawnSync(candidate, ['--version'], { stdio: 'ignore' });
+    if (probe.status === 0) {
+      pythonCmd = candidate;
+      break;
+    }
+  }
+
+  if (!pythonCmd) {
+    console.warn('-------- venv: no Python interpreter found (skipping project venv setup)');
+    return;
+  }
+
+  const packageRoot = path.join(__dirname, '..', '..');
+  const corePyPath = path.join(packageRoot, 'packages', 'core-py');
+  const env = { ...process.env, SUPER_PROMPT_PROJECT_ROOT: projectRoot } as NodeJS.ProcessEnv;
+  env.PYTHONPATH = env.PYTHONPATH
+    ? `${corePyPath}${path.delimiter}${env.PYTHONPATH}`
+    : corePyPath;
+
+  const result = spawnSync(
+    pythonCmd,
+    ['-m', 'super_prompt.venv', '--project-root', projectRoot],
+    { stdio: 'inherit', env }
+  );
+
+  if (result.status !== 0) {
+    console.warn('-------- venv: setup command reported an error; continuing with system Python');
   }
 }
 
@@ -79,6 +114,9 @@ export async function run(_ctx?: any) {
     if (fs.existsSync(defaultPersona)) {
       copyIfMissing(defaultPersona, path.join(personasDst, 'default.json'));
     }
+
+    // Ensure project-specific Python virtual environment is ready
+    ensurePythonVenv(cwd);
 
     // 5) 모드 토큰/모델 안내(검증은 선택: 토큰 없으면 경고만)
     // No external API keys are required for internal MCP tools.

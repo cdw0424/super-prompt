@@ -1,4 +1,4 @@
-# Super Prompt v4.6.6: Ultimate Dual IDE Prompt Engineering Toolkit
+# Super Prompt v4.6.9: Ultimate Dual IDE Prompt Engineering Toolkit
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -25,6 +25,20 @@ intelligent persona system.
 
 This philosophy powers a dual‑IDE workflow (Cursor + Codex) and underpins our
 model recommendation below for consistent, fast, and reliable results.
+
+### 🔍 Confession Mode (Double‑Check)
+
+- **What it is**: An automatic self‑audit appended to the end of every MCP tool
+  response.
+- **What it includes**:
+  - Summary of what was done
+  - Unknowns and potential risks
+  - Recommended countermeasures (verification/rollback/alternatives)
+  - Completion timestamp
+- **Scope**: Enabled by default for all Super Prompt MCP tool outputs in
+  Cursor/Codex.
+- **Purpose**: Standardizes a “double‑check” step to improve reliability and
+  transparency of results.
 
 ### ✅ Recommended IDE Models (Cursor)
 
@@ -80,14 +94,22 @@ npm install @cdw0424/super-prompt@latest
 ### 2) Initialize project assets
 
 ```bash
-super-prompt super:init
-```
-
-If you don’t have the CLI globally, use one‑off:
-
-```bash
 npx -y @cdw0424/super-prompt@latest super:init
 ```
+
+> ℹ️ **Why `npx`?** `super-prompt` isn’t installed globally by default, so running
+> `super-prompt super:init` directly will usually show `command not found`. The
+> one-off `npx` call (or the local npm script below) is the supported way to run
+> the init command.
+
+If you installed the package locally, you can also use the bundled npm script:
+
+```bash
+npm run sp:init
+```
+
+To make the CLI globally available, install it with `npm i -g` or add
+`./node_modules/.bin` to your PATH.
 
 ### 3) Use in Cursor IDE (MCP)
 

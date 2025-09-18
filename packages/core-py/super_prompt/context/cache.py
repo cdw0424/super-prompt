@@ -43,6 +43,24 @@ class ContextCache:
         self.memory_cache: Dict[str, CacheEntry] = {}
         self._load_cache()
 
+    # Mapping-style helpers -------------------------------------------------
+    def __contains__(self, key: str) -> bool:
+        """Support `key in cache` syntax."""
+        return key in self.memory_cache
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dictionary-style access while tracking hits."""
+        entry = self.memory_cache[key]
+        entry.hits += 1
+        return entry.content
+
+    def __setitem__(self, key: str, content: Any) -> None:
+        """Allow dictionary-style assignment."""
+        self.set(key, content)
+
+    def __len__(self) -> int:
+        return len(self.memory_cache)
+
     def get(self, key: str) -> Optional[Any]:
         """Get cached content by key"""
         # Check memory cache first

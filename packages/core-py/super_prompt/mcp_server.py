@@ -172,6 +172,7 @@ except Exception as e:
     # Create a stub 'mcp' so decorators below don't fail at import time.
     mcp = _StubMCP()  # type: ignore
 from .paths import package_root, project_root, project_data_dir
+from .venv import ensure_project_venv
 from .mcp_register import ensure_cursor_mcp_registered, ensure_codex_mcp_registered
 from .mode_store import get_mode, set_mode
 from .personas.loader import PersonaLoader
@@ -1371,96 +1372,6 @@ def _validate_assets():
         raise RuntimeError(f"Too few commands found ({n}). Fallback disabled.")
 
 
-def _ensure_project_venv(pr: Path, force: bool = False) -> Optional[Path]:
-    """Create a project-scoped Python venv and install minimal deps.
-
-    Returns the venv directory path on success, or None on failure. Never throws.
-    """
-    try:
-        venv_dir = project_data_dir() / "venv"
-        # Create venv if absent
-        if not venv_dir.exists():
-            py = sys.executable or "python3"
-            print(f"-------- venv: creating at {venv_dir}", file=sys.stderr, flush=True)
-            import subprocess
-
-            subprocess.check_call([py, "-m", "venv", str(venv_dir)])
-
-        # Resolve venv binaries
-        if os.name == "nt":
-            vbin = venv_dir / "Scripts"
-            vpython = vbin / "python.exe"
-            vpip = vbin / "pip.exe"
-        else:
-            vbin = venv_dir / "bin"
-            vpython = vbin / "python"
-            vpip = vbin / "pip"
-
-        # Offline-aware dependency steps
-        import subprocess
-
-        offline = str(
-            os.environ.get("SUPER_PROMPT_OFFLINE") or os.environ.get("SP_NO_PIP_INSTALL") or ""
-        ).lower() in ("1", "true", "yes")
-        if offline:
-            print("-------- venv: offline mode (skip pip installs)", file=sys.stderr, flush=True)
-        else:
-            try:
-                print("-------- venv: upgrading pip", file=sys.stderr, flush=True)
-                subprocess.check_call(
-                    [str(vpython), "-m", "pip", "install", "--upgrade", "pip"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-            except Exception as e:
-                print(f"-------- WARN: pip upgrade failed: {e}", file=sys.stderr, flush=True)
-
-            pkgs = [
-                "typer>=0.9.0",
-                "pyyaml>=6.0",
-                "pathspec>=0.11.0",
-                "mcp>=0.4.0",
-            ]
-            try:
-                print("-------- venv: installing python deps", file=sys.stderr, flush=True)
-                subprocess.check_call(
-                    [str(vpip), "install", *pkgs],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-            except Exception as e:
-                print(f"-------- WARN: dependency install failed: {e}", file=sys.stderr, flush=True)
-
-        # Try to install super_prompt core wheel if bundled
-        try:
-            dist_dirs = [package_root() / "packages" / "core-py" / "dist", package_root() / "dist"]
-            wheel = None
-            for d in dist_dirs:
-                if d.exists():
-                    for f in sorted(d.glob("*.whl"), reverse=True):
-                        wheel = f
-                        break
-                if wheel:
-                    break
-            if wheel:
-                print(f"-------- venv: installing {wheel.name}", file=sys.stderr, flush=True)
-                subprocess.check_call([str(vpip), "install", str(wheel)])
-            else:
-                # Not fatal. The wrapper sets PYTHONPATH for source import.
-                print(
-                    "-------- venv: no core wheel found; relying on PYTHONPATH",
-                    file=sys.stderr,
-                    flush=True,
-                )
-        except Exception as e:
-            print(f"-------- WARN: core wheel install failed: {e}", file=sys.stderr, flush=True)
-
-        return venv_dir
-    except Exception as e:
-        print(f"-------- WARN: venv setup failed: {e}", file=sys.stderr, flush=True)
-        return None
-
-
 def _init_impl(force: bool = False) -> str:
     # Display Super Prompt ASCII Art
     try:
@@ -1497,7 +1408,7 @@ def _init_impl(force: bool = False) -> str:
     data = project_data_dir()
     data.mkdir(parents=True, exist_ok=True)
     # Ensure project venv and runtime deps
-    _ensure_project_venv(pr, force=force)
+    ensure_project_venv(pr, force=force)
     # 에셋 복사(필요 파일만, 덮어쓰기 정책은 force로 제어)
     src = package_root() / "packages" / "cursor-assets"
     # 예시: commands/super-prompt/*, rules/* 등 선택 복사

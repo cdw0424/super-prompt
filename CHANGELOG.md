@@ -1,20 +1,48 @@
 # Changelog
 
-## v4.6.7 - 2025-09-17
+## v4.6.9 - 2025-09-18
 
-### ✨ Features
+### 🐛 Fixes
 
-- Global post-exec confession double-check for all MCP tools via `register_tool` wrapper (prints `-------- confession:` logs)
-- Architect pipeline enforced: [프롬프트 분석 → 사전 사료 조사 → 메모리 DB 체크 → 페르소나/커맨드 호출 → 추론/Plan 설계 → Plan 실행 지침 → 고해성사 더블체크 → 메모리 DB 업데이트 → 결론]
+- Align versions across root `package.json`, Python `pyproject.toml`, and README title.
+- Minor docs touch-ups during rebase; ensure consistent version display.
 
-### 🔧 Internals
+### 🔧 Version
 
-- Ensure confession hook also runs on direct-call path (`SP_DIRECT_TOOL`)
-- Memory store used to append `architect_pipeline` events
+- Bump to 4.6.9.
 
-### 🔖 Version
+---
 
-- Bump root and Python core to 4.6.7
+## v4.6.8 - 2025-09-18
+
+### 🐛 Fixes
+
+- Resolve `CHANGELOG.md` merge conflict and retain latest v4.6.7 entry.
+- Increment versions to avoid npm republish error.
+
+### 🔧 Version
+
+- Bump root package, Python core, and README header to 4.6.8.
+
+---
+
+## v4.6.7 - 2025-09-18
+
+### 🐛 Fixes
+
+- SDD gates: Align function signatures to accept optional `project_id` and
+  `project_root`, use `pathlib` and `rglob` for more reliable file discovery,
+  and parameterize acceptance self-check execution path.
+- Validation: Fix error message formatting in `validate_check` and ensure
+  context collection check operates reliably.
+
+### 📝 Docs
+
+- README: Add Confession Mode (Double‑Check) section and translate to English.
+
+### 🔧 Version
+
+- Bump root package, Python core, and README header to 4.6.7.
 
 ---
 

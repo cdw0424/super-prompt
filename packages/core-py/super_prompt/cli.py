@@ -29,6 +29,7 @@ from .engine.execution_pipeline import ExecutionPipeline
 from .context.collector import ContextCollector
 from .sdd.gates import check_implementation_ready
 from .personas.loader import PersonaLoader
+from .venv import ensure_project_venv
 from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
@@ -805,6 +806,16 @@ def init(
 
         # Resolve real project root (never point to .super-prompt here)
         target_dir = Path(project_root).resolve() if project_root else Path.cwd().resolve()
+        os.environ["SUPER_PROMPT_PROJECT_ROOT"] = str(target_dir)
+
+        # Ensure Python virtual environment is ready for context tools
+        typer.echo("🐍 Ensuring project Python environment...")
+        venv_dir = ensure_project_venv(target_dir, force=force)
+        if venv_dir:
+            display_path = venv_dir if venv_dir.is_absolute() else (target_dir / venv_dir)
+            typer.echo(f"✅ Python venv ready: {display_path}")
+        else:
+            typer.echo("⚠️  Python venv setup skipped or failed; falling back to system Python")
 
         # --- Legacy cleanup (idempotent) ---
         legacy_paths = [
