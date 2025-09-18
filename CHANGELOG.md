@@ -1,5 +1,18 @@
 # Changelog
 
+## v4.6.10 - 2025-09-18
+
+### 🛠️ Improvements
+
+- Cursor MCP config: adopt `npx --yes --package=@cdw0424/super-prompt@latest` pattern to prevent cache drift and fix tool discovery.
+- Confirm `sp.tr` tool visibility in Cursor after MCP reload.
+
+### 🔧 Version
+
+- Bump root package, Python core, and README header to 4.6.10.
+
+---
+
 ## v4.6.9 - 2025-09-18
 
 ### 🐛 Fixes
