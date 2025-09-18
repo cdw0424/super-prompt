@@ -2,8 +2,9 @@
 description: mentor command
 run: mcp
 server: super-prompt
-tool: sp.mentor
+tool: sp.pipeline
 args:
+  tool: "mentor"
   query: "${input}"
 ---
 

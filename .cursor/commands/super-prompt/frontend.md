@@ -2,8 +2,9 @@
 description: frontend command
 run: mcp
 server: super-prompt
-tool: sp.frontend
+tool: sp.pipeline
 args:
+  tool: "frontend"
   query: "${input}"
 ---
 

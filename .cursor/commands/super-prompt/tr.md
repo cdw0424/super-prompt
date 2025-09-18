@@ -2,10 +2,11 @@
 description: tr command
 run: mcp
 server: super-prompt
-tool: sp.tr
+tool: sp.pipeline
 args:
+  tool: "tr"
   query: "${input}"
 ---
 
-🔧 Troubleshooter
-Rapid issue diagnosis and resolution
+🌐 Translate
+Professional translation and localization support

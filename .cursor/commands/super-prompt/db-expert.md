@@ -2,8 +2,9 @@
 description: db-expert command
 run: mcp
 server: super-prompt
-tool: sp.db-expert
+tool: sp.pipeline
 args:
+  tool: "db-expert"
   query: "${input}"
 ---
 

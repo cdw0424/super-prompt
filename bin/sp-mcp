@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Lightweight wrapper to launch the MCP server via the main CLI
+# Lightweight wrapper to launch the MCP server directly as a module
 DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "$DIR/super-prompt" mcp-serve "$@"
+
+# Use project venv if available, otherwise system python3
+if [ -f "$DIR/../.super-prompt/venv/bin/python3" ]; then
+    PYTHON_EXEC="$DIR/../.super-prompt/venv/bin/python3"
+else
+    PYTHON_EXEC="python3"
+fi
+
+# Set required environment variables
+export SUPER_PROMPT_PACKAGE_ROOT="$DIR/.."
+export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$(pwd)}"
+export MCP_SERVER_MODE="1"
+export PYTHONPATH="$DIR/../packages/core-py"
+
+# Launch MCP server as module
+exec "$PYTHON_EXEC" -m super_prompt.mcp_server "$@"
 

@@ -2,8 +2,9 @@
 description: seq-ultra command
 run: mcp
 server: super-prompt
-tool: sp.seq-ultra
+tool: sp.pipeline
 args:
+  tool: "seq-ultra"
   query: "${input}"
 ---
 

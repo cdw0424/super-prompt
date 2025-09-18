@@ -1,4 +1,4 @@
-# Super Prompt v4.6.10: Ultimate Dual IDE Prompt Engineering Toolkit
+# Super Prompt v4.7.0: Ultimate Dual IDE Prompt Engineering Toolkit
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -6,6 +6,20 @@
 
 **🚀 The Ultimate Dual IDE Prompt Engineering Toolkit with Enhanced MCP
 Support**
+
+### ❗ Important: Enable Super‑Prompt MCP in Cursor
+
+To use Super‑Prompt inside Cursor, ensure the Super‑Prompt MCP is enabled in
+Cursor after initialization.
+
+- Open Cursor → Settings → MCP and enable the Super‑Prompt server
+- If you don’t see it, restart Cursor after running project initialization
+- In chat, you should see slash command autocomplete like
+  `/super-prompt/architect`
+
+See the setup guide: [Cursor MCP Setup Guide](docs/cursor-mcp-setting-guide.md)
+
+---
 
 Super Prompt delivers advanced MCP (Model Context Protocol) implementation with
 comprehensive development tools, seamless Cursor and Codex IDE integration, and
@@ -50,7 +64,38 @@ model recommendation below for consistent, fast, and reliable results.
 
 ## ⚡ Quick Start
 
-### 🔀 Model Modes (GPT vs Grok)
+### 1) Install
+
+```bash
+npm install @cdw0424/super-prompt@latest
+```
+
+### 2) Initialize project assets
+
+```bash
+npx -y @cdw0424/super-prompt@latest super:init
+```
+
+> ℹ️ **Why `npx`?** `super-prompt` isn’t installed globally by default, so
+> running `super-prompt super:init` directly will usually show
+> `command not found`. The one-off `npx` call (or the local npm script below) is
+> the supported way to run the init command.
+
+If you installed the package locally, you can also use the bundled npm script:
+
+```bash
+npm run sp:init
+```
+
+To make the CLI globally available, install it with `npm i -g` or add
+`./node_modules/.bin` to your PATH.
+
+### 3) Enable in Cursor (MCP)
+
+Open Cursor → Settings → MCP and enable the Super‑Prompt server (restart Cursor
+if needed). After enabling, slash commands will autocomplete in chat.
+
+### 4) Model Modes (GPT vs Grok)
 
 - Modes are mutually exclusive; default is GPT.
 - In Cursor, toggle with slash commands (these persist the mode to
@@ -85,33 +130,7 @@ sp gpt-mode-off
 sp grok-mode-off
 ```
 
-### 1) Install
-
-```bash
-npm install @cdw0424/super-prompt@latest
-```
-
-### 2) Initialize project assets
-
-```bash
-npx -y @cdw0424/super-prompt@latest super:init
-```
-
-> ℹ️ **Why `npx`?** `super-prompt` isn’t installed globally by default, so
-> running `super-prompt super:init` directly will usually show
-> `command not found`. The one-off `npx` call (or the local npm script below) is
-> the supported way to run the init command.
-
-If you installed the package locally, you can also use the bundled npm script:
-
-```bash
-npm run sp:init
-```
-
-To make the CLI globally available, install it with `npm i -g` or add
-`./node_modules/.bin` to your PATH.
-
-### 3) Use in Cursor IDE (MCP)
+### 5) Use in Cursor IDE
 
 1. Set models as recommended above (GPT‑5 Codex low fast max + Grok Code fast
    max).
@@ -122,7 +141,7 @@ To make the CLI globally available, install it with `npm i -g` or add
 /super-prompt/dev "implement authentication"
 ```
 
-### 4) Use in Codex (flag commands)
+### 6) Use in Codex (flag commands)
 
 In Codex, enter flags directly in chat (no `super-prompt` prefix). Recommended
 flags use the `--sp-` prefix (both forms are accepted):
@@ -132,7 +151,7 @@ flags use the `--sp-` prefix (both forms are accepted):
 --sp-dev "implement authentication"
 ```
 
-### 5) CLI shorthand
+### 7) CLI shorthand
 
 The package also installs a short alias `sp`, so you can run MCP personas
 directly from the shell:
@@ -141,6 +160,20 @@ directly from the shell:
 sp --architect "design a REST API"
 sp --dev "implement authentication"
 ```
+
+### Unified MCP pipeline (new in 4.7.0)
+
+- Every `/super-prompt/<persona>` command now routes through a shared
+  `sp.pipeline` helper.
+- The pipeline always performs: memory lookup → prompt/context analysis →
+  Codex/persona execution → plan + execution guidance → confession double-check
+  → memory update.
+- To call the pipeline manually you can run
+  `sp --pipeline "tool=<persona>" "<query>"` or via MCP tool args.
+- Existing Cursor commands are already wired to the appropriate pipeline key, so
+  no action is required to benefit from the upgraded workflow.
+- The helper understands Cursor-style argument payloads (`query`, `input`, `a`,
+  etc.), so legacy commands keep working without changes.
 
 ---
 

@@ -2,8 +2,9 @@
 description: optimize command
 run: mcp
 server: super-prompt
-tool: sp.optimize
+tool: sp.pipeline
 args:
+  tool: "optimize"
   query: "${input}"
 ---
 

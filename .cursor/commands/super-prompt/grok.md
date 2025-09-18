@@ -2,8 +2,9 @@
 description: grok command
 run: mcp
 server: super-prompt
-tool: sp.grok
+tool: sp.pipeline
 args:
+  tool: "grok"
   query: "${input}"
 ---
 

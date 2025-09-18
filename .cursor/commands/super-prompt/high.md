@@ -2,8 +2,9 @@
 description: high command
 run: mcp
 server: super-prompt
-tool: sp.high
+tool: sp.pipeline
 args:
+  tool: "high"
   query: "${input}"
 ---
 

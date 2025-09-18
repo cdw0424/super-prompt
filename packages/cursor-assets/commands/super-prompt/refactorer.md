@@ -2,10 +2,10 @@
 description: refactorer command
 run: mcp
 server: super-prompt
-tool: sp.refactorer
+tool: sp.pipeline
 args:
+  tool: "refactorer"
   query: "${input}"
 ---
 
-🔧 Refactorer
-Code quality and technical debt management
+🔧 Refactorer Code quality and technical debt management

@@ -2,10 +2,10 @@
 description: ultracompressed command
 run: mcp
 server: super-prompt
-tool: sp.ultracompressed
+tool: sp.pipeline
 args:
+  tool: "ultracompressed"
   query: "${input}"
 ---
 
-⚡ Ultra Compressed
-Highly compressed, efficient responses
+⚡ Ultra Compressed Highly compressed, efficient responses

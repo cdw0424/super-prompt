@@ -7,6 +7,7 @@ import asyncio
 import subprocess
 import json
 import inspect
+from dataclasses import dataclass
 from pathlib import Path
 import socket
 import time
@@ -179,7 +180,7 @@ from .personas.loader import PersonaLoader
 import shutil, sys
 import time
 import json
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable
 from contextlib import contextmanager
 
 # SECURITY: Prevent direct execution
@@ -928,7 +929,11 @@ def register_tool(tool_name: str):
                     print(f"-------- confession: {line}", flush=True)
             except Exception as e:  # best-effort; never break main tool result
                 try:
-                    print(f"-------- confession: error during validation: {e}", file=sys.stderr, flush=True)
+                    print(
+                        f"-------- confession: error during validation: {e}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
                 except Exception:
                     pass
 
@@ -977,8 +982,27 @@ def register_tool(tool_name: str):
 
         # Wrap original tool to always run the confession check at the end
         def _tool_with_confession(*a, **k):
+            # Handle the case where MCP passes arguments as keyword args
+            # but the function expects different parameter names
             try:
+                # Try calling with original args first
                 return fn(*a, **k)
+            except TypeError as e:
+                if "unexpected keyword argument" in str(e):
+                    # If there's a parameter mismatch, try to adapt
+                    # Remove problematic kwargs and call with remaining args
+                    filtered_kwargs = {
+                        key: value
+                        for key, value in k.items()
+                        if not key.startswith(("a", "k")) or key in ["query", "input"]
+                    }
+                    try:
+                        return fn(*a, **filtered_kwargs)
+                    except Exception:
+                        # If that fails, try calling with no kwargs
+                        return fn(*a)
+                else:
+                    raise
             finally:
                 # Avoid recursion or undesired re-entry for analyzer itself
                 if tool_name not in {"sp.analyzer"}:
@@ -1427,19 +1451,29 @@ def _init_impl(force: bool = False) -> str:
         # Ensure H2 headings for Success/Acceptance to satisfy SDD gates
         if not spec_path.exists():
             with open(spec_path, "w", encoding="utf-8") as f:
-                f.write("# SDD Enhancement Feature Specification\n\n## REQ-ID: REQ-SDD-001\n\n## Overview\nDescribe the feature.\n\n## User Journey\nDescribe the journey.\n\n## Success Criteria\n- [ ] Criterion\n\n## Acceptance Criteria\n- [ ] Criterion\n\n## Scope & Boundaries\n\n## Business Value\n")
+                f.write(
+                    "# SDD Enhancement Feature Specification\n\n## REQ-ID: REQ-SDD-001\n\n## Overview\nDescribe the feature.\n\n## User Journey\nDescribe the journey.\n\n## Success Criteria\n- [ ] Criterion\n\n## Acceptance Criteria\n- [ ] Criterion\n\n## Scope & Boundaries\n\n## Business Value\n"
+                )
         else:
             try:
                 content = spec_path.read_text(encoding="utf-8")
                 if "### Success Criteria" in content or "### Acceptance Criteria" in content:
-                    content = content.replace("### Success Criteria", "## Success Criteria").replace("### Acceptance Criteria", "## Acceptance Criteria")
+                    content = content.replace(
+                        "### Success Criteria", "## Success Criteria"
+                    ).replace("### Acceptance Criteria", "## Acceptance Criteria")
                     spec_path.write_text(content, encoding="utf-8")
             except Exception:
                 pass
         if not plan_path.exists():
-            plan_path.write_text("# Implementation Plan\n\n## REQ-ID: REQ-SDD-001\n\n## Architecture Overview\n\n## Technical Stack\n\n## Security Architecture\n\n## Testing Strategy\n\n## Deployment Strategy\n\n## Success Metrics\n", encoding="utf-8")
+            plan_path.write_text(
+                "# Implementation Plan\n\n## REQ-ID: REQ-SDD-001\n\n## Architecture Overview\n\n## Technical Stack\n\n## Security Architecture\n\n## Testing Strategy\n\n## Deployment Strategy\n\n## Success Metrics\n",
+                encoding="utf-8",
+            )
         if not tasks_path.exists():
-            tasks_path.write_text("# Implementation Tasks\n\n## REQ-ID: REQ-SDD-001\n\n## Task Breakdown Strategy\n\n## Acceptance Self-Check Template\n- [ ] ", encoding="utf-8")
+            tasks_path.write_text(
+                "# Implementation Tasks\n\n## REQ-ID: REQ-SDD-001\n\n## Task Breakdown Strategy\n\n## Acceptance Self-Check Template\n- [ ] ",
+                encoding="utf-8",
+            )
     except Exception:
         pass
     # Generate Codex assets based on manifest
@@ -1622,7 +1656,7 @@ def mode_set(mode: str) -> TextContent:
 
 
 @register_tool("sp.grok_mode_on")  # 도구명: sp.grok_mode_on - 설정 파일 수정 (모드 변경)
-def grok_mode_on() -> TextContent:
+def grok_mode_on(a=None, k=None, **kwargs) -> TextContent:
     """Switch LLM mode to grok"""
     with memory_span("sp.grok_mode_on"):
         set_mode("grok")
@@ -1631,7 +1665,7 @@ def grok_mode_on() -> TextContent:
 
 
 @register_tool("sp.gpt_mode_on")  # 도구명: sp.gpt_mode_on - 설정 파일 수정 (모드 변경)
-def gpt_mode_on() -> TextContent:
+def gpt_mode_on(a=None, k=None, **kwargs) -> TextContent:
     """Switch LLM mode to gpt"""
     with memory_span("sp.gpt_mode_on"):
         set_mode("gpt")
@@ -1642,150 +1676,598 @@ def gpt_mode_on() -> TextContent:
 # === Persona Tools ===
 
 
-@register_tool("sp.architect")  # 도구명: sp.architect - 읽기 전용 아키텍처 분석 및 설계 조언
-def architect(query: str = "") -> TextContent:
-    """🏗️ Architect - System design and architecture specialist
+@dataclass
+class PersonaPipelineConfig:
+    persona: str
+    label: str
+    memory_tag: str
+    use_codex: Optional[bool] = None
+    plan_builder: Optional[Callable[[str, dict], List[str]]] = None
+    exec_builder: Optional[Callable[[str, dict], List[str]]] = None
+    persona_kwargs: Optional[Dict[str, Any]] = None
+    empty_prompt: Optional[str] = None
 
-    Analyzes system architecture, provides design recommendations, and helps with
-    scalability planning. Best for complex system design decisions and architectural
-    reviews.
 
-    Args:
-        query: Architecture question or system design problem to analyze
+_PIPELINE_LABELS: Dict[str, str] = {
+    "architect": "Architect",
+    "frontend": "Frontend",
+    "backend": "Backend",
+    "security": "Security",
+    "performance": "Performance",
+    "analyzer": "Analyzer",
+    "qa": "QA",
+    "refactorer": "Refactorer",
+    "devops": "DevOps",
+    "debate": "Debate",
+    "mentor": "Mentor",
+    "scribe": "Scribe",
+    "dev": "Dev",
+    "grok": "Grok",
+    "db-expert": "DB Expert",
+    "optimize": "Optimize",
+    "review": "Review",
+    "service-planner": "Service Planner",
+    "tr": "Translate",
+    "doc-master": "Doc Master",
+    "docs-refector": "Docs Refector",
+    "ultracompressed": "Ultra Compressed",
+    "seq": "Sequential",
+    "seq-ultra": "Sequential Ultra",
+    "high": "High Reasoning",
+}
 
-    Returns:
-        Detailed architectural analysis and recommendations"""
-    with memory_span("sp.architect"):
-        # Note: MCP environment check removed - direct calls work without full MCP server
-        # This ensures the tool always works when called via MCP client direct invocation
 
+_PIPELINE_ALIASES: Dict[str, str] = {
+    "architect": "architect",
+    "architecture": "architect",
+    "frontend": "frontend",
+    "ui": "frontend",
+    "backend": "backend",
+    "api": "backend",
+    "security": "security",
+    "performance": "performance",
+    "perf": "performance",
+    "analyzer": "analyzer",
+    "analysis": "analyzer",
+    "qa": "qa",
+    "quality": "qa",
+    "refactor": "refactorer",
+    "refactorer": "refactorer",
+    "devops": "devops",
+    "debate": "debate",
+    "mentor": "mentor",
+    "scribe": "scribe",
+    "doc": "doc-master",
+    "doc-master": "doc-master",
+    "docs-refector": "docs-refector",
+    "dev": "dev",
+    "grok": "grok",
+    "db-expert": "db-expert",
+    "database": "db-expert",
+    "optimize": "optimize",
+    "optimization": "optimize",
+    "review": "review",
+    "code-review": "review",
+    "service-planner": "service-planner",
+    "service": "service-planner",
+    "translate": "tr",
+    "translator": "tr",
+    "ultra": "ultracompressed",
+    "ultracompressed": "ultracompressed",
+    "seq": "seq",
+    "sequential": "seq",
+    "seq-ultra": "seq-ultra",
+    "high": "high",
+}
+
+
+_DEFAULT_PLAN_LINES: Dict[str, List[str]] = {
+    "tr": [
+        "- Identify source and target locale requirements",
+        "- Gather glossary or domain terminology",
+        "- Determine tone, formality, and formatting rules",
+    ],
+    "analyzer": [
+        "- Collect reproduction steps and relevant logs",
+        "- Map symptom timeline against recent changes",
+        "- Formulate top hypotheses ranked by likelihood",
+    ],
+    "architect": [
+        "- Define system boundaries, domains, and capabilities",
+        "- Choose data flows, storage, and integration contracts",
+        "- Address scalability, observability, and risk mitigation",
+    ],
+    "frontend": [
+        "- Audit component states, accessibility, and responsive breakpoints",
+        "- Align visuals with design tokens and interaction patterns",
+        "- Identify performance or UX risks across target devices",
+    ],
+    "backend": [
+        "- Map endpoint contracts, data flows, and error handling",
+        "- Review database access patterns and transaction boundaries",
+        "- Evaluate observability, scaling, and resiliency requirements",
+    ],
+    "security": [
+        "- Enumerate potential threats and sensitive assets",
+        "- Review authentication, authorization, and data protection",
+        "- Prioritize vulnerabilities and compliance obligations",
+    ],
+    "performance": [
+        "- Profile hot paths and identify resource bottlenecks",
+        "- Propose caching, batching, or parallelization strategies",
+        "- Define baseline metrics and regression safeguards",
+    ],
+    "qa": [
+        "- Determine critical workflows and risk-based scenarios",
+        "- Plan edge cases, negative tests, and data variations",
+        "- Align acceptance criteria with automation strategy",
+    ],
+    "refactorer": [
+        "- Locate code smells, duplication, and architectural drift",
+        "- Propose incremental refactor plan with safety nets",
+        "- Coordinate regression tests and migration notes",
+    ],
+    "devops": [
+        "- Review deployment topology, pipelines, and secrets handling",
+        "- Assess monitoring, alerting, and rollout strategies",
+        "- Outline reliability risks and mitigation steps",
+    ],
+    "dev": [
+        "- Clarify product requirements and success metrics",
+        "- Break work into testable, incremental deliverables",
+        "- Align validation, release, and stakeholder coordination",
+    ],
+    "service-planner": [
+        "- Capture goals, KPIs, and success metrics",
+        "- Map discovery research, experiments, and risks",
+        "- Define cross-team alignment and governance checkpoints",
+    ],
+    "doc-master": [
+        "- Inventory audiences, doc types, and information gaps",
+        "- Design IA, templates, and contributor workflow",
+        "- Plan verification, localization, and maintenance cadence",
+    ],
+    "docs-refector": [
+        "- Identify duplicate or outdated documentation clusters",
+        "- Propose consolidation structure and redirect plan",
+        "- Define review owners and migration sequencing",
+    ],
+    "ultracompressed": [
+        "- Select critical insights and supporting evidence",
+        "- Prioritize messaging hierarchy under token budget",
+        "- Flag trade-offs or details omitted for brevity",
+    ],
+    "seq": [
+        "- Define hypothesis list and evidence required",
+        "- Outline sequential reasoning checkpoints",
+        "- Prepare validation tests for each conclusion",
+    ],
+    "seq-ultra": [
+        "- Establish ten-step investigation agenda",
+        "- Maintain branching options and re-evaluation criteria",
+        "- Record open questions and ownership for follow-up",
+    ],
+    "high": [
+        "- Frame strategic context, stakeholders, and constraints",
+        "- Analyze scenarios, risks, and potential experiments",
+        "- Recommend decision guardrails and success metrics",
+    ],
+}
+
+
+_DEFAULT_EXEC_LINES: Dict[str, List[str]] = {
+    "tr": [
+        "- Produce draft translation and run terminology QA",
+        "- Validate locale-specific formatting and constraints",
+        "- Schedule stakeholder review and acceptance testing",
+    ],
+    "analyzer": [
+        "- Run experiments to confirm or eliminate hypotheses",
+        "- Document root cause evidence and proposed fixes",
+        "- Share mitigation plan and monitoring actions",
+    ],
+    "architect": [
+        "- Draft ADRs and architecture diagrams for consensus",
+        "- Stage rollout phases with validation checkpoints",
+        "- Align observability, SLOs, and governance updates",
+    ],
+    "frontend": [
+        "- Implement component or layout adjustments with accessibility tests",
+        "- Run visual/unit regression suites and manual UX checks",
+        "- Capture follow-up UX debt and release notes",
+    ],
+    "backend": [
+        "- Implement API or data changes behind feature guards",
+        "- Execute contract, integration, and load tests",
+        "- Update telemetry dashboards and rollback plan",
+    ],
+    "security": [
+        "- Apply mitigations or compensating controls",
+        "- Schedule penetration/system tests and policy updates",
+        "- Document residual risk and monitoring actions",
+    ],
+    "performance": [
+        "- Prototype and benchmark prioritized optimizations",
+        "- Deploy behind experiment/feature flags",
+        "- Monitor long-run metrics and guardrails",
+    ],
+    "qa": [
+        "- Author automated and exploratory test cases",
+        "- Execute regression plan and triage defects",
+        "- Update coverage dashboards and flake watchlist",
+    ],
+    "refactorer": [
+        "- Execute safe refactors with incremental commits",
+        "- Run full test suite and static analysis",
+        "- Communicate migration guides and deprecation timeline",
+    ],
+    "devops": [
+        "- Update CI/CD pipelines and infrastructure as code",
+        "- Perform canary deployments with health checks",
+        "- Document incident response and rollback SOPs",
+    ],
+    "dev": [
+        "- Implement feature slices with instrumentation",
+        "- Validate acceptance tests and code review",
+        "- Prepare release notes and rollout checklist",
+    ],
+    "service-planner": [
+        "- Draft PRD, discovery plan, and telemetry hooks",
+        "- Align cross-functional owners and decision gates",
+        "- Schedule backlog grooming and launch readiness reviews",
+    ],
+    "doc-master": [
+        "- Produce IA map, templates, and contributor guide",
+        "- Coordinate doc sprints and validation reviews",
+        "- Establish upkeep cadence and analytics tracking",
+    ],
+    "docs-refector": [
+        "- Merge or retire redundant docs with redirects",
+        "- Normalize style and examples across remaining docs",
+        "- Log future documentation debt and owners",
+    ],
+    "ultracompressed": [
+        "- Draft concise response and confirm key facts",
+        "- Run peer or stakeholder verification for omissions",
+        "- Capture optional deep-dive references",
+    ],
+    "seq": [
+        "- Execute sequential reasoning steps with evidence",
+        "- Validate conclusions against assumptions",
+        "- Track unresolved branches for future exploration",
+    ],
+    "seq-ultra": [
+        "- Document each iteration outcome and decision",
+        "- Maintain branch ledger and revisit pivot criteria",
+        "- Summarize insights with remaining unknowns",
+    ],
+    "high": [
+        "- Present strategic recommendation with rationale",
+        "- Align stakeholders on risks and contingency plans",
+        "- Define monitoring metrics and follow-up checkpoints",
+    ],
+}
+
+
+def _build_plan_lines(persona: str, query: str, context: dict) -> List[str]:
+    return list(
+        _DEFAULT_PLAN_LINES.get(
+            persona,
+            [
+                "- Clarify requirements and constraints",
+                "- Break down the problem into manageable steps",
+                "- Identify risks and mitigation strategies",
+            ],
+        )
+    )
+
+
+def _build_exec_lines(persona: str, query: str, context: dict) -> List[str]:
+    return list(
+        _DEFAULT_EXEC_LINES.get(
+            persona,
+            [
+                "- Implement prioritized actions",
+                "- Validate outcomes against definition of done",
+                "- Record follow-ups and monitor for regressions",
+            ],
+        )
+    )
+
+
+_PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
+    "architect": PersonaPipelineConfig(
+        persona="architect",
+        label="Architect",
+        memory_tag="pipeline_architect",
+        empty_prompt="🏗️ Architect pipeline activated. Describe the system or feature to design.",
+    ),
+    "frontend": PersonaPipelineConfig(
+        persona="frontend",
+        label="Frontend",
+        memory_tag="pipeline_frontend",
+        empty_prompt="🎨 Frontend pipeline activated. Share the UI/UX issue to analyze.",
+    ),
+    "backend": PersonaPipelineConfig(
+        persona="backend",
+        label="Backend",
+        memory_tag="pipeline_backend",
+        empty_prompt="⚙️ Backend pipeline activated. Provide the backend/API context to review.",
+    ),
+    "security": PersonaPipelineConfig(
+        persona="security",
+        label="Security",
+        memory_tag="pipeline_security",
+        use_codex=True,
+        empty_prompt="🛡️ Security pipeline activated. Describe the threat or vulnerability.",
+    ),
+    "performance": PersonaPipelineConfig(
+        persona="performance",
+        label="Performance",
+        memory_tag="pipeline_performance",
+        empty_prompt="⚡ Performance pipeline activated. Provide the workload to optimize.",
+    ),
+    "analyzer": PersonaPipelineConfig(
+        persona="analyzer",
+        label="Analyzer",
+        memory_tag="pipeline_analyzer",
+        use_codex=True,
+        empty_prompt="🔍 Analyzer pipeline activated. Describe the incident or defect to investigate.",
+    ),
+    "qa": PersonaPipelineConfig(
+        persona="qa",
+        label="QA",
+        memory_tag="pipeline_qa",
+        empty_prompt="🧪 QA pipeline activated. Outline the feature or risk area to test.",
+    ),
+    "refactorer": PersonaPipelineConfig(
+        persona="refactorer",
+        label="Refactorer",
+        memory_tag="pipeline_refactorer",
+        empty_prompt="🔧 Refactorer pipeline activated. Describe the code area to improve.",
+    ),
+    "devops": PersonaPipelineConfig(
+        persona="devops",
+        label="DevOps",
+        memory_tag="pipeline_devops",
+        empty_prompt="🚢 DevOps pipeline activated. Provide the infra or deployment concern.",
+    ),
+    "debate": PersonaPipelineConfig(
+        persona="debate",
+        label="Debate",
+        memory_tag="pipeline_debate",
+        empty_prompt="💬 Debate pipeline activated. Provide the decision topic to evaluate.",
+    ),
+    "mentor": PersonaPipelineConfig(
+        persona="mentor",
+        label="Mentor",
+        memory_tag="pipeline_mentor",
+        empty_prompt="👨‍🏫 Mentor pipeline activated. Share the learning goal or question.",
+    ),
+    "scribe": PersonaPipelineConfig(
+        persona="scribe",
+        label="Scribe",
+        memory_tag="pipeline_scribe",
+        persona_kwargs={"lang": "en"},
+        empty_prompt="📝 Scribe pipeline activated. Provide the documentation task.",
+    ),
+    "dev": PersonaPipelineConfig(
+        persona="dev",
+        label="Dev",
+        memory_tag="pipeline_dev",
+        empty_prompt="🚀 Dev pipeline activated. Describe the feature or bug fix to implement.",
+    ),
+    "grok": PersonaPipelineConfig(
+        persona="grok",
+        label="Grok",
+        memory_tag="pipeline_grok",
+        empty_prompt="🤖 Grok pipeline activated. Provide the query to explore in Grok mode.",
+    ),
+    "db-expert": PersonaPipelineConfig(
+        persona="db-expert",
+        label="DB Expert",
+        memory_tag="pipeline_db_expert",
+        empty_prompt="🗄️ DB Expert pipeline activated. Share the schema or query challenge.",
+    ),
+    "optimize": PersonaPipelineConfig(
+        persona="optimize",
+        label="Optimize",
+        memory_tag="pipeline_optimize",
+        empty_prompt="🎯 Optimize pipeline activated. Describe the system or metric to improve.",
+    ),
+    "review": PersonaPipelineConfig(
+        persona="review",
+        label="Review",
+        memory_tag="pipeline_review",
+        empty_prompt="📋 Review pipeline activated. Provide the diff or component to review.",
+    ),
+    "service-planner": PersonaPipelineConfig(
+        persona="service-planner",
+        label="Service Planner",
+        memory_tag="pipeline_service_planner",
+        use_codex=True,
+        empty_prompt="🧭 Service Planner pipeline activated. Outline the service or product goal.",
+    ),
+    "tr": PersonaPipelineConfig(
+        persona="tr",
+        label="Translate",
+        memory_tag="pipeline_translate",
+        use_codex=False,
+        empty_prompt="🌐 Translate pipeline activated. Please provide source text and target locale.",
+    ),
+    "doc-master": PersonaPipelineConfig(
+        persona="doc-master",
+        label="Doc Master",
+        memory_tag="pipeline_doc_master",
+        empty_prompt="📚 Doc Master pipeline activated. Provide the documentation architecture task.",
+    ),
+    "docs-refector": PersonaPipelineConfig(
+        persona="docs-refector",
+        label="Docs Refector",
+        memory_tag="pipeline_docs_refector",
+        empty_prompt="🗂️ Docs Refector pipeline activated. Describe docs to consolidate.",
+    ),
+    "ultracompressed": PersonaPipelineConfig(
+        persona="ultracompressed",
+        label="Ultra Compressed",
+        memory_tag="pipeline_ultracompressed",
+        empty_prompt="🗜️ Ultra Compressed pipeline activated. Provide the topic to compress.",
+    ),
+    "seq": PersonaPipelineConfig(
+        persona="seq",
+        label="Sequential",
+        memory_tag="pipeline_seq",
+        empty_prompt="🔍 Sequential pipeline activated. Specify the problem to analyze step-by-step.",
+    ),
+    "seq-ultra": PersonaPipelineConfig(
+        persona="seq-ultra",
+        label="Sequential Ultra",
+        memory_tag="pipeline_seq_ultra",
+        empty_prompt="🧠 Sequential Ultra pipeline activated. Provide the complex scenario to dissect.",
+    ),
+    "high": PersonaPipelineConfig(
+        persona="high",
+        label="High Reasoning",
+        memory_tag="pipeline_high",
+        use_codex=True,
+        empty_prompt="🧠 High Reasoning pipeline activated. Share the strategic question to explore.",
+    ),
+}
+
+
+def _run_persona_pipeline(
+    config: PersonaPipelineConfig, query: str, extra_kwargs: Optional[Dict[str, Any]] = None
+) -> TextContent:
+    with memory_span(f"sp.{config.persona}-pipeline"):
         if not query.strip():
-            return TextContent(
-                type="text",
-                text="""🏗️ Architect tool activated.
-
-To provide the best architectural guidance, please provide:
-
-• What type of system are you designing? (web app, API, microservices, etc.)
-• What are the key requirements? (scalability, performance, security, etc.)
-• What technologies/frameworks are you considering?
-• What's the expected user load and data volume?
-
-Example: "Design a scalable e-commerce platform using React and Node.js"
-
-Please provide your architecture question or requirements.""",
+            prompt = config.empty_prompt or (
+                f"🔁 {config.label} pipeline activated.\n\nPlease provide a detailed query to begin the pipeline."
             )
+            return TextContent(type="text", text=prompt)
 
-        # Enforce pipeline: [프롬프트 분석 -> 사전 사료 조사 -> 메모리 db체크 -> 페르소나/커맨드 호출 -> 추론/Plan -> Plan실행 -> 고해성사 더블체크 -> 메모리 db업데이트 -> 결론]
-        # 1) 프롬프트 분석
-        prompt_summary = _summarize_situation_for_codex(query, "", "architect")
-
-        # 2) 사전 사료 조사
-        project_root = Path.cwd()
-        context_info = _analyze_project_context(project_root, query)
-
-        # 3) 메모리 db체크
-        confession_logs: list[str] = []
-        mem_overview: str = ""
+        project_dir = project_root()
+        confession_logs: List[str] = []
+        mem_overview = "no memory available"
+        store = None
         try:
             from .memory.store import MemoryStore  # type: ignore
-            store = MemoryStore.open(project_root)
-            recent = store.recent_events(limit=10)
-            mem_overview = f"recent_events={len(recent)}; task_tag={store.get_task_tag()!s}"
-        except Exception as e:
-            confession_logs.append(f"memory check skipped ({e})")
 
-        # 4) 페르소나 및 커맨드 mcp 호출 및 자료 전달
-        codex_response: str | None = None
-        if _should_use_codex_assistance(query, "architect"):
-            print("-------- architect: using Codex assistance per pipeline", file=sys.stderr, flush=True)
-            ctx_str = f"Architecture context: {', '.join(context_info.get('patterns', []))}"
-            codex_response = _call_codex_assistance(query, ctx_str, "architect")
+            store = MemoryStore.open(project_dir)
+            recent = store.recent_events(limit=5)
+            mem_overview = f"recent_events={len(recent)}"
+        except Exception as exc:
+            confession_logs.append(f"memory load skipped ({exc})")
 
-        persona_result = _execute_persona("architect", query)
+        prompt_summary = _summarize_situation_for_codex(query, "", config.persona)
+        context_info = _analyze_project_context(project_dir, query)
 
-        # 5) 추론 및 Plan 설계
-        plan_lines = [
-            "- Define system boundaries and core services",
-            "- Choose data storage strategies and cache layers",
-            "- Establish API contracts and integration points",
-            "- Address scalability, observability, and security baselines",
-        ]
+        if config.use_codex is None:
+            codex_needed = _should_use_codex_assistance(query, config.persona)
+        else:
+            codex_needed = config.use_codex
 
-        # 6) Plan 실행 (지침)
-        exec_lines = [
-            "- Create ADR for chosen architecture",
-            "- Scaffold services and CI with templates",
-            "- Add dashboards and SLOs; implement tracing",
-        ]
+        codex_response: Optional[str] = None
+        if codex_needed:
+            ctx_patterns = ", ".join(context_info.get("patterns", [])[:3])
+            ctx_hint = f"Patterns: {ctx_patterns}" if ctx_patterns else ""
+            codex_response = _call_codex_assistance(query, ctx_hint, config.persona)
 
-        # 7) 고해성사모드 더블체크
+        persona_kwargs: Dict[str, Any] = {}
+        if config.persona_kwargs:
+            persona_kwargs.update(config.persona_kwargs)
+        if extra_kwargs:
+            persona_kwargs.update(extra_kwargs)
+
+        persona_result = _execute_persona(config.persona, query, **persona_kwargs)
+
+        plan_lines = (
+            config.plan_builder(query, context_info)
+            if config.plan_builder
+            else _build_plan_lines(config.persona, query, context_info)
+        )
+        exec_lines = (
+            config.exec_builder(query, context_info)
+            if config.exec_builder
+            else _build_exec_lines(config.persona, query, context_info)
+        )
+
         try:
             from .commands.validate_tools import validate_check  # type: ignore
-            v = validate_check()
-            for ln in (v or {}).get("logs", []) or []:
-                confession_logs.append(ln)
-        except Exception as e:
-            confession_logs.append(f"validation error: {e}")
 
-        # 8) 메모리 db업데이트
-        try:
-            from .memory.store import MemoryStore  # type: ignore
-            store2 = MemoryStore.open(project_root)
-            store2.append_event(
-                "architect_pipeline",
-                {
-                    "query": query,
-                    "context_patterns": context_info.get("patterns", []),
-                    "plan": plan_lines,
-                    "execution": exec_lines,
-                    "codex_used": bool(codex_response),
-                },
-            )
-        except Exception as e:
-            confession_logs.append(f"memory update skipped ({e})")
+            audit = validate_check(project_root=project_dir)
+            for line in (audit or {}).get("logs", []) or []:
+                confession_logs.append(line)
+        except Exception as exc:
+            confession_logs.append(f"validation error: {exc}")
 
-        # 9) 결론
-        out: list[str] = []
-        out.append("🏗️ Architect Pipeline Result")
-        out.append("")
-        out.append("1) 프롬프트 분석")
-        out.append(prompt_summary)
-        out.append("")
-        out.append("2) 사전 사료 조사")
-        out.append(f"- Tech stack hints: {', '.join(context_info.get('patterns', [])) or 'n/a'}")
-        out.append(f"- Relevance: {', '.join(context_info.get('query_relevance', [])) or 'n/a'}")
-        out.append("")
-        out.append("3) 메모리 DB 체크")
-        out.append(f"- {mem_overview or 'no memory available'}")
-        out.append("")
-        out.append("4) 페르소나 및 커맨드 호출")
+        if store is not None:
+            try:
+                store.append_event(
+                    config.memory_tag,
+                    {
+                        "persona": config.persona,
+                        "query": query,
+                        "patterns": context_info.get("patterns", []),
+                        "plan": plan_lines,
+                        "execution": exec_lines,
+                        "codex_used": bool(codex_response),
+                    },
+                )
+            except Exception as exc:
+                confession_logs.append(f"memory update skipped ({exc})")
+
+        lines: List[str] = []
+        lines.append(f"🧭 {config.label} Pipeline Result")
+        lines.append("")
+        lines.append("1) 프롬프트 분석")
+        lines.append(prompt_summary)
+        lines.append("")
+        lines.append("2) 사전 사료 조사")
+        patterns = ", ".join(context_info.get("patterns", [])) or "n/a"
+        relevance = ", ".join(context_info.get("query_relevance", [])) or "n/a"
+        lines.append(f"- Patterns: {patterns}")
+        lines.append(f"- Relevance: {relevance}")
+        lines.append("")
+        lines.append("3) 메모리 DB 체크")
+        lines.append(f"- {mem_overview}")
+        lines.append("")
+        lines.append("4) 페르소나 및 커맨드 호출")
         if codex_response:
-            out.append("- Codex Insight:")
-            out.append(codex_response)
-        out.append("- Persona Execution: done")
-        out.append("")
-        out.append("5) 추론 및 Plan 설계")
-        out.extend(plan_lines)
-        out.append("")
-        out.append("6) Plan 실행 지침")
-        out.extend(exec_lines)
-        out.append("")
-        out.append("7) 고해성사 더블체크")
-        for ln in confession_logs:
-            out.append(f"- {ln}")
-        out.append("")
-        out.append("8) 메모리 DB 업데이트")
-        out.append("- recorded pipeline event")
-        out.append("")
-        out.append("9) 결론")
-        out.append(_text_from(persona_result))
+            lines.append("- Codex Insight:")
+            lines.append(codex_response)
+        lines.append("- Persona Execution: complete")
+        lines.append("")
+        lines.append("5) 추론 및 Plan 설계")
+        lines.extend(plan_lines)
+        lines.append("")
+        lines.append("6) Plan 실행 지침")
+        lines.extend(exec_lines)
+        lines.append("")
+        lines.append("7) 고해성사 더블체크")
+        if confession_logs:
+            for log_line in confession_logs:
+                lines.append(f"- {log_line}")
+        else:
+            lines.append("- validation log available (no issues)")
+        lines.append("")
+        lines.append("8) 메모리 DB 업데이트")
+        lines.append("- pipeline event recorded")
+        lines.append("")
+        lines.append("9) 결론")
+        lines.append(_text_from(persona_result))
 
-        return TextContent(type="text", text="\n".join(out))
+        result = TextContent(type="text", text="\n".join(lines).strip())
+        return _add_confession_mode(result, config.persona, query)
+
+
+@register_tool("sp.architect")  # 도구명: sp.architect - 읽기 전용 아키텍처 분석 및 설계 조언
+def architect(query: str = "", **kwargs) -> TextContent:
+    """🏗️ Architect - System design and architecture specialist"""
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["architect"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.frontend")  # 도구명: sp.frontend - 읽기 전용 프론트엔드 UI/UX 분석 및 조언
-def frontend(query: str = "") -> TextContent:
+def frontend(query: str = "", **kwargs):
     """🎨 Frontend - UI/UX specialist and accessibility advocate
 
     Provides expertise in React, Vue, Angular, and modern frontend frameworks.
@@ -1797,30 +2279,11 @@ def frontend(query: str = "") -> TextContent:
 
     Returns:
         Frontend implementation guidance and best practices"""
-    with memory_span("sp.frontend"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="""🎨 Frontend tool activated.
-
-To provide the best frontend guidance, please specify:
-
-• What framework/library are you using? (React, Vue, Angular, Svelte, etc.)
-• What type of component/feature are you building?
-• Is this about styling, state management, performance, or accessibility?
-• Do you have existing code or design mockups?
-
-Example: "How to implement a responsive navigation menu in React with accessibility"
-
-Please provide your frontend development question.""",
-            )
-
-        result = _execute_persona("frontend", query)
-        return _add_confession_mode(result, "frontend", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["frontend"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.backend")  # 도구명: sp.backend - 읽기 전용 백엔드 API 및 데이터베이스 분석
-def backend(query: str = "") -> TextContent:
+def backend(query: str = "", **kwargs):
     """⚡ Backend - Reliability engineer and API specialist
 
     Expert in server-side development, API design, database optimization, and
@@ -1832,230 +2295,170 @@ def backend(query: str = "") -> TextContent:
 
     Returns:
         Backend implementation guidance and architectural recommendations"""
-    with memory_span("sp.backend"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="""⚡ Backend tool activated.
-
-To provide the best backend guidance, please specify:
-
-• What language/framework are you using? (Node.js, Python, Java, Go, etc.)
-• What type of API/service are you building? (REST, GraphQL, microservices)
-• Is this about database design, API endpoints, performance, or security?
-• What database system are you considering? (PostgreSQL, MongoDB, Redis, etc.)
-
-Example: "Design REST API endpoints for user management with JWT authentication"
-
-Please provide your backend development question.""",
-            )
-
-        result = _execute_persona("backend", query)
-        return _add_confession_mode(result, "backend", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["backend"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.security")  # 도구명: sp.security - 읽기 전용 보안 취약점 분석 및 조언
-def security(query: str = "") -> TextContent:
+def security(query: str = "", **kwargs):
     """🛡️ Security - Threat modeling and vulnerability specialist"""
-    with memory_span("sp.security"):
-        result = _execute_persona("security", query)
-        return _add_confession_mode(result, "security", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["security"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.performance")  # 도구명: sp.performance - 읽기 전용 성능 분석 및 최적화 조언
-def performance(query: str = "") -> TextContent:
+def performance(query: str = "", **kwargs):
     """🚀 Performance - Optimization and bottleneck elimination expert"""
-    with memory_span("sp.performance"):
-        result = _execute_persona("performance", query)
-        return _add_confession_mode(result, "performance", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["performance"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.analyzer")  # 도구명: sp.analyzer - 읽기 전용 근본 원인 분석 및 조사
-def analyzer(query: str = "") -> TextContent:
+def analyzer(query: str = "", **kwargs) -> TextContent:
     """🔍 Analyzer - Root cause investigation specialist"""
-    with memory_span("sp.analyzer"):
-        progress.show_progress("🔍 Analyzer activated")
-        progress.show_info("Initializing root cause analysis")
-
-        # Note: MCP environment check removed - direct calls work without full MCP server
-        # This ensures the tool always works when called via MCP client direct invocation
-
-        if not query.strip():
-            progress.show_error("No query provided")
-            return TextContent(
-                type="text",
-                text="""🔍 Analyzer tool activated.
-
-To perform effective root cause analysis, please provide:
-
-• What specific issue or error are you experiencing?
-• What symptoms have you observed?
-• When did this issue start occurring?
-• What recent changes were made before the issue appeared?
-• Are there any error messages, logs, or stack traces?
-
-Example: "My React app crashes when users submit forms - getting 'Cannot read property of undefined'"
-
-Please provide the problem description for analysis.""",
-            )
-
-        progress.show_progress("🔍 Starting root cause analysis")
-        progress.show_info(f"Query: {query[:50]}{'...' if len(query) > 50 else ''}")
-
-        # Always use Codex CLI for root cause analysis, as that is the tool's purpose.
-        progress.show_progress("🤖 Calling Codex CLI for analysis")
-        print(
-            "-------- analyzer: using Codex CLI for root cause analysis",
-            file=sys.stderr,
-            flush=True,
-        )
-
-        # 프로젝트 컨텍스트 수집
-        project_root = Path.cwd()
-        context_info = _analyze_project_context(project_root, query)
-        context_str = f"Analysis context: {context_info.get('file_count', 0)} files, investigating: {query[:100]}..."
-
-        # Codex CLI 호출
-        codex_response = _call_codex_assistance(query, context_str, "analyzer")
-
-        response = f"🔍 **Root Cause Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
-        response += f"**📊 Analysis Context:**\n"
-        response += f"- Project scope: {context_info.get('file_count', 0)} files\n"
-        response += f"- Investigation focus: {query[:100]}{'...' if len(query) > 100 else ''}\n\n"
-
-        response += f"**🤖 Codex Root Cause Insight:**\n"
-        response += f"{codex_response}\n\n"
-
-        # 분석 프레임워크 표시
-        response += f"**Analysis Framework:**\n"
-        steps = [
-            "✅ Problem Identification - COMPLETED",
-            "✅ Root Cause Analysis - PROVIDED BY CODEX",
-            "✅ Impact Assessment - INTEGRATED",
-            "✅ Solution Recommendations - GUIDED",
-            "✅ Prevention Strategies - SUGGESTED",
-        ]
-        for step in steps:
-            response += f"- {step}\n"
-
-        result = TextContent(type="text", text=response)
-        return _add_confession_mode(result, "analyzer", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["analyzer"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.qa")  # 도구명: sp.qa - 읽기 전용 품질 보증 및 테스트 분석
-def qa(query: str = "") -> TextContent:
+def qa(query: str = "", **kwargs):
     """🧪 QA - Quality advocate and testing specialist"""
-    with memory_span("sp.qa"):
-        result = _execute_persona("qa", query)
-        return _add_confession_mode(result, "qa", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["qa"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.refactorer")  # 도구명: sp.refactorer - 읽기 전용 코드 리팩토링 분석 및 조언
-def refactorer(query: str = "") -> TextContent:
+def refactorer(query: str = "", **kwargs):
     """🔧 Refactorer - Code quality and technical debt specialist"""
-    with memory_span("sp.refactorer"):
-        result = _execute_persona("refactorer", query)
-        return _add_confession_mode(result, "refactorer", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["refactorer"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.devops")  # 도구명: sp.devops - 읽기 전용 DevOps 및 인프라 분석
-def devops(query: str = "") -> TextContent:
+def devops(query: str = "", **kwargs):
     """🚢 DevOps - Infrastructure and deployment specialist"""
-    with memory_span("sp.devops"):
-        result = _execute_persona("devops", query)
-        return _add_confession_mode(result, "devops", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["devops"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.debate")  # 도구명: sp.debate - 읽기 전용 내부 토론 분석
-def debate(query: str = "") -> TextContent:
+def debate(query: str = "", **kwargs):
     """💬 Debate - Positive vs. critical internal debate facilitation"""
-    with memory_span("sp.debate"):
-        result = _execute_persona("debate", query)
-        return _add_confession_mode(result, "debate", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["debate"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.mentor")  # 도구명: sp.mentor - 읽기 전용 교육 및 멘토링 조언
-def mentor(query: str = "") -> TextContent:
+def mentor(query: str = "", **kwargs):
     """👨‍🏫 Mentor - Knowledge transfer and educational specialist"""
-    with memory_span("sp.mentor"):
-        result = _execute_persona("mentor", query)
-        return _add_confession_mode(result, "mentor", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["mentor"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.scribe")  # 도구명: sp.scribe - 읽기 전용 기술 문서 작성 조언
-def scribe(query: str = "", lang: str = "en") -> TextContent:
+def scribe(query: str = "", lang: str = "en", **kwargs):
     """📝 Scribe - Professional documentation specialist"""
-    with memory_span("sp.scribe"):
-        print(
-            f"-------- mcp: sp.scribe(args={{lang:'{lang}', query_len:{len(query)}}})",
-            file=sys.stderr,
-            flush=True,
-        )
-        # Reflect language so MCP arg is visibly consumed
-        prefix = f"[lang={lang}] " if lang else ""
-        base = _execute_persona("scribe", query)
-        result = TextContent(type="text", text=f"{prefix}{_text_from(base)}")
-        return _add_confession_mode(result, "scribe", query)
+    extras = {"lang": lang}
+    extras.update(kwargs)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["scribe"], query, extra_kwargs=extras)
 
 
-# === Additional Tools ===
+@register_tool("sp.pipeline")
+def pipeline(tool: str = "", query: str = "", **kwargs) -> TextContent:
+    """Meta pipeline tool that routes to persona-specific pipelines."""
 
+    with memory_span("sp.pipeline"):
+        if not tool or not tool.strip():
+            return TextContent(
+                type="text",
+                text='⚠️ Pipeline requires a `tool` parameter, e.g., tool="tr".',
+            )
 
-def _add_confession_mode(result: TextContent, persona_name: str, query: str) -> TextContent:
-    """Add confession mode (double-check) transparency to all MCP tool outputs"""
-    original_text = _text_from(result)
+        normalized = tool.strip().lower()
+        canonical = _PIPELINE_ALIASES.get(normalized)
+        if canonical is None:
+            available = ", ".join(sorted({f"`{name}`" for name in _PIPELINE_LABELS.keys()}))
+            return TextContent(
+                type="text",
+                text=f"⚠️ Unknown pipeline target `{tool}`. Available targets: {available}.",
+            )
 
-    # Generate confession mode audit
-    confession_audit = f"""
+        config = _PIPELINE_CONFIGS.get(canonical)
+        if config is None:
+            return TextContent(
+                type="text",
+                text=f"⚠️ Pipeline target `{canonical}` has no registered configuration.",
+            )
 
----
+        extra: Dict[str, Any] = {k: v for k, v in kwargs.items() if v is not None}
 
-🕵️‍♂️ **CONFESSION MODE - Radical Transparency Audit**
+        def _coerce_to_string(value: Any) -> str:
+            if isinstance(value, str):
+                return value.strip()
+            if isinstance(value, (list, tuple)):
+                joined = " ".join(str(item) for item in value)
+                return joined.strip()
+            if isinstance(value, dict):
+                if "content" in value and isinstance(value["content"], str):
+                    return value["content"].strip()
+                try:
+                    return json.dumps(value, ensure_ascii=False).strip()
+                except Exception:
+                    return str(value).strip()
+            return str(value).strip()
 
-**Tool:** {persona_name}
-**Query:** {query}
+        effective_query = query.strip() if isinstance(query, str) else ""
+        # If the incoming query is a JSON object string (e.g., {"a":"...","k":"..."}),
+        # parse it and extract a more meaningful query and extra kwargs.
+        # This makes the pipeline robust to clients that pass Cursor-style payloads as a single string.
+        if effective_query and isinstance(query, str):
+            q = effective_query
+            if (q.startswith("{") and q.endswith("}")) or (q.startswith("[") and q.endswith("]")):
+                try:
+                    parsed = json.loads(q)
+                    if isinstance(parsed, dict):
+                        # Prefer 'k' as the primary text (user key used in some shells), then 'query'
+                        if "k" in parsed and isinstance(parsed["k"], (str, list, tuple, dict)):
+                            effective_query = _coerce_to_string(parsed.pop("k"))
+                        elif "query" in parsed and isinstance(
+                            parsed["query"], (str, list, tuple, dict)
+                        ):
+                            effective_query = _coerce_to_string(parsed.pop("query"))
 
-**✅ WHAT IS KNOWN:**
-- This response was generated by the {persona_name} persona
-- Based on the provided query and available context
-- Subject to the persona's specialized knowledge domain
-- Memory span tracking is active for this interaction
+                        # If 'a' carries a hint like "tool=high", capture as a non-routing hint
+                        a_val = parsed.pop("a", None)
+                        if isinstance(a_val, str) and a_val.startswith("tool="):
+                            hint = a_val.split("=", 1)[1].strip()
+                            if hint:
+                                extra["tool_hint"] = (
+                                    hint  # Do not override selected tool automatically
+                                )
 
-**❓ WHAT IS UNKNOWN:**
-- Real-time external data or system status
-- User's specific project constraints or preferences
-- Integration requirements with other systems
-- Long-term maintenance implications
-- Performance impact in production environments
+                        # Merge any remaining fields into extras if not None
+                        for k2, v2 in list(parsed.items()):
+                            if v2 is not None and k2 not in ("tool",):
+                                extra[k2] = v2
+                except Exception:
+                    # If JSON parsing fails, continue with the original string
+                    pass
+        if not effective_query:
+            fallback_keys = [
+                "query",
+                "input",
+                "message",
+                "text",
+                "prompt",
+                "body",
+                "content",
+                "question",
+                "a",
+            ]
+            for key in fallback_keys:
+                if key in extra:
+                    candidate = _coerce_to_string(extra.pop(key))
+                    if candidate:
+                        effective_query = candidate
+                        break
 
-**⚠️ POTENTIAL SIDE-EFFECTS & EDGE CASES:**
-- Persona recommendations may need adaptation to specific project needs
-- Technical suggestions assume standard configurations
-- Security recommendations are general and should be reviewed by experts
-- Performance optimizations may have trade-offs in other areas
+        if not effective_query and isinstance(query, str):
+            effective_query = query
 
-**🛡️ PROPOSED COUNTERMEASURES:**
-- Always validate recommendations against your specific project requirements
-- Test all code changes in staging environments first
-- Consult with domain experts for critical decisions
-- Implement monitoring and rollback strategies
-- Document assumptions and constraints for future reference
-
-**🎯 RELIABILITY CONFIDENCE:** Medium-High (based on persona specialization)
-**📊 AUDIT COMPLETED:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
-"""
-
-    # Add resource links for the persona
-    resource_links = _get_persona_resource_links(persona_name)
-    if resource_links:
-        confession_audit += f"\n{resource_links}\n"
-
-    combined_text = original_text + confession_audit
-    return TextContent(type="text", text=combined_text)
+        return _run_persona_pipeline(config, effective_query, extra_kwargs=extra)
 
 
 @register_tool("sp.grok_mode_off")  # 도구명: sp.grok_mode_off - 설정 파일 수정 (모드 변경)
-def grok_mode_off() -> TextContent:
+def grok_mode_off(a=None, k=None, **kwargs) -> TextContent:
     """Turn off Grok mode"""
     with memory_span("sp.grok_mode_off"):
         set_mode("gpt")
@@ -2063,7 +2466,7 @@ def grok_mode_off() -> TextContent:
 
 
 @register_tool("sp.gpt_mode_off")  # 도구명: sp.gpt_mode_off - 설정 파일 수정 (모드 변경)
-def gpt_mode_off() -> TextContent:
+def gpt_mode_off(a=None, k=None, **kwargs) -> TextContent:
     """Turn off GPT mode"""
     with memory_span("sp.gpt_mode_off"):
         set_mode("grok")
@@ -2071,7 +2474,7 @@ def gpt_mode_off() -> TextContent:
 
 
 @register_tool("sp.specify")  # 도구명: sp.specify - 읽기 전용 요구사항 명세화
-def specify(query: str = "") -> TextContent:
+def specify(query: str = "", **kwargs) -> TextContent:
     """📋 Specify - Create detailed specifications"""
     with memory_span("sp.specify"):
         return TextContent(
@@ -2081,7 +2484,7 @@ def specify(query: str = "") -> TextContent:
 
 
 @register_tool("sp.plan")  # 도구명: sp.plan - 읽기 전용 계획 수립
-def plan(query: str = "") -> TextContent:
+def plan(query: str = "", **kwargs) -> TextContent:
     """📅 Plan - Create implementation plans"""
     with memory_span("sp.plan"):
         return TextContent(
@@ -2091,7 +2494,7 @@ def plan(query: str = "") -> TextContent:
 
 
 @register_tool("sp.tasks")  # 도구명: sp.tasks - 읽기 전용 작업 분해
-def tasks(query: str = "") -> TextContent:
+def tasks(query: str = "", **kwargs) -> TextContent:
     """✅ Tasks - Break down work into tasks"""
     with memory_span("sp.tasks"):
         return TextContent(
@@ -2101,7 +2504,7 @@ def tasks(query: str = "") -> TextContent:
 
 
 @register_tool("sp.implement")  # 도구명: sp.implement - 읽기 전용 구현 조언
-def implement(query: str = "") -> TextContent:
+def implement(query: str = "", **kwargs) -> TextContent:
     """🔨 Implement - Execute implementation"""
     with memory_span("sp.implement"):
         return TextContent(
@@ -2111,1393 +2514,117 @@ def implement(query: str = "") -> TextContent:
 
 
 @register_tool("sp.seq")  # 도구명: sp.seq - 읽기 전용 순차적 추론
-def seq(query: str = "") -> TextContent:
+def seq(query: str = "", **kwargs):
     """🔍 Sequential - Step-by-step reasoning and analysis"""
-    with memory_span("sp.seq"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🔍 Sequential reasoning tool activated.\n\nPlease provide a query to analyze.",
-            )
-
-        # Basic sequential reasoning approach
-        steps = [
-            "1. **Understand the Problem**: Break down the question into its core components",
-            "2. **Identify Key Concepts**: Determine the fundamental principles involved",
-            "3. **Apply Logical Reasoning**: Use step-by-step logic to arrive at a conclusion",
-            "4. **Verify the Answer**: Check the reasoning for consistency and accuracy",
-            "5. **Provide Explanation**: Give a clear, comprehensive answer",
-        ]
-
-        response = f"🔍 **Sequential Reasoning Analysis**\n\n**Query:** {query}\n\n**Step-by-Step Approach:**\n"
-        for step in steps:
-            response += f"- {step}\n"
-
-        response += f"\n**Analysis:**\n"
-        response += _perform_sequential_analysis(query)
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["seq"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.seq-ultra")  # 도구명: sp.seq-ultra - 읽기 전용 심층 순차적 추론
-def seq_ultra(query: str = "") -> TextContent:
+def seq_ultra(query: str = "", **kwargs):
     """🧠 Sequential Ultra - Ultra-deep sequential reasoning for complex problems"""
-    with memory_span("sp.seq-ultra"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🧠 Sequential Ultra reasoning tool activated.\n\nPlease provide a complex query to analyze in depth.",
-            )
-
-        # Ultra-deep sequential reasoning with more detailed steps
-        steps = [
-            "1. **Problem Decomposition**: Break down complex problems into fundamental components",
-            "2. **Knowledge Base Analysis**: Identify relevant concepts, theories, and principles",
-            "3. **Logical Framework Construction**: Build systematic reasoning structures",
-            "4. **Step-by-Step Deduction**: Apply rigorous logical progression",
-            "5. **Alternative Perspectives**: Consider multiple viewpoints and edge cases",
-            "6. **Validation & Verification**: Cross-check reasoning with established knowledge",
-            "7. **Synthesis & Conclusion**: Integrate findings into comprehensive answer",
-            "8. **Confidence Assessment**: Evaluate certainty and identify limitations",
-        ]
-
-        response = f"🧠 **Ultra-Deep Sequential Reasoning Analysis**\n\n**Query:** {query}\n\n**Comprehensive Analysis Framework:**\n"
-        for step in steps:
-            response += f"- {step}\n"
-
-        response += f"\n**Detailed Analysis:**\n"
-        response += _perform_ultra_sequential_analysis(query)
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["seq-ultra"], query)
 
 
 @register_tool("sp.high")  # 도구명: sp.high - 읽기 전용 고수준 추론
-def high(query: str = "") -> TextContent:
+def high(query: str = "", **kwargs):
     """🧠 High Reasoning - Deep reasoning and strategic problem solving with GPT-5 high model approach"""
-    with memory_span("sp.high"):
-        # Note: MCP environment check removed - direct calls work without full MCP server
-        # This ensures the tool always works when called via MCP client direct invocation
-
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🧠 High Reasoning tool activated.\n\nPlease provide a complex query for deep strategic analysis.",
-            )
-
-        # High 명령어는 무조건 Codex CLI 사용
-        print("-------- high: using Codex CLI for strategic reasoning", file=sys.stderr, flush=True)
-
-        # 프로젝트 컨텍스트 수집
-        project_root = Path.cwd()
-        context_info = _analyze_project_context(project_root, query)
-        context_str = f"Project: {context_info.get('file_count', 0)} files, patterns: {', '.join(context_info.get('patterns', []))}"
-
-        # Codex CLI 호출
-        codex_response = _call_codex_assistance(query, context_str, "high")
-
-        # 결과 포맷팅
-        response = f"🧠 **High Reasoning Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
-        response += f"**📊 Project Context:**\n"
-        response += f"- Files analyzed: {context_info.get('file_count', 0)}\n"
-        response += f"- Key patterns: {', '.join(context_info.get('patterns', []))}\n"
-        response += f"- Context clues: {', '.join(context_info.get('query_relevance', []))}\n\n"
-
-        response += f"**🤖 Codex Strategic Insight:**\n"
-        response += f"{codex_response}\n\n"
-
-        # 추가 분석 프레임워크 표시
-        response += f"**Strategic Analysis Framework:**\n"
-        steps = [
-            "✅ Situation Analysis - COMPLETED",
-            "✅ Strategic Insight - PROVIDED BY CODEX",
-            "✅ Risk Assessment - INTEGRATED",
-            "✅ Decision Optimization - RECOMMENDED",
-            "✅ Implementation Strategy - GUIDED",
-        ]
-        for step in steps:
-            response += f"- {step}\n"
-
-        result = TextContent(type="text", text=response)
-        return _add_confession_mode(result, "high", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["high"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.dev")  # 도구명: sp.dev - 읽기 전용 개발 조언
-def dev(query: str = "") -> TextContent:
+def dev(query: str = "", **kwargs):
     """🚀 Dev - Feature development with quality and delivery focus"""
-    with memory_span("sp.dev"):
-        # Note: MCP environment check removed - direct calls work without full MCP server
-        # This ensures the tool always works when called via MCP client direct invocation
-
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🚀 Dev tool activated.\n\nPlease provide a development task or feature request.",
-            )
-
-        # Codex CLI 사용 여부 결정
-        use_codex = _should_use_codex_assistance(query, "dev")
-
-        if use_codex:
-            print(
-                "-------- dev: using Codex CLI for complex development analysis",
-                file=sys.stderr,
-                flush=True,
-            )
-
-            # 프로젝트 컨텍스트 수집
-            project_root = Path.cwd()
-            context_info = _analyze_project_context(project_root, query)
-            context_str = f"Tech stack analysis: {', '.join(context_info.get('patterns', []))}"
-
-            # Codex CLI 호출
-            codex_response = _call_codex_assistance(query, context_str, "dev")
-
-            response = f"🚀 **Development Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
-            response += f"**📊 Technical Context:**\n"
-            response += f"- Project patterns: {', '.join(context_info.get('patterns', []))}\n"
-            response += f"- Context clues: {', '.join(context_info.get('query_relevance', []))}\n\n"
-
-            response += f"**🤖 Codex Development Insight:**\n"
-            response += f"{codex_response}\n\n"
-
-            # 개발 프레임워크 표시
-            response += f"**Development Framework:**\n"
-            steps = [
-                "✅ Requirements Analysis - COMPLETED",
-                "✅ Technical Design - GUIDED BY CODEX",
-                "✅ Implementation Strategy - PROVIDED",
-                "✅ Quality Assurance - RECOMMENDED",
-                "✅ Success Metrics - DEFINED",
-            ]
-            for step in steps:
-                response += f"- {step}\n"
-        else:
-            # 기존 로컬 분석 사용
-            steps = [
-                "1. **Requirements Analysis**: Understand the feature requirements and constraints",
-                "2. **Technical Design**: Plan the implementation approach and architecture",
-                "3. **Code Quality Standards**: Ensure maintainable, testable, and scalable code",
-                "4. **Implementation Strategy**: Break down development into manageable tasks",
-                "5. **Testing Approach**: Define comprehensive testing strategy",
-                "6. **Quality Assurance**: Establish code review and validation processes",
-                "7. **Delivery Planning**: Timeline and deployment considerations",
-                "8. **Success Metrics**: Define measurable outcomes and KPIs",
-            ]
-
-            response = f"🚀 **Development Analysis & Planning**\n\n**Query:** {query}\n\n**Development Framework:**\n"
-            for step in steps:
-                response += f"- {step}\n"
-
-            response += f"\n**Development Strategy:**\n"
-            response += _perform_dev_analysis(query)
-
-        result = TextContent(type="text", text=response)
-        return _add_confession_mode(result, "dev", query)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["dev"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.grok")  # 도구명: sp.grok - 읽기 전용 Grok 세션 최적화
-def grok(query: str = "") -> TextContent:
+def grok(query: str = "", **kwargs):
     """🤖 Grok - xAI's helpful and maximally truthful AI"""
-    with memory_span("sp.grok"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🤖 Grok tool activated.\n\nPlease provide a query for Grok AI assistance.",
-            )
-
-        # For now, provide a helpful response about Grok mode
-        response = f"🤖 **Grok AI Assistance**\n\n**Query:** {query}\n\n"
-        response += "Grok is xAI's helpful and maximally truthful AI. "
-        response += "To use Grok, first switch to Grok mode with `/super-prompt/mode grok` or `--grok` flag.\n\n"
-        response += "**Grok's Key Principles:**\n"
-        response += "- Helpful and maximally truthful\n"
-        response += "- Built by xAI (not based on other companies' models)\n"
-        response += "- Focuses on understanding the universe\n\n"
-        response += f"**Your Query:** {query}\n\n"
-        response += "_Switch to Grok mode to get actual Grok responses._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["grok"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.db-expert")  # 도구명: sp.db-expert - 읽기 전용 데이터베이스 전문가 조언
-def db_expert(query: str = "") -> TextContent:
+def db_expert(query: str = "", **kwargs):
     """🗄️ Database Expert - SQL, database design, and optimization specialist"""
-    with memory_span("sp.db-expert"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🗄️ Database Expert tool activated.\n\nPlease provide a database-related query or task.",
-            )
-
-        response = f"🗄️ **Database Expert Analysis**\n\n**Query:** {query}\n\n"
-        response += "**Database Expertise Areas:**\n"
-        response += "- SQL query optimization\n"
-        response += "- Database schema design\n"
-        response += "- Performance tuning\n"
-        response += "- Data modeling\n"
-        response += "- Migration strategies\n"
-        response += "- Backup and recovery\n\n"
-        response += f"**Analysis for:** {query}\n\n"
-        response += "_This tool provides database expertise and best practices._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["db-expert"], query)
 
 
 @register_tool("sp.optimize")  # 도구명: sp.optimize - 읽기 전용 일반 최적화 조언
-def optimize(query: str = "") -> TextContent:
+def optimize(query: str = "", **kwargs):
     """⚡ Optimize - Performance optimization and efficiency specialist"""
-    with memory_span("sp.optimize"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="⚡ Optimize tool activated.\n\nPlease provide a performance optimization task or query.",
-            )
-
-        response = f"⚡ **Performance Optimization Analysis**\n\n**Query:** {query}\n\n"
-        response += "**Optimization Focus Areas:**\n"
-        response += "- Code performance profiling\n"
-        response += "- Algorithm optimization\n"
-        response += "- Memory usage optimization\n"
-        response += "- Database query optimization\n"
-        response += "- System resource optimization\n"
-        response += "- Load balancing and scaling\n\n"
-        response += f"**Optimization Target:** {query}\n\n"
-        response += "_This tool helps identify and implement performance improvements._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["optimize"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.review")  # 도구명: sp.review - 읽기 전용 코드 리뷰 및 품질 검토
-def review(query: str = "") -> TextContent:
+def review(query: str = "", **kwargs):
     """🔍 Review - Code review and quality assurance specialist"""
-    with memory_span("sp.review"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🔍 Review tool activated.\n\nPlease provide code or a project to review.",
-            )
-
-        response = f"🔍 **Code Review & Quality Assurance**\n\n**Query:** {query}\n\n"
-        response += "**Review Checklist:**\n"
-        response += "- Code quality and style\n"
-        response += "- Security vulnerabilities\n"
-        response += "- Performance considerations\n"
-        response += "- Test coverage\n"
-        response += "- Documentation completeness\n"
-        response += "- Best practices adherence\n\n"
-        response += f"**Review Target:** {query}\n\n"
-        response += "_This tool performs comprehensive code reviews and quality assessments._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["review"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.service-planner")  # 도구명: sp.service-planner
-def service_planner(query: str = "") -> TextContent:
+def service_planner(query: str = "", **kwargs):
     """🏗️ Service Planner - System architecture and service design specialist"""
-    with memory_span("sp.service-planner"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🏗️ Service Planner tool activated.\n\nPlease provide a service planning or architecture query.",
-            )
-
-        response = f"🏗️ **Service Architecture & Planning**\n\n**Query:** {query}\n\n"
-        response += "**Service Planning Areas:**\n"
-        response += "- Microservices architecture design\n"
-        response += "- API design and documentation\n"
-        response += "- Service orchestration\n"
-        response += "- Scalability planning\n"
-        response += "- Integration patterns\n"
-        response += "- Deployment strategies\n\n"
-        response += f"**Planning Focus:** {query}\n\n"
-        response += "_This tool helps design robust and scalable service architectures._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["service-planner"], query)
 
 
 @register_tool("sp.tr")  # 도구명: sp.tr
-def tr(query: str = "") -> TextContent:
+def tr(query: str = "", **kwargs) -> TextContent:
     """🌐 Translate - Multi-language translation and localization specialist"""
-    with memory_span("sp.tr"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🌐 Translate tool activated.\n\nPlease provide text to translate or a translation task.",
-            )
-
-        response = f"🌐 **Translation & Localization Services**\n\n**Query:** {query}\n\n"
-        response += "**Translation Capabilities:**\n"
-        response += "- Multi-language translation\n"
-        response += "- Technical documentation translation\n"
-        response += "- UI/UX text localization\n"
-        response += "- Cultural adaptation\n"
-        response += "- Terminology management\n"
-        response += "- Quality assurance for translations\n\n"
-        response += f"**Translation Request:** {query}\n\n"
-        response += "_This tool provides professional translation and localization services._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["tr"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.ultracompressed")  # 도구명: sp.ultracompressed
-def ultracompressed(query: str = "") -> TextContent:
+def ultracompressed(query: str = "", **kwargs):
     """🗜️ Ultra Compressed - Maximum information density with minimal tokens"""
-    with memory_span("sp.ultracompressed"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="🗜️ Ultra Compressed tool activated.\n\nPlease provide a query for ultra-compressed analysis.",
-            )
-
-        response = f"🗜️ **Ultra-Compressed Analysis**\n\n**Query:** {query}\n\n"
-        response += "**Compression Strategy:**\n"
-        response += "- Maximum information density\n"
-        response += "- Minimal token usage\n"
-        response += "- Essential insights only\n"
-        response += "- High-signal, low-noise output\n"
-        response += "- Prioritized critical information\n\n"
-        response += f"**Compressed Analysis:** {query}\n\n"
-        response += "_This tool provides highly condensed, information-dense responses._"
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["ultracompressed"], query, extra_kwargs=kwargs)
 
 
 @register_tool("sp.doc-master")  # 도구명: sp.doc-master
-def doc_master(query: str = "") -> TextContent:
+def doc_master(query: str = "", **kwargs):
     """📚 Doc Master - Documentation architecture, writing, and verification"""
-    with memory_span("sp.doc-master"):
-        if not query.strip():
-            return TextContent(
-                type="text",
-                text="📚 Doc Master tool activated.\n\nPlease provide a documentation task or request.",
-            )
-
-        # Codex CLI 사용 여부 결정
-        use_codex = _should_use_codex_assistance(query, "doc-master")
-
-        if use_codex:
-            print(
-                "-------- doc-master: using Codex CLI for complex documentation analysis",
-                file=sys.stderr,
-                flush=True,
-            )
-
-            # 프로젝트 컨텍스트 수집
-            project_root = Path.cwd()
-            context_info = _analyze_project_context(project_root, query)
-            context_str = f"Documentation context: {context_info.get('file_count', 0)} files, {len([p for p in context_info.get('patterns', []) if '.md' in p])} markdown files"
-
-            # Codex CLI 호출
-            codex_response = _call_codex_assistance(query, context_str, "doc-master")
-
-            response = f"📚 **Documentation Analysis (Codex CLI)**\n\n**Query:** {query}\n\n"
-            response += f"**📊 Documentation Context:**\n"
-            response += f"- Total files: {context_info.get('file_count', 0)}\n"
-            response += f"- Documentation files: {len([p for p in context_info.get('patterns', []) if '.md' in p])}\n"
-            response += f"- Context clues: {', '.join(context_info.get('query_relevance', []))}\n\n"
-
-            response += f"**🤖 Codex Documentation Insight:**\n"
-            response += f"{codex_response}\n\n"
-
-            # 문서화 프레임워크 표시
-            response += f"**Documentation Framework:**\n"
-            steps = [
-                "✅ Documentation Strategy - PROVIDED BY CODEX",
-                "✅ Content Architecture - GUIDED",
-                "✅ Writing Standards - ESTABLISHED",
-                "✅ Technical Accuracy - ENSURED",
-                "✅ User Experience - OPTIMIZED",
-            ]
-            for step in steps:
-                response += f"- {step}\n"
-        else:
-            # 기존 로컬 분석 사용
-            steps = [
-                "1. **Documentation Strategy**: Define documentation goals and audience",
-                "2. **Content Architecture**: Structure and organize information hierarchy",
-                "3. **Writing Standards**: Establish style, tone, and quality guidelines",
-                "4. **Technical Accuracy**: Ensure all technical content is correct and up-to-date",
-                "5. **User Experience**: Make documentation accessible and user-friendly",
-                "6. **Maintenance Process**: Plan for ongoing updates and version control",
-                "7. **Verification Methods**: Quality assurance and review processes",
-                "8. **Distribution Strategy**: Publishing and accessibility considerations",
-            ]
-
-            response = f"📚 **Documentation Architecture & Strategy**\n\n**Query:** {query}\n\n**Documentation Framework:**\n"
-            for step in steps:
-                response += f"- {step}\n"
-
-            response += f"\n**Documentation Strategy:**\n"
-            response += _perform_doc_master_analysis(query)
-
-        return TextContent(type="text", text=response)
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["doc-master"], query)
 
 
 @register_tool("sp.docs-refector")  # 도구명: sp.docs-refector
-def docs_refector(query: str = "") -> TextContent:
+def docs_refector(query: str = "", **kwargs):
     """🧹 Docs Refector - Repository-wide documentation audit, de-duplication, and consolidation"""
-    with memory_span("sp.docs-refector"):
-        # Analyze repository markdown/docs to propose a consolidation plan
-        project_root = Path.cwd()
-        md_files: list[Path] = []
-        for pattern in ["**/*.md", "**/*.mdx"]:
-            md_files.extend(project_root.glob(pattern))
+    return _run_persona_pipeline(_PIPELINE_CONFIGS["docs-refector"], query)
 
-        # Build simple indices: by filename stem and first heading
-        name_index: dict[str, list[Path]] = {}
-        heading_index: dict[str, list[Path]] = {}
-        for path in md_files:
-            if not path.is_file():
-                continue
-            stem = path.stem.lower()
-            name_index.setdefault(stem, []).append(path)
-            try:
-                first_line = path.read_text(encoding="utf-8", errors="ignore").splitlines()[:10]
-                heading = next(
-                    (l.strip("# ") for l in first_line if l.lstrip().startswith("#")), ""
-                )
-                if heading:
-                    heading_index.setdefault(heading.lower(), []).append(path)
-            except Exception:
-                # Ignore unreadable files
-                continue
 
-        duplicates_by_name = {k: v for k, v in name_index.items() if len(v) > 1}
-        duplicates_by_heading = {k: v for k, v in heading_index.items() if len(v) > 1}
-
-        docs_dirs = [
-            p
-            for p in [project_root / "docs", project_root / "packages", project_root / "specs"]
-            if p.exists()
-        ]
-
-        response = ["🧹 **Docs Refector Audit & Consolidation Plan**\n"]
-        response.append(f"Total markdown-like files: {len(md_files)}\n")
-
-        if duplicates_by_name:
-            response.append("\n### Potential Duplicates (by filename)\n")
-            for stem, paths in list(duplicates_by_name.items())[:20]:
-                shown = "\n".join(f"- {p.as_posix()}" for p in paths[:6])
-                more = " (and more)" if len(paths) > 6 else ""
-                response.append(f"- {stem}:{more}\n{shown}\n")
-
-        if duplicates_by_heading:
-            response.append("\n### Potential Duplicates (by top-level heading)\n")
-            for heading, paths in list(duplicates_by_heading.items())[:20]:
-                shown = "\n".join(f"- {p.as_posix()}" for p in paths[:6])
-                more = " (and more)" if len(paths) > 6 else ""
-                response.append(f"- {heading}:{more}\n{shown}\n")
-
-        if docs_dirs:
-            response.append("\n### Documentation Areas Scanned\n")
-            for d in docs_dirs:
-                response.append(f"- {d.as_posix()}\n")
-
-        # High-level refactor plan
-        response.append("\n### Proposed Consolidation Strategy\n")
-        response.append("- Build a canonical information architecture (IA) with sources of truth\n")
-        response.append("- Merge duplicates; create redirects or cross-links where necessary\n")
-        response.append("- Remove obsolete/legacy files; update internal links\n")
-        response.append("- Normalize style (headings, frontmatter, tone)\n")
-        response.append("- Add verification checklist and ownership for sustained maintenance\n")
-
-        if query.strip():
-            response.append("\n### Focus Area\n")
-            response.append(f"- User request: {query}\n")
-
-        return TextContent(type="text", text="".join(response))
-
-
-def _perform_sequential_analysis(query: str) -> str:
-    """Perform basic sequential analysis for the given query"""
-    query_lower = query.lower()
-
-    if "1+1" in query_lower or "one plus one" in query_lower:
-        return """Let's analyze: "Why is 1+1 equal to 2?"
-
-**Step 1 - Understanding the Problem:**
-- We have two individual units (1 and 1)
-- We want to combine them and find the total
-
-**Step 2 - Key Concepts:**
-- Addition is the mathematical operation of combining quantities
-- The number 1 represents a single unit
-- The equals sign (=) shows equivalence
-
-**Step 3 - Logical Reasoning:**
-- When we have one unit and add another unit, we have two units total
-- This is a fundamental property of counting and arithmetic
-- 1 + 1 = 2 is an axiom in mathematics - a basic truth that doesn't need proof
-
-**Step 4 - Verification:**
-- Count with fingers: One finger + one finger = two fingers ✓
-- Use physical objects: One apple + one apple = two apples ✓
-- Mathematical consistency: The pattern holds across all number systems
-
-**Step 5 - Conclusion:**
-1 + 1 = 2 because when you combine two single units, you get a quantity of two units. This is a fundamental principle of arithmetic that forms the basis for all mathematical operations."""
-
-    else:
-        return f"""**Sequential Analysis for:** {query}
-
-This appears to be a general reasoning problem. Let me break it down:
-
-**Core Question Identification:**
-- The main inquiry seems to be: {query}
-
-**Reasoning Approach:**
-- I'll analyze this systematically using logical principles
-- Consider multiple perspectives and potential solutions
-- Validate assumptions and conclusions
-
-**Note:** For specific mathematical, scientific, or technical questions, please provide more context for a more detailed analysis."""
-
-
-def _perform_ultra_sequential_analysis(query: str) -> str:
-    """Perform ultra-deep sequential analysis for complex queries"""
-    query_lower = query.lower()
-
-    if "1+1" in query_lower or "one plus one" in query_lower:
-        return """## Ultra-Deep Analysis: "Why is 1+1 equal to 2?"
-
-### 1. Problem Decomposition
-**Fundamental Question:** What is the nature of addition and why does 1+1 specifically equal 2?
-**Scope:** Mathematical foundations, philosophical implications, practical applications
-**Assumptions:** We're working within standard arithmetic systems
-
-### 2. Knowledge Base Analysis
-**Mathematical Foundations:**
-- Peano axioms (axiomatic set theory)
-- Successor function and natural numbers
-- Addition as repeated succession
-
-**Philosophical Context:**
-- Platonism vs. Formalism in mathematics
-- The nature of mathematical truth
-- Empirical vs. logical necessity
-
-**Cognitive Science:**
-- How humans conceptualize addition
-- Innate number sense in infants
-- Cultural variations in counting systems
-
-### 3. Logical Framework Construction
-**Formal Definition:**
-```
-Addition: ∀a,b ∈ ℕ: a + b = a + S(b) where S is the successor function
-Base case: a + 0 = a
-Recursive case: a + S(b) = S(a + b)
-```
-
-**Peano Arithmetic:**
-- 0 is a natural number
-- Every natural number has a unique successor
-- 1 is defined as S(0)
-- 2 is defined as S(S(0)) = S(1)
-
-### 4. Step-by-Step Deduction
-**Mathematical Proof:**
-1. Start with: 1 + 1
-2. Using definition: 1 + 1 = 1 + S(0)
-3. Apply successor: 1 + S(0) = S(1 + 0)
-4. Base case: 1 + 0 = 1
-5. Therefore: S(1) = 2 ✓
-
-**Alternative Proof (Set Theory):**
-- {∅} ∪ {∅} = {∅, {∅}} (cardinality 2)
-- Union of two singleton sets creates a set with two elements
-
-### 5. Alternative Perspectives
-**Psychological Perspective:**
-- Infants as young as 6 months understand 1+1=2 through object permanence
-- Cross-cultural studies show this understanding is universal
-
-**Computational Perspective:**
-- Binary representation: 1 + 1 = 10 (decimal 2)
-- Boolean algebra: True + True = 2 (interpreted as carry + sum)
-
-**Philosophical Perspective:**
-- Is 1+1=2 necessarily true, or is it a convention?
-- Gödel's incompleteness theorems and mathematical certainty
-
-### 6. Validation & Verification
-**Consistency Checks:**
-- Commutativity: 1 + 1 = 1 + 1 ✓
-- Associativity: (1 + 1) + 0 = 1 + (1 + 0) ✓
-- Field properties maintained
-
-**Empirical Validation:**
-- Physical counting validation
-- Computational verification across systems
-- Cognitive developmental studies
-
-### 7. Synthesis & Conclusion
-**Core Truth:** 1 + 1 = 2 is a fundamental mathematical truth that:
-- Forms the basis of arithmetic
-- Is consistent across different mathematical systems
-- Has both logical and empirical validation
-- Serves as a foundation for all subsequent mathematical operations
-
-**Limitations:**
-- Applies within standard number systems
-- May not hold in non-standard arithmetic (e.g., modular arithmetic)
-- Subject to philosophical debate about mathematical Platonism
-
-### 8. Confidence Assessment
-**High Confidence Factors:**
-- Universal mathematical consistency
-- Empirical validation across cultures and species
-- Logical necessity within Peano arithmetic
-
-**Areas of Uncertainty:**
-- Philosophical foundations of mathematics
-- Consciousness and subjective experience of number
-- Ultimate nature of mathematical truth
-
-**Final Assessment:** 99.9% confidence in the mathematical truth 1+1=2, with philosophical caveats about the nature of mathematical reality."""
-
-    else:
-        return f"""## Ultra-Deep Sequential Analysis: {query}
-
-### 1. Problem Decomposition
-**Primary Question:** {query}
-**Analysis Scope:** Comprehensive multi-disciplinary examination
-**Complexity Level:** Advanced reasoning required
-
-### 2. Knowledge Base Analysis
-**Relevant Domains:**
-- Core subject matter analysis
-- Interdisciplinary connections
-- Historical context and evolution
-- Current state and future implications
-
-### 3. Logical Framework Construction
-**Systematic Approach:**
-- Hypothesis generation and testing
-- Evidence evaluation framework
-- Counter-argument consideration
-- Synthesis methodology
-
-### 4. Step-by-Step Deduction
-**Detailed Reasoning Process:**
-- Break down complex elements
-- Establish logical connections
-- Validate each step rigorously
-- Build towards comprehensive conclusion
-
-### 5. Alternative Perspectives
-**Multi-Viewpoint Analysis:**
-- Different theoretical frameworks
-- Cultural and contextual variations
-- Historical vs. modern interpretations
-- Practical vs. theoretical implications
-
-### 6. Validation & Verification
-**Robustness Testing:**
-- Internal consistency checks
-- External validation methods
-- Peer review and expert consensus
-- Predictive accuracy assessment
-
-### 7. Synthesis & Conclusion
-**Integrated Findings:**
-- Comprehensive answer synthesis
-- Key insights and implications
-- Areas requiring further investigation
-
-### 8. Confidence Assessment
-**Confidence Level:** Medium-High (context-dependent)
-**Strengths:** Systematic methodology, comprehensive analysis
-**Limitations:** Subject-specific expertise requirements, evolving knowledge
-
-**Recommendation:** Please provide additional context or specify the domain for more targeted analysis."""
-
-
-def _analyze_project_context(project_root: Path, query: str) -> dict:
-    """Analyze project context to provide situation clues for high reasoning"""
-    try:
-        context = {
-            "file_count": 0,
-            "patterns": [],
-            "key_files": [],
-            "structure": {},
-            "query_relevance": [],
-        }
-
-        # Count files and analyze structure
-        if project_root.exists():
-            all_files = list(project_root.rglob("*"))
-            context["file_count"] = len([f for f in all_files if f.is_file()])
-
-            # Analyze file patterns
-            extensions = {}
-            for file in all_files:
-                if file.is_file():
-                    ext = file.suffix.lower()
-                    extensions[ext] = extensions.get(ext, 0) + 1
-
-            # Get top patterns
-            sorted_patterns = sorted(extensions.items(), key=lambda x: x[1], reverse=True)
-            context["patterns"] = [f"{ext}: {count}" for ext, count in sorted_patterns[:5]]
-
-        # Add query-specific context clues
-        query_lower = query.lower()
-        if any(word in query_lower for word in ["api", "endpoint", "rest", "graphql"]):
-            context["query_relevance"].append("API development context detected")
-        if any(word in query_lower for word in ["database", "sql", "schema", "migration"]):
-            context["query_relevance"].append("Database operations context detected")
-        if any(word in query_lower for word in ["ui", "frontend", "component", "react"]):
-            context["query_relevance"].append("Frontend development context detected")
-        if any(word in query_lower for word in ["security", "auth", "permission", "encryption"]):
-            context["query_relevance"].append("Security implementation context detected")
-
-        return context
-
-    except Exception as e:
-        return {"file_count": 0, "patterns": [], "error": str(e)}
-
-
-def _prepare_high_reasoning_prompt(query: str, context: dict) -> str:
-    """Prepare comprehensive prompt for high reasoning analysis"""
-    prompt_parts = []
-
-    # Situation summary
-    prompt_parts.append("## Current Situation Analysis")
-    prompt_parts.append(f"Query: {query}")
-    prompt_parts.append(f"Project files analyzed: {context.get('file_count', 0)}")
-    prompt_parts.append(f"Key patterns: {', '.join(context.get('patterns', []))}")
-
-    if context.get("query_relevance"):
-        prompt_parts.append(f"Context clues: {', '.join(context['query_relevance'])}")
-
-    # High reasoning framework
-    prompt_parts.append("\n## High Reasoning Framework")
-    prompt_parts.append("You are operating in HIGH REASONING MODE with maximum analytical depth.")
-    prompt_parts.append("Follow this systematic approach:")
-    prompt_parts.append(
-        "1. **Strategic Analysis**: Assess broader implications and strategic context"
-    )
-    prompt_parts.append("2. **Deep Problem Decomposition**: Break down into fundamental components")
-    prompt_parts.append(
-        "3. **Multi-Disciplinary Synthesis**: Consider multiple perspectives and domains"
-    )
-    prompt_parts.append("4. **Advanced Logical Frameworks**: Apply rigorous reasoning structures")
-    prompt_parts.append(
-        "5. **Risk Assessment**: Identify potential issues and mitigation strategies"
-    )
-    prompt_parts.append(
-        "6. **Long-term Implications**: Consider future consequences and scalability"
-    )
-    prompt_parts.append("7. **Decision Optimization**: Evaluate optimal paths and trade-offs")
-    prompt_parts.append(
-        "8. **Implementation Strategy**: Develop actionable plans with success metrics"
-    )
-
-    # Query-specific guidance
-    prompt_parts.append("\n## Analysis Requirements")
-    prompt_parts.append("Provide comprehensive analysis with:")
-    prompt_parts.append("- Detailed reasoning steps with justification")
-    prompt_parts.append("- Multiple perspectives and alternative viewpoints")
-    prompt_parts.append("- Risk assessment and mitigation strategies")
-    prompt_parts.append("- Actionable recommendations with priorities")
-    prompt_parts.append("- Success metrics and evaluation criteria")
-
-    return "\n".join(prompt_parts)
-
-
-def _perform_high_reasoning_analysis(query: str) -> str:
-    """Perform high-level strategic analysis for complex queries"""
-    query_lower = query.lower()
-
-    if "1+1" in query_lower or "one plus one" in query_lower:
-        return """## 🧠 High-Level Strategic Analysis: "Why is 1+1 equal to 2?"
-
-### 1. Strategic Context Assessment
-**Fundamental Question:** What are the strategic implications of this basic mathematical truth?
-**Scope:** Mathematical foundations, philosophical implications, computational consequences
-**Strategic Importance:** Understanding this axiom reveals deeper truths about logic, computation, and reality
-
-### 2. Deep Problem Decomposition
-**Core Components:**
-- **Arithmetic Foundation**: The basic operation of addition
-- **Logical Necessity**: Why this must be true in any consistent system
-- **Computational Universality**: How this underlies all digital computation
-- **Philosophical Implications**: What this reveals about the nature of truth
-
-**Root Cause Analysis:**
-- Mathematical axioms are the foundation of all formal systems
-- 1+1=2 is not just a calculation—it's a logical necessity
-- Any system that contradicts this would be inconsistent and unusable
-
-### 3. Multi-Disciplinary Synthesis
-**Mathematical Perspective:**
-- Peano Arithmetic foundation
-- Set theory interpretations
-- Algebraic structure requirements
-
-**Computational Perspective:**
-- Binary representation: 1 + 1 = 10₂ = 2₁₀
-- Boolean algebra and digital logic
-- Quantum computing implications
-
-**Philosophical Perspective:**
-- Platonism vs. Formalism debate
-- Gödel's incompleteness theorems
-- Nature of mathematical truth
-
-### 4. Advanced Logical Frameworks
-**Formal Proof Theory:**
-```
-Axiom: ∀x,y ∈ ℕ: x + y = x + S(y) where S is successor
-Base: ∀x: x + 0 = x
-Induction: ∀x,y: x + S(y) = S(x + y)
-
-Proof that 1 + 1 = 2:
-1 + 1 = 1 + S(0)           [Definition]
-      = S(1 + 0)           [Successor rule]
-      = S(1)               [Base case]
-      = 2                  [Definition of 2]
-```
-
-**Model Theory:**
-- Any model of arithmetic must satisfy 1+1=2
-- This constrains possible interpretations of numbers
-
-### 5. Risk Assessment & Mitigation
-**Potential Risks:**
-- **Paradoxical Systems**: Systems where basic arithmetic fails
-- **Inconsistent Foundations**: Undermining mathematical certainty
-- **Computational Errors**: Cascading failures in digital systems
-
-**Mitigation Strategies:**
-- Formal verification of critical systems
-- Multiple computational paradigms
-- Cross-validation across different number systems
-
-### 6. Long-term Implications
-**Computational Future:**
-- Quantum computing reliability depends on logical consistency
-- AI systems must maintain arithmetic foundations
-- Cryptographic systems depend on mathematical certainty
-
-**Scientific Impact:**
-- Physics theories must be consistent with arithmetic
-- Biological computation models
-- Cognitive science and mathematical intuition
-
-### 7. Decision Optimization
-**Optimal Paths:**
-- Accept 1+1=2 as fundamental constraint
-- Build complex systems on this foundation
-- Use formal methods to ensure consistency
-
-**Trade-off Analysis:**
-- **Certainty vs. Complexity**: Absolute certainty enables complex systems
-- **Efficiency vs. Correctness**: Formal verification overhead vs. reliability
-- **Innovation vs. Stability**: Pushing boundaries while maintaining foundations
-
-### 8. Implementation Strategy
-**Actionable Framework:**
-1. **Foundation Verification**: Ensure arithmetic consistency in all systems
-2. **Formal Methods Integration**: Use proof assistants for critical components
-3. **Multi-Layer Validation**: Cross-check across different computational models
-4. **Continuous Monitoring**: Watch for logical inconsistencies
-5. **Knowledge Preservation**: Document mathematical foundations
-
-**Success Metrics:**
-- System reliability: 99.999% consistency maintenance
-- Computational efficiency: Minimal overhead for verification
-- Innovation enablement: Support for increasingly complex systems
-- Risk mitigation: Proactive identification of logical threats
-
-**Strategic Recommendation:** Embrace 1+1=2 as the cornerstone of reliable computation and complex system design."""
-
-    else:
-        return f"""## 🧠 High-Level Strategic Analysis: {query}
-
-### 1. Strategic Context Assessment
-**Primary Objective:** Conduct comprehensive strategic analysis
-**Scope:** Multi-disciplinary examination with long-term implications
-**Strategic Value:** Identify optimal paths and mitigate risks
-
-### 2. Deep Problem Decomposition
-**Core Components:**
-- **Primary Challenge**: {query}
-- **Secondary Factors**: Context-dependent considerations
-- **Root Cause Analysis**: Fundamental drivers and constraints
-- **System Interactions**: How components interrelate
-
-### 3. Multi-Disciplinary Synthesis
-**Integrated Perspectives:**
-- **Technical Analysis**: System architecture and implementation
-- **Business Impact**: Economic and operational consequences
-- **Human Factors**: User experience and organizational dynamics
-- **Risk Assessment**: Potential failure modes and mitigation strategies
-
-### 4. Advanced Logical Frameworks
-**Strategic Frameworks:**
-- **SWOT Analysis**: Strengths, Weaknesses, Opportunities, Threats
-- **Decision Trees**: Branching logic for complex scenarios
-- **Systems Thinking**: Holistic understanding of interactions
-- **Game Theory**: Strategic interactions and optimal play
-
-### 5. Risk Assessment & Mitigation
-**Risk Categories:**
-- **Technical Risks**: Implementation challenges and technical debt
-- **Operational Risks**: Deployment and maintenance complexities
-- **Strategic Risks**: Market changes and competitive threats
-- **Compliance Risks**: Regulatory and legal considerations
-
-**Mitigation Strategies:**
-- **Diversification**: Multiple approaches and backup plans
-- **Monitoring**: Continuous assessment and early warning systems
-- **Contingency Planning**: Alternative paths and recovery procedures
-
-### 6. Long-term Implications
-**Future Considerations:**
-- **Scalability**: How the solution grows over time
-- **Evolution**: Adapting to changing requirements
-- **Legacy**: Long-term maintainability and technical debt
-- **Innovation**: Enabling future capabilities and improvements
-
-### 7. Decision Optimization
-**Optimization Criteria:**
-- **Efficiency**: Resource utilization and performance metrics
-- **Effectiveness**: Achievement of strategic objectives
-- **Sustainability**: Long-term viability and maintenance costs
-- **Risk-Adjusted Returns**: Benefits weighed against uncertainties
-
-### 8. Implementation Strategy
-**Strategic Roadmap:**
-1. **Phase 1: Foundation** - Establish core capabilities
-2. **Phase 2: Integration** - Connect with existing systems
-3. **Phase 3: Optimization** - Refine and improve performance
-4. **Phase 4: Scaling** - Expand to full operational capacity
-
-**Success Metrics:**
-- **Quantitative**: Measurable KPIs and performance indicators
-- **Qualitative**: Stakeholder satisfaction and strategic alignment
-- **Risk Metrics**: Reduction in identified vulnerabilities
-- **Innovation Metrics**: New capabilities and competitive advantages
-
-**Strategic Recommendation:** Focus on foundational strength while maintaining flexibility for future evolution."""
-
-
-def _execute_persona(persona_name: str, query: str = "", **kwargs) -> TextContent:
-    """Execute persona with given query"""
-    try:
-        # Avoid importing the full CLI to keep dependencies minimal in MCP/direct mode
-        from .personas.loader import PersonaLoader
-
-        # Load persona configuration
-        loader = PersonaLoader()
-        loader.load_manifest()
-
-        # Get persona config
-        persona_config = None
-        for p in loader.list_personas():
-            if p["name"] == persona_name:
-                persona_config = p
-                break
-
-        if not persona_config:
-            # Fallback when manifest is missing or PyYAML unavailable
-            fallback_prompt = f"You are the {persona_name} persona.\n\nUser query: {query}"
-            return TextContent(
-                type="text",
-                text=f"🎭 {persona_name.title()} persona activated!\n\n{fallback_prompt}",
-            )
-
-        # Create persona prompt
-        persona_prompt = f"""You are {persona_config['description']}.
-
-{persona_config.get('system_prompt', '')}
-
-User query: {query}"""
-
-        # Return persona activation message
-        # Use emoji if available, otherwise a generic mask
-        emoji = persona_config.get("emoji", "🎭")
-        return TextContent(
-            type="text",
-            text=f"🎭 {emoji} {persona_config['name'].title()} persona activated!\n\n{persona_prompt}",
-        )
-
-    except Exception as e:
-        return TextContent(type="text", text=f"Error executing persona: {str(e)}")
-
-
-def _perform_dev_analysis(query: str) -> str:
-    """Perform development-focused analysis for the given query"""
-    query_lower = query.lower()
-
-    if any(
-        keyword in query_lower for keyword in ["feature", "implement", "build", "develop", "create"]
-    ):
-        return """## 🚀 Development Strategy Analysis
-
-### Requirements Analysis
-**Functional Requirements:**
-- Clear specification of desired functionality
-- User acceptance criteria and success metrics
-- Integration points with existing systems
-- Performance and scalability expectations
-
-**Non-Functional Requirements:**
-- Code quality standards and maintainability
-- Testing coverage and validation criteria
-- Security considerations and compliance
-- Performance benchmarks and monitoring
-
-### Technical Design
-**Architecture Considerations:**
-- Modular design with clear separation of concerns
-- Scalable and maintainable code structure
-- Error handling and resilience patterns
-- Database design and data flow optimization
-
-**Technology Stack:**
-- Framework and library selections
-- Development tools and CI/CD pipeline
-- Testing frameworks and quality gates
-- Deployment and infrastructure requirements
-
-### Code Quality Standards
-**Best Practices:**
-- Clean Code principles and SOLID design
-- Comprehensive test coverage (unit, integration, e2e)
-- Code review processes and quality gates
-- Documentation standards and API contracts
-
-**Quality Metrics:**
-- Cyclomatic complexity limits
-- Code coverage thresholds (target: >80%)
-- Performance benchmarks and memory usage
-- Security vulnerability scanning
-
-### Implementation Strategy
-**Development Phases:**
-1. **Planning & Design** (1-2 days)
-2. **Core Implementation** (3-5 days)
-3. **Testing & Validation** (2-3 days)
-4. **Integration & Deployment** (1-2 days)
-
-**Risk Mitigation:**
-- Regular code reviews and pair programming
-- Automated testing and continuous integration
-- Feature flags for gradual rollout
-- Rollback plans and monitoring alerts
-
-### Testing Approach
-**Testing Pyramid:**
-- **Unit Tests**: Core business logic validation
-- **Integration Tests**: Component interaction verification
-- **End-to-End Tests**: Complete user journey testing
-- **Performance Tests**: Load and stress testing
-
-**Quality Assurance:**
-- Code review checklist and standards
-- Automated security scanning
-- Accessibility and usability testing
-- Cross-browser and device compatibility
-
-### Delivery Planning
-**Timeline Estimation:**
-- Small features: 1-2 weeks
-- Medium features: 2-4 weeks
-- Large features: 1-2 months
-- Complex features: 2-3 months
-
-**Milestone Planning:**
-- Weekly progress reviews and demos
-- Sprint planning and backlog management
-- Stakeholder communication and updates
-- Risk assessment and mitigation planning
-
-### Success Metrics
-**Quantitative Metrics:**
-- Code coverage: >80%
-- Performance benchmarks met: 100%
-- Bug rate: <0.1 per 100 lines
-- Deployment success rate: >99%
-
-**Qualitative Metrics:**
-- User satisfaction scores
-- Code maintainability ratings
-- Team productivity improvements
-- Stakeholder feedback and adoption rates
-
-**Strategic Recommendation:** Focus on iterative development with strong quality gates and continuous feedback loops."""
-
-    else:
-        return f"""## 🚀 Development Analysis: {query}
-
-### Core Development Principles
-**Quality First Approach:**
-- Clean, maintainable, and scalable code
-- Comprehensive testing and validation
-- Security by design and best practices
-- Performance optimization and monitoring
-
-**Agile Development:**
-- Iterative development with frequent feedback
-- Continuous integration and deployment
-- Automated testing and quality gates
-- Collaborative development practices
-
-### Recommended Development Workflow
-1. **Requirement Gathering**: Define clear specifications and acceptance criteria
-2. **Technical Design**: Create detailed design documents and architecture plans
-3. **Implementation**: Write clean, well-tested code following best practices
-4. **Code Review**: Peer review and quality assurance processes
-5. **Testing**: Comprehensive testing at all levels
-6. **Deployment**: Safe deployment with monitoring and rollback capabilities
-
-### Quality Assurance Framework
-**Code Quality:**
-- Static analysis and linting
-- Code coverage reporting
-- Performance profiling
-- Security vulnerability scanning
-
-**Process Quality:**
-- Version control best practices
-- Documentation standards
-- Change management procedures
-- Risk assessment and mitigation
-
-**Strategic Focus:** Build with quality, scalability, and maintainability as primary objectives."""
-
-
-def _perform_doc_master_analysis(query: str) -> str:
-    """Perform documentation-focused analysis for the given query"""
-    query_lower = query.lower()
-
-    if any(
-        keyword in query_lower for keyword in ["api", "documentation", "docs", "guide", "manual"]
-    ):
-        return """## 📚 Documentation Architecture Strategy
-
-### Documentation Strategy
-**Target Audience Analysis:**
-- **Developers**: API references, code examples, architecture docs
-- **Users**: User guides, tutorials, troubleshooting guides
-- **Administrators**: Installation, configuration, maintenance docs
-- **Stakeholders**: High-level overviews and business context
-
-**Documentation Goals:**
-- Reduce support tickets through self-service resources
-- Accelerate onboarding for new team members
-- Establish knowledge base for long-term maintenance
-- Demonstrate product value and capabilities
-
-### Content Architecture
-**Information Hierarchy:**
-- **Level 1**: Product overview and getting started
-- **Level 2**: Feature documentation and user guides
-- **Level 3**: API references and technical specifications
-- **Level 4**: Advanced topics and troubleshooting
-
-**Content Types:**
-- **Conceptual**: What and why explanations
-- **Procedural**: How-to guides and tutorials
-- **Reference**: API docs and specifications
-- **Troubleshooting**: Common issues and solutions
-
-### Writing Standards
-**Style Guidelines:**
-- Clear, concise, and accessible language
-- Active voice and consistent terminology
-- Structured format with consistent headings
-- Inclusive and professional tone
-
-**Technical Standards:**
-- Version-specific documentation
-- Code examples in multiple languages
-- Screenshots and diagrams for visual clarity
-- Cross-references and navigation aids
-
-### Technical Accuracy
-**Validation Processes:**
-- Technical review by subject matter experts
-- Automated testing of code examples
-- Version control integration for accuracy
-- Regular updates for feature changes
-
-**Quality Assurance:**
-- Grammar and style checking
-- Link validation and broken reference detection
-- User feedback integration and improvement cycles
-- Accessibility compliance and standards adherence
-
-### User Experience
-**Navigation Design:**
-- Intuitive information architecture
-- Search functionality and filters
-- Progressive disclosure of information
-- Mobile-responsive design
-
-**User Journey Mapping:**
-- New user onboarding flow
-- Feature discovery and learning paths
-- Support and troubleshooting workflows
-- Advanced user deep-dive paths
-
-### Maintenance Process
-**Content Lifecycle:**
-- **Creation**: New feature documentation
-- **Review**: Regular accuracy and relevance checks
-- **Update**: Feature changes and improvements
-- **Archival**: Deprecated feature documentation
-
-**Version Management:**
-- Documentation versioning aligned with product releases
-- Branch-based workflow for content updates
-- Automated publishing and deployment
-- Change tracking and audit trails
-
-### Verification Methods
-**Quality Gates:**
-- Technical accuracy review checklist
-- User experience testing and feedback
-- SEO optimization and discoverability
-- Performance monitoring and load testing
-
-**Metrics and KPIs:**
-- Page views and user engagement
-- Search success rates and time to find information
-- User satisfaction scores and feedback ratings
-- Support ticket reduction and self-service adoption
-
-### Distribution Strategy
-**Publishing Platforms:**
-- **Internal Wiki/Knowledge Base**: Team collaboration and internal docs
-- **Public Documentation Site**: User-facing guides and references
-- **API Documentation Portal**: Developer resources and integration guides
-- **Video Tutorials**: Visual learning and demonstrations
-
-**Accessibility Considerations:**
-- Multi-language support and localization
-- Screen reader compatibility and accessibility standards
-- Offline documentation options and downloadable resources
-- Mobile and tablet optimization
-
-**Strategic Recommendation:** Implement a comprehensive documentation strategy that serves all stakeholders with accurate, accessible, and maintainable content."""
-
-    else:
-        return f"""## 📚 Documentation Strategy: {query}
-
-### Documentation Excellence Framework
-**Core Principles:**
-- **Accuracy**: Technically correct and up-to-date information
-- **Accessibility**: Easy to find, read, and understand
-- **Maintainability**: Sustainable processes for content updates
-- **User-Centric**: Designed around user needs and workflows
-
-### Comprehensive Documentation Strategy
-1. **Audience Analysis**: Identify and understand user personas and their needs
-2. **Content Planning**: Define documentation scope and information architecture
-3. **Writing Process**: Establish style guides and quality standards
-4. **Technical Validation**: Ensure accuracy through expert review and testing
-5. **Publishing Workflow**: Streamlined processes for content deployment
-6. **Maintenance Plan**: Ongoing updates and improvement cycles
-
-### Quality Assurance Standards
-**Content Quality:**
-- Technical accuracy and completeness
-- Clear and concise writing style
-- Consistent formatting and structure
-- User feedback integration
-
-**Technical Quality:**
-- Automated link checking and validation
-- Search engine optimization
-- Mobile responsiveness and accessibility
-- Performance optimization
-
-### Success Metrics
-**Quantitative Measures:**
-- Documentation coverage completeness
-- User engagement and page view metrics
-- Search success rates and findability
-- Support ticket deflection rates
-
-**Qualitative Measures:**
-- User satisfaction and feedback scores
-- Content clarity and usability ratings
-- Stakeholder adoption and usage patterns
-- Team productivity improvements
-
-**Strategic Focus:** Create documentation that empowers users, reduces support burden, and accelerates product adoption."""
-
+# MCP Server Entry Point for Cursor IDE
+# This module provides MCP tools that Cursor IDE can use
 
 if __name__ == "__main__":
-    # Handle direct-call fast path if requested
-    if _run_direct_tool_if_requested():
+    # When run directly, start MCP server in stdio mode
+    import asyncio
+    import sys
+
+    async def main():
+        if mcp is None:
+            print("-------- ERROR: MCP server initialization failed", file=sys.stderr, flush=True)
+            sys.exit(1)
+
+        print(
+            "-------- MCP: Starting Super Prompt server for Cursor IDE", file=sys.stderr, flush=True
+        )
+
+        try:
+            # Run FastMCP in stdio mode - Cursor will handle stdin/stdout communication
+            await mcp.run()
+        except Exception as e:
+            print(f"-------- ERROR: MCP server error: {e}", file=sys.stderr, flush=True)
+            sys.exit(1)
+
+    # Run help if requested
+    if len(sys.argv) > 1 and sys.argv[1] in ["--help", "-h", "help"]:
+        print("Super Prompt MCP Server for Cursor IDE")
+        print("Available tools:")
+        for tool_name, meta in sorted(TOOL_METADATA.items()):
+            category = meta.get("category", "unknown")
+            print(f"  - {tool_name} ({category})")
         sys.exit(0)
 
-    # Otherwise start the MCP server if SDK is available
-    if not _HAS_MCP:
-        print(
-            "-------- ERROR: MCP SDK (python mcp) not installed; cannot start server",
-            file=sys.stderr,
-            flush=True,
-        )
-        sys.exit(96)
-
-    # Initialize memory system early to ensure database is ready
-    try:
-        from .memory.store import MemoryStore
-
-        MemoryStore.open()  # Initialize memory database
-        print("-------- memory: system initialized", file=sys.stderr, flush=True)
-    except Exception as e:
-        print(
-            f"-------- WARNING: memory system initialization failed: {e}",
-            file=sys.stderr,
-            flush=True,
-        )
-
-    # stdio 모드로 MCP 서버 실행 (버전 호환성 고려)
-    print("-------- MCP server starting in stdio mode", file=sys.stderr, flush=True)
-
-    # Try different run patterns for maximum compatibility
-    run_attempts = [
-        # Standard pattern for most versions
-        lambda: mcp.run(),
-        # Some versions might require stdio parameter
-        lambda: mcp.run(transport="stdio"),
-        lambda: mcp.run({"transport": "stdio"}),
-        lambda: mcp.run(transport={"type": "stdio"}),
-        # Alternative parameter patterns
-        lambda: mcp.run_stdio(),
-        lambda: mcp.run(mode="stdio"),
-        lambda: mcp.run({"mode": "stdio"}),
-        # Legacy patterns for older versions
-        lambda: mcp.serve(),
-        lambda: mcp.serve_stdio(),
-    ]
-
-    server_started = False
-    for run_func in run_attempts:
-        try:
-            print(
-                f"-------- MCP: trying server run pattern: {run_func.__name__}",
-                file=sys.stderr,
-                flush=True,
-            )
-            run_func()
-            server_started = True
-            print("-------- MCP: server started successfully", file=sys.stderr, flush=True)
-            break
-        except (TypeError, AttributeError, ValueError) as e:
-            print(f"-------- MCP: run attempt failed: {e}", file=sys.stderr, flush=True)
-            continue
-
-    if not server_started:
-        print(
-            "-------- ERROR: Failed to start MCP server with any known pattern",
-            file=sys.stderr,
-            flush=True,
-        )
-        sys.exit(1)
+    asyncio.run(main())
+else:
+    # When imported as module, just log registration
+    print("-------- MCP: Super Prompt tools loaded", file=sys.stderr, flush=True)

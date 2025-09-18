@@ -1,1 +1,3 @@
-{"mode":"gpt"}
+{
+  "llm_mode": "gpt"
+}

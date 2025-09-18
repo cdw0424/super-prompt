@@ -2,8 +2,9 @@
 description: debate command
 run: mcp
 server: super-prompt
-tool: sp.debate
+tool: sp.pipeline
 args:
+  tool: "debate"
   query: "${input}"
 ---
 

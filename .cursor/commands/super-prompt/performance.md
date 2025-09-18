@@ -2,8 +2,9 @@
 description: performance command
 run: mcp
 server: super-prompt
-tool: sp.performance
+tool: sp.pipeline
 args:
+  tool: "performance"
   query: "${input}"
 ---
 

@@ -2,8 +2,9 @@
 description: review command
 run: mcp
 server: super-prompt
-tool: sp.review
+tool: sp.pipeline
 args:
+  tool: "review"
   query: "${input}"
 ---
 

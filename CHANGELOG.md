@@ -1,5 +1,24 @@
 # Changelog
 
+## v4.7.0 - 2025-09-18
+
+### 🚀 Features
+
+- Introduced a unified `sp.pipeline` executor that applies a consistent workflow (memory ingest → context analysis → persona/Codex call → plan + execution guidance → confession double-check → memory update) to every MCP persona tool.
+- Added persona-specific pipeline configurations covering all first-party tools (frontend, backend, QA, DevOps, service-planner, documentation personas, sequential reasoning, etc.) with tailored plan and execution templates.
+- Improved pipeline argument handling to accept Cursor payload keys (`query`, `input`, `a`, etc.) so existing slash commands continue to work without modification.
+
+### 🧰 Tooling
+
+- Updated Cursor command bindings so `/super-prompt/<persona>` commands invoke the pipeline helper automatically.
+- Documented the new pipeline flow and manual usage in the README.
+
+### 🔧 Version
+
+- Bumped project version to 4.7.0.
+
+---
+
 ## v4.6.10 - 2025-09-18
 
 ### 🛠️ Improvements

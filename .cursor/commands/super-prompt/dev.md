@@ -2,8 +2,9 @@
 description: dev command
 run: mcp
 server: super-prompt
-tool: sp.dev
+tool: sp.pipeline
 args:
+  tool: "dev"
   query: "${input}"
 ---
 

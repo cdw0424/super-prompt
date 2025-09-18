@@ -2,8 +2,9 @@
 description: refactorer command
 run: mcp
 server: super-prompt
-tool: sp.refactorer
+tool: sp.pipeline
 args:
+  tool: "refactorer"
   query: "${input}"
 ---
 
