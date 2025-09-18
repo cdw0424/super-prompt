@@ -8,14 +8,14 @@ Enhance the Super Prompt project with complete Spec-Driven Development (SDD) sup
 ## User Journey
 As a developer using Super Prompt, I want to use structured development workflows so that I can ensure quality and consistency in my development process. I want to start with clear specifications, create implementation plans, break down work into testable tasks, and have automatic quality checks.
 
-### Success Criteria
+## Success Criteria
 - [ ] All developers can create and validate specifications
 - [ ] Implementation plans are comprehensive and approved
 - [ ] Tasks are properly broken down and tracked
 - [ ] Constitution compliance is automatic
 - [ ] Acceptance checks prevent premature implementation
 
-### Acceptance Criteria
+## Acceptance Criteria
 - [ ] /specify command creates valid spec templates
 - [ ] /plan command generates implementation plans with constitution compliance
 - [ ] /tasks command creates testable task breakdowns
