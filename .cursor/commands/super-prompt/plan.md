@@ -7,4 +7,5 @@ args:
   query: "${input}"
 ---
 
-📋 Plan Create Implementation Plan.
+📋 Plan
+Create Implementation Plan.

@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-📝 Scribe
-Technical writing and developer documentation
+📝 Scribe Technical writing and developer documentation

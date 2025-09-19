@@ -4,8 +4,8 @@ run: mcp
 server: super-prompt
 tool: sp.pipeline
 args:
-  tool: "tr"
   query: "${input}"
+  tool: "tr"
 ---
 
 🔀 Translate

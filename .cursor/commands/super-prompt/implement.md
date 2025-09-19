@@ -7,4 +7,5 @@ args:
   query: "${input}"
 ---
 
-📋 Implement Execute Implementation.
+📋 Implement
+Execute Implementation.

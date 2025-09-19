@@ -47,7 +47,17 @@ async function run() {
     return;
   }
 
-  // Temporary direct-call path via Python module (no full MCP handshake required)
+  // Enforce MCP-only execution unless explicitly whitelisted for bootstrap or development override
+  const allowDirect = process.env.SUPER_PROMPT_ALLOW_DIRECT === 'true';
+  const allowBootstrap = isBootstrapTool(tool);
+  if (!allowDirect && !allowBootstrap) {
+    console.error('-------- ERROR: Persona/tools must run via Cursor MCP integration');
+    console.error('-------- Hint: Use Cursor command cards (run: mcp, server: super-prompt)');
+    process.exit(3);
+    return;
+  }
+
+  // Development override or bootstrap allowance: direct-call path via Python module
   await directCall(tool, kv);
   process.exit(0);
 }
@@ -67,7 +77,6 @@ async function directInit() {
   const root = process.env.SUPER_PROMPT_PROJECT_ROOT || process.cwd();
   const tplRoot = path.join(__dirname, '..', 'templates');
   const appHome = path.join(__dirname, '..');
-  const pinnedSpec = getPinnedSpec();
 
   // Display protection notice and ASCII art
   console.log('\x1b[31m\x1b[1m🚨 CRITICAL PROTECTION NOTICE:\x1b[0m');
@@ -121,14 +130,21 @@ async function directInit() {
             try {
               const json = JSON.parse(fs.readFileSync(dst, 'utf-8'));
               const entry = json?.mcpServers?.['super-prompt'];
-              if (entry && Array.isArray(entry.args) && entry.args.length >= 3) {
-                entry.args[1] = pinnedSpec;
+              if (entry) {
+                entry.type = 'stdio';
+                entry.command = '${workspaceFolder}/bin/sp-mcp';
+                entry.args = [];
                 entry.env = {
                   ...(entry.env || {}),
-                  SUPER_PROMPT_NPM_SPEC: pinnedSpec,
+                  SUPER_PROMPT_ALLOW_INIT: 'true',
+                  SUPER_PROMPT_REQUIRE_MCP: '1',
+                  SUPER_PROMPT_PROJECT_ROOT: '${workspaceFolder}',
+                  PYTHONUNBUFFERED: '1',
+                  PYTHONUTF8: '1',
                 };
+                delete entry.env.SUPER_PROMPT_NPM_SPEC;
                 fs.writeFileSync(dst, JSON.stringify(json, null, 2));
-                console.log('-------- pinned npm spec in .cursor/mcp.json');
+                console.log('-------- normalized .cursor/mcp.json to local sp-mcp launcher');
               }
             } catch (e) {
               // best-effort
@@ -228,17 +244,16 @@ async function resolvePython(projectRoot, appHome) {
 
 function defaultCursorFile(name) {
   if (name === 'mcp.json') {
-    const pinned = getPinnedSpec();
     return {
       mcpServers: {
         'super-prompt': {
-          command: 'npx',
-          args: ['-y', pinned, 'sp-mcp'],
+          type: 'stdio',
+          command: './bin/sp-mcp',
+          args: [],
           env: {
             SUPER_PROMPT_ALLOW_INIT: 'true',
             SUPER_PROMPT_REQUIRE_MCP: '1',
             SUPER_PROMPT_PROJECT_ROOT: '${workspaceFolder}',
-            SUPER_PROMPT_NPM_SPEC: pinned,
             PYTHONUNBUFFERED: '1',
             PYTHONUTF8: '1',
           },
@@ -316,8 +331,8 @@ async function generateCursorAssets(projectRoot, appHome) {
   });
 }
 
-function getPinnedSpec() {
-  const env = process.env.SUPER_PROMPT_NPM_SPEC;
-  if (env) return env;
-  return '@cdw0424/super-prompt@latest';
+function isBootstrapTool(toolName) {
+  if (toolName === 'sp.init' && process.env.SUPER_PROMPT_ALLOW_INIT === 'true') return true;
+  if (toolName === 'sp.refresh' && process.env.SUPER_PROMPT_ALLOW_REFRESH === 'true') return true;
+  return false;
 }

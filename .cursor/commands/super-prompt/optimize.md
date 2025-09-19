@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🎯 Optimize
-Generic optimization and efficiency improvements
+🎯 Optimize Generic optimization and efficiency improvements

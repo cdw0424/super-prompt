@@ -206,11 +206,11 @@ def _validate_spec_quality(spec_path: PathLike) -> GateReport:
             miss.append("Invalid or missing REQ-ID format (should be REQ-XXX)")
 
         # Check for measurable success criteria
-        if not re.search(r"Success Criteria.*- \[ \]", content, re.DOTALL):
+        if not re.search(r"Success Criteria.*- \[[ xX]\]", content, re.DOTALL):
             warnings.append("Consider adding measurable success criteria")
 
         # Check for acceptance criteria
-        if not re.search(r"Acceptance Criteria.*- \[ \]", content, re.DOTALL):
+        if not re.search(r"Acceptance Criteria.*- \[[ xX]\]", content, re.DOTALL):
             warnings.append("Consider adding specific acceptance criteria")
 
     except Exception as e:

@@ -7,4 +7,5 @@ args:
   query: "${input}"
 ---
 
-📋 Specify Create Feature Specification.
+📋 Specify
+Create Feature Specification.

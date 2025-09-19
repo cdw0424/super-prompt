@@ -1,22 +1,132 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env node
+/**
+ * Super Prompt MCP server launcher for Cursor/Codex integrations.
+ */
 
-# Lightweight wrapper to launch the MCP server directly as a module
-DIR="$(cd "$(dirname "$0")" && pwd)"
+const { spawn, spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
-# Use project venv if available, otherwise system python3
-if [ -f "$DIR/../.super-prompt/venv/bin/python3" ]; then
-    PYTHON_EXEC="$DIR/../.super-prompt/venv/bin/python3"
-else
-    PYTHON_EXEC="python3"
-fi
+function resolveAppHome() {
+  let prg = process.argv[1];
+  try {
+    let stat = fs.lstatSync(prg);
+    while (stat.isSymbolicLink()) {
+      const link = fs.readlinkSync(prg);
+      prg = path.isAbsolute(link) ? link : path.join(path.dirname(prg), link);
+      stat = fs.lstatSync(prg);
+    }
+  } catch {
+    // best-effort fallback
+  }
+  return path.resolve(path.dirname(prg), '..');
+}
 
-# Set required environment variables
-export SUPER_PROMPT_PACKAGE_ROOT="$DIR/.."
-export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$(pwd)}"
-export MCP_SERVER_MODE="1"
-export PYTHONPATH="$DIR/../packages/core-py"
+function resolveProjectRoot() {
+  if (process.env.SUPER_PROMPT_PROJECT_ROOT) return process.env.SUPER_PROMPT_PROJECT_ROOT;
+  try {
+    const res = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+    if (res.status === 0 && res.stdout.trim()) return res.stdout.trim();
+  } catch {
+    // ignore
+  }
+  return process.cwd();
+}
 
-# Launch MCP server as module
-exec "$PYTHON_EXEC" -m super_prompt.mcp_server "$@"
+function resolvePython(projectRoot, appHome) {
+  const isWin = process.platform === 'win32';
+  const candidates = [];
+  if (isWin) {
+    candidates.push(path.join(projectRoot, '.super-prompt', 'venv', 'Scripts', 'python.exe'));
+    candidates.push(path.join(appHome, '.super-prompt', 'venv', 'Scripts', 'python.exe'));
+  } else {
+    candidates.push(path.join(projectRoot, '.super-prompt', 'venv', 'bin', 'python'));
+    candidates.push(path.join(appHome, '.super-prompt', 'venv', 'bin', 'python'));
+  }
+  if (process.env.PYTHON) candidates.push(process.env.PYTHON);
+  candidates.push(isWin ? 'python.exe' : 'python3');
 
+  for (const candidate of candidates) {
+    try {
+      if (candidate === 'python3' || candidate === 'python.exe') return candidate;
+      if (fs.existsSync(candidate)) return candidate;
+    } catch {
+      // ignore
+    }
+  }
+  return isWin ? 'python.exe' : 'python3';
+}
+
+function main() {
+  const appHome = resolveAppHome();
+  const projectRoot = resolveProjectRoot();
+  const python = resolvePython(projectRoot, appHome);
+
+  const env = {
+    ...process.env,
+    SUPER_PROMPT_PACKAGE_ROOT: appHome,
+    SUPER_PROMPT_PROJECT_ROOT: projectRoot,
+    SUPER_PROMPT_REQUIRE_MCP: process.env.SUPER_PROMPT_REQUIRE_MCP || '1',
+    MCP_SERVER_MODE: '1',  // Allow MCP server to run when imported as module
+    PYTHONPATH: `${path.join(appHome, 'packages', 'core-py')}${path.delimiter}${process.env.PYTHONPATH || ''}`,
+  };
+
+  // Create a temporary script to run the MCP server
+  const scriptPath = path.join(appHome, 'temp_mcp_runner.py');
+  const scriptContent = `
+import sys
+import os
+sys.path.insert(0, '${path.join(appHome, 'packages', 'core-py')}')
+
+# Set environment variables
+os.environ['MCP_SERVER_MODE'] = '1'
+os.environ['SUPER_PROMPT_PROJECT_ROOT'] = '${projectRoot}'
+
+# Import and run the MCP server
+try:
+    import super_prompt.mcp_server as mcp_server
+    print("-------- MCP: Module loaded, starting server...", file=sys.stderr, flush=True)
+    import asyncio
+
+    async def run_server():
+        await mcp_server.main()
+
+    # Try to run with asyncio.run, fallback to get_event_loop if already running
+    try:
+        asyncio.run(run_server())
+    except RuntimeError as e:
+        if "already running" in str(e).lower():
+            print("-------- MCP: Using existing event loop", file=sys.stderr, flush=True)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(run_server())
+        else:
+            raise
+
+except Exception as e:
+    print(f"-------- ERROR: Failed to start MCP server: {e}", file=sys.stderr, flush=True)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+`;
+
+  fs.writeFileSync(scriptPath, scriptContent);
+
+  const child = spawn(python, [scriptPath, ...process.argv.slice(2)], {
+    stdio: 'inherit',
+    env,
+  });
+
+  child.on('exit', () => {
+    // Clean up temp script
+    try { fs.unlinkSync(scriptPath); } catch {}
+  });
+
+  child.on('exit', code => {
+    process.exit(code === null ? 1 : code);
+  });
+  child.on('error', err => {
+    console.error('-------- ERROR: Failed to launch MCP server:', err.message);
+    process.exit(1);
+  });
+}
+
+main();

@@ -7,4 +7,5 @@ args:
   query: "${input}"
 ---
 
-📋 Tasks Create Task Breakdown.
+📋 Tasks
+Create Task Breakdown.

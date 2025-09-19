@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-💬 Debate
-Internal debate (positive vs critical analysis)
+💬 Debate Internal debate (positive vs critical analysis)

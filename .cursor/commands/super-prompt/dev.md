@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🚀 Dev
-Feature development with quality and delivery focus
+🚀 Dev Feature development with quality and delivery focus

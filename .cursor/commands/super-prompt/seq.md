@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🔍 Sequential
-Sequential reasoning and step-by-step analysis
+🔍 Sequential Sequential reasoning and step-by-step analysis

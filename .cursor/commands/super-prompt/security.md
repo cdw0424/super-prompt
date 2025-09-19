@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🛡️ Security
-Security analysis and threat modeling
+🛡️ Security Security analysis and threat modeling

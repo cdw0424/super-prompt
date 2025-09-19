@@ -25,7 +25,13 @@
       "Bash(tar:*)",
       "Read(//tmp/test-package/src/**)",
       "Read(//private/tmp/test-package/**)",
-      "Read(//private/tmp/test-final/**)"
+      "Read(//private/tmp/test-final/**)",
+      "Bash(./bin/sp-mcp:*)",
+      "Bash(timeout:*)",
+      "Bash(SUPER_PROMPT_ALLOW_INIT=true SUPER_PROMPT_REQUIRE_MCP=1 python3 -m super_prompt.mcp_server --help)",
+      "Bash(PYTHONPATH=packages/core-py SUPER_PROMPT_ALLOW_INIT=true SUPER_PROMPT_REQUIRE_MCP=1 python3 -c \"import super_prompt.mcp_server; print(''MCP module imported successfully'')\")",
+      "Bash(pip3 install:*)",
+      "Bash(.super-prompt/venv/bin/pip install mcp)"
     ],
     "deny": [],
     "ask": []

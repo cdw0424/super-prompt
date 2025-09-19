@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🔍 Analyzer
-Root cause analysis and systematic investigation
+🔍 Analyzer Root cause analysis and systematic investigation

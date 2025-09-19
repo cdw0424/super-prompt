@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-📚 Doc Master
-Documentation architecture, writing, and verification
+📚 Doc Master Documentation architecture, writing, and verification

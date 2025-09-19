@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🔧 Refactorer
-Code quality and technical debt management
+🔧 Refactorer Code quality and technical debt management

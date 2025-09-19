@@ -55,7 +55,7 @@ class AcceptanceSelfCheck:
                 spec_content = f.read()
 
             # Extract success criteria
-            success_match = re.search(r'### Success Criteria\s*\n((?:- \[.\] .*\n?)*)',
+            success_match = re.search(r'#{2,3} Success Criteria\s*\n((?:- \[.\] .*\n?)*)',
                                     spec_content, re.MULTILINE)
             if not success_match:
                 return CheckResult(False, "No success criteria found in spec",
@@ -94,7 +94,7 @@ class AcceptanceSelfCheck:
                 spec_content = f.read()
 
             # Extract acceptance criteria
-            acceptance_match = re.search(r'### Acceptance Criteria\s*\n((?:- \[.\] .*\n?)*)',
+            acceptance_match = re.search(r'#{2,3} Acceptance Criteria\s*\n((?:- \[.\] .*\n?)*)',
                                        spec_content, re.MULTILINE)
             if not acceptance_match:
                 return CheckResult(False, "No acceptance criteria found in spec",

@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-⚡ Ultra Compressed
-Highly compressed, efficient responses
+⚡ Ultra Compressed Highly compressed, efficient responses

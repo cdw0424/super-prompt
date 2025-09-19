@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-⚙️ Backend
-Server-side development and API specialist
+⚙️ Backend Server-side development and API specialist

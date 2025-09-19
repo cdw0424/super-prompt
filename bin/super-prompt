@@ -259,6 +259,11 @@ resolve_direct_tool() {
 exec_mcp_tool() {
   local tool="$1"
   shift
+  : "${SUPER_PROMPT_ALLOW_DIRECT:=true}"
+  export SUPER_PROMPT_ALLOW_DIRECT
+  export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+  export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
+  export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
   if [ $# -gt 0 ]; then
     local query="$*"
     exec node "$APP_HOME/src/mcp-client.js" call "$tool" "--query=$query"
@@ -287,6 +292,10 @@ case "$CMD" in
     ;;
   super:refresh)
     shift
+    export SUPER_PROMPT_ALLOW_REFRESH="true"
+    export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+    export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
+    export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
     exec node "$APP_HOME/src/mcp-client.js" call sp.refresh "$@"
     ;;
   codex-mode-on)

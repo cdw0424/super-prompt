@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-✅ QA
-Quality assurance and testing specialist
+✅ QA Quality assurance and testing specialist

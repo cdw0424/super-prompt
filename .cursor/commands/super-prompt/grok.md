@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🧠 Grok Session
-Session-only Grok optimization
+🧠 Grok Session Session-only Grok optimization

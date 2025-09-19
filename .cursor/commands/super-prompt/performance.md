@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-⚡ Performance
-Performance optimization and bottleneck analysis
+⚡ Performance Performance optimization and bottleneck analysis

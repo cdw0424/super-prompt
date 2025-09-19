@@ -8,20 +8,34 @@ from pathlib import Path
 def _render_codex_config_block(project_root: Path,
                                server_name: str,
                                npm_spec: str,
-                               python_exec: str) -> str:
+                               python_exec: str,
+                               local_sp_mcp: Path | None = None) -> str:
     """Render canonical Codex MCP config block for super:init."""
     project_path = str(project_root).replace("\\", "\\\\").replace('"', '\\"')
     python_exec = python_exec or "python3"
     env_entries = [
         'SUPER_PROMPT_ALLOW_INIT = "true"',
         f'SUPER_PROMPT_PROJECT_ROOT = "{project_path}"',
-        f'PYTHON = "{python_exec}"',
     ]
+    if local_sp_mcp is None:
+        env_entries.extend([
+            f'SUPER_PROMPT_NPM_SPEC = "{npm_spec}"',
+            f'PYTHON = "{python_exec}"',
+        ])
+    env_entries.extend([
+        'PYTHONUNBUFFERED = "1"',
+        'PYTHONUTF8 = "1"',
+    ])
     env_inline = ", ".join(env_entries)
+
+    if local_sp_mcp is not None:
+        command_line = f'command = "{str(local_sp_mcp)}"\nargs = []\n'
+    else:
+        command_line = 'command = "npx"\n' + f'args = ["-y", "{npm_spec}", "sp-mcp"]\n'
+
     return (
         f"[mcp_servers.{server_name}]\n"
-        'command = "npx"\n'
-        f'args = ["-y", "{npm_spec}", "sp-mcp"]\n'
+        f"{command_line}"
         f"env = {{ {env_inline} }}\n"
     )
 
@@ -78,18 +92,42 @@ def ensure_cursor_mcp_registered(project_root: Path,
     # npx가 실행할 패키지 스펙(정확한 설치버전 우선, 없으면 latest)
     npm_spec = npm_spec or os.environ.get("SUPER_PROMPT_NPM_SPEC") or "@cdw0424/super-prompt@latest"
 
-    entry = {
-        "command": "npx",
-        "args": ["-y", npm_spec, "sp-mcp"],
-        "env": {
-            # 설치/갱신을 MCP에서 허용(보안상 프로젝트 스코프에서만)
-            "SUPER_PROMPT_ALLOW_INIT": "true",
-            # 서버가 프로젝트 루트를 정확히 인식하도록 전달
-            "SUPER_PROMPT_PROJECT_ROOT": str(project_root),
-            # 파이썬 선택(없으면 python3)
-            "PYTHON": os.environ.get("PYTHON", "python3")
+    sp_mcp = project_root / "bin" / "sp-mcp"
+    command_path = "./bin/sp-mcp" if sp_mcp.exists() else "npx"
+
+    if sp_mcp.exists():
+        entry = {
+            "type": "stdio",
+            "command": command_path,
+            "args": [],
+            "env": {
+                "SUPER_PROMPT_ALLOW_INIT": "true",
+                "SUPER_PROMPT_REQUIRE_MCP": "1",
+                "SUPER_PROMPT_PROJECT_ROOT": str(project_root),
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONUTF8": "1",
+            },
         }
-    }
+    else:
+        entry = {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", npm_spec, "sp-mcp"],
+            "env": {
+                # 설치/갱신을 MCP에서 허용(보안상 프로젝트 스코프에서만)
+                "SUPER_PROMPT_ALLOW_INIT": "true",
+                # MCP 브리지 강제
+                "SUPER_PROMPT_REQUIRE_MCP": "1",
+                # 서버가 프로젝트 루트를 정확히 인식하도록 전달
+                "SUPER_PROMPT_PROJECT_ROOT": str(project_root),
+                # 설치된 버전 고정
+                "SUPER_PROMPT_NPM_SPEC": npm_spec,
+                # 파이썬 선택(없으면 python3)
+                "PYTHON": os.environ.get("PYTHON", "python3"),
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONUTF8": "1",
+            }
+        }
 
     data = {}
     if cfg_path.exists():
@@ -104,10 +142,21 @@ def ensure_cursor_mcp_registered(project_root: Path,
     if server_name in mcp and isinstance(mcp[server_name], dict):
         merged = dict(mcp[server_name])
         merged.update(entry)
-        # env는 얕은 병합
+        # env는 얕은 병합 + 오래된 키 제거
         merged_env = dict(mcp[server_name].get("env") or {})
         merged_env.update(entry["env"])
+        for legacy_key in (
+            "SUPER_PROMPT_PACKAGE_ROOT",
+            "PYTHONPATH",
+            "MCP_SERVER_MODE",
+            "SUPER_PROMPT_NPM_SPEC",
+            "PYTHON",
+        ):
+            merged_env.pop(legacy_key, None)
         merged["env"] = merged_env
+        merged["command"] = entry["command"]
+        merged["args"] = entry["args"]
+        merged["type"] = "stdio"
         mcp[server_name] = merged
     else:
         mcp[server_name] = entry
@@ -127,7 +176,12 @@ def ensure_codex_mcp_registered(project_root: Path,
 
     npm_spec = os.environ.get("SUPER_PROMPT_NPM_SPEC") or "@cdw0424/super-prompt@latest"
     python_exec = os.environ.get("PYTHON", "python3")
-    block = _render_codex_config_block(project_root, server_name, npm_spec, python_exec)
+    local_sp_mcp = None
+    sp_mcp_candidate = project_root / "bin" / "sp-mcp"
+    if sp_mcp_candidate.exists():
+        local_sp_mcp = sp_mcp_candidate
+
+    block = _render_codex_config_block(project_root, server_name, npm_spec, python_exec, local_sp_mcp)
 
     if overwrite or not cfg.exists():
         body = block

@@ -5,4 +5,5 @@ server: super-prompt
 tool: sp.grok_mode_on
 ---
 
-🤖 Grok Mode On Enable Grok mode instantly and persist for this project
+🤖 Grok Mode On
+Enable Grok mode instantly and persist for this project

@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-📋 Review
-Code review and best practices validation
+📋 Review Code review and best practices validation

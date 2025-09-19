@@ -2,8 +2,9 @@
 description: docs-refector command
 run: mcp
 server: super-prompt
-tool: sp.docs-refector
+tool: sp.pipeline
 args:
+  tool: "docs-refector"
   query: "${input}"
 ---
 

@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🏗️ Architect
-System design and architecture specialist
+🏗️ Architect System design and architecture specialist

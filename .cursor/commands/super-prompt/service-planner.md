@@ -8,5 +8,5 @@ args:
   query: "${input}"
 ---
 
-🧭 Service Planner
-Service planning expert (product strategy from discovery → delivery → growth)
+🧭 Service Planner Service planning expert (product strategy from discovery →
+delivery → growth)

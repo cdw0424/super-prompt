@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🎓 Mentor
-Educational guidance and knowledge transfer
+🎓 Mentor Educational guidance and knowledge transfer

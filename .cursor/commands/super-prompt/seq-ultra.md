@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🧠 Sequential Ultra
-Ultra-deep sequential reasoning for complex problems
+🧠 Sequential Ultra Ultra-deep sequential reasoning for complex problems

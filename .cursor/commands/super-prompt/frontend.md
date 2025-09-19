@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🎨 Frontend
-UI/UX specialist and accessibility advocate
+🎨 Frontend UI/UX specialist and accessibility advocate

@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🚀 DevOps
-CI/CD, infrastructure automation, and reliability
+🚀 DevOps CI/CD, infrastructure automation, and reliability

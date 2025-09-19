@@ -1,5 +1,5 @@
 ---
-description: tr command
+description: translate command (alias of translate)
 run: mcp
 server: super-prompt
 tool: sp.pipeline
@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🌐 Translate
-Professional translation and localization support
+🔀 Translate Code translation and format conversion

@@ -8,5 +8,4 @@ args:
   query: "${input}"
 ---
 
-🗄️ DB Expert
-Database design and query optimization
+🗄️ DB Expert Database design and query optimization
