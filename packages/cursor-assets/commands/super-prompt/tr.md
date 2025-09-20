@@ -2,9 +2,8 @@
 description: translate command (alias of translate)
 run: mcp
 server: super-prompt
-tool: sp.pipeline
+tool: sp_tr
 args:
-  tool: "tr"
   query: "${input}"
 ---
 

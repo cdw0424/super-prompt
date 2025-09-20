@@ -2,7 +2,7 @@
 description: gpt-mode-off command
 run: mcp
 server: super-prompt
-tool: sp.gpt_mode_off
+tool: gpt_mode_off
 ---
 
 🔴 GPT Mode Off

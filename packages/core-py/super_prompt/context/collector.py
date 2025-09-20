@@ -67,15 +67,19 @@ class ContextCollector:
         # Extract content with token budgeting
         context_parts = self._extract_content_with_budget(all_files, max_tokens)
 
+        # Calculate total tokens
+        total_tokens = sum(self.tokenizer.estimate_tokens(part.get("content", "")) for part in context_parts)
+
         result = {
             "query": query,
             "files": context_parts,
             "metadata": {
                 "collection_time": time.time() - start_time,
                 "total_files_scanned": len(all_files),
-                "context_tokens": sum(self.tokenizer.estimate_tokens(part.get("content", "")) for part in context_parts),
+                "context_tokens": total_tokens,
                 "ripgrep_used": self.ripgrep_available,
-                "cached": False
+                "cached": False,
+                "cache_stats": self.cache.get_stats() if hasattr(self.cache, 'get_stats') else {}
             }
         }
 

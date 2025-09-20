@@ -1,5 +1,153 @@
 # Changelog
 
+## v5.0.0 - 2025-09-20
+
+### 🎯 **Architecture Revolution: Complete Prompt-Based Workflow Transformation**
+
+#### **🔄 프롬프트 기반 아키텍처 전환**
+- **20개 주요 페르소나 함수들** 모두 프롬프트 기반으로 변환 (high 포함)
+- `_run_persona_pipeline` → `run_prompt_based_workflow` 로 완전 교체
+- 불필요한 파이프라인 코드 제거 및 성능 최적화
+
+#### **🎯 모드별 특화 프롬프트 템플릿**
+- **GPT 모드**: 구조화된 분석, 실용적 해결 방안 (20개 템플릿)
+- **Grok 모드**: 최대한 진실된 분석, 현실적 고려사항 (20개 템플릿)
+- 총 **40개 모드별 최적화 프롬프트 템플릿**
+
+#### **📈 성능 및 안정성 향상**
+- 간소화된 아키텍처로 더 빠른 응답 속도
+- 메모리 사용량 감소
+- 불필요한 코드 제거로 유지보수성 향상
+
+#### **🔧 MCP Server Refactoring: Stateless Architecture**
+- **Legacy Infrastructure Removed**: PID file management, daemon process checks, stdout redirections
+- **New Modular Design**: `mcp_app.py` (pure tool registry) + `mcp_stdio.py` (minimal wrapper)
+- **Cleaner Launch Process**: Stateless STDIO-based server startup without process management overhead
+- **Deprecated Functions**: Removed `start_server()`, `_run_mcp_server()`, PID helpers from `mcp_server.py`
+
+### 🚀 Major Features
+
+- **Pure Python MCP Architecture**: Complete transition to Python-first MCP implementation
+- **Enhanced super:init**: Robust initialization with comprehensive validation and sanity checks
+- **Interactive MCP Client**: Added `--interactive` mode for manual tool argument input
+- **Hardened Asset Management**: Template verification, manifest validation, and post-copy validation
+- **Comprehensive Testing Suite**: Extended unit and integration tests with error handling coverage
+
+### 🧰 Tooling Improvements
+
+- **super:init Hardening**: Added dependency bootstrap, MCP sanity checks, and telemetry improvements
+- **Asset Packaging Readiness**: Template verification, persona manifest validation, and doc synchronization
+- **CLI Polish**: Enhanced Typer CLI with better error messages and troubleshooting suggestions
+- **MCP Doctor Enhancement**: Improved diagnostics with timeout handling and dependency validation
+- **Watch Mode**: Added iterative development support with `super-prompt mcp run --watch`
+- **Codex Client Enhancement**: Robust error handling for `sp_high` with dependency detection and actionable guidance
+- **Codex Integration Refactoring**: Dedicated client module with structured error objects and graceful fallbacks
+
+### 🔧 Breaking Changes
+
+- **Version Bump**: Major version update to reflect architectural changes
+- **Installation Method**: Python-first installation recommended (`pip install super-prompt-core`)
+- **CLI Commands**: Enhanced MCP subcommands with improved validation and error handling
+- **Asset Verification**: Stricter validation of generated assets during initialization
+
+### 🧠 Codex Integration Improvements
+
+- **CLI-Only sp_high with Auto-Setup**: `sp_high` now uses pure CLI execution with automatic setup
+- **Always-First sudo npm install**: Every execution starts with `sudo npm install -g @openai/codex@latest`
+- **Login Retry Mechanism**: Failed login check triggers `openai login` then retries entire process
+- **Streamlined Authentication Flow**: No API keys needed, all auth handled through OpenAI CLI
+- **Predictable Execution Order**: Consistent sequence: npm install → login check → execute/retry
+- **Enhanced Error Handling**: Clear messages for sudo, npm, and login failures
+
+### 📦 Migration Guide
+
+For upgrading from v4.x:
+
+1. **Update Installation**:
+   ```bash
+   # Recommended Python-first installation
+   pip install super-prompt-core
+
+   # Or update existing installation
+   pip install --upgrade super-prompt-core
+   ```
+
+2. **Re-initialize Project**:
+   ```bash
+   # Clean re-initialization with enhanced validation
+   super-prompt super:init --force
+   ```
+
+3. **Update MCP Configurations**:
+   - Cursor MCP settings will be automatically updated during re-initialization
+   - Verify MCP server is enabled in Cursor Settings → MCP
+
+4. **Test New Features**:
+   ```bash
+   # Verify MCP server health
+   super-prompt mcp doctor
+
+   # Test interactive mode
+   super-prompt mcp call sp.list_commands --interactive
+
+   # Use watch mode for development
+   super-prompt mcp run sp.architect --watch
+   ```
+
+### 🎯 New Capabilities
+
+- **Enhanced Error Handling**: Better error messages with actionable troubleshooting steps
+- **Asset Validation**: Post-initialization verification of all generated files and directories
+- **MCP Sanity Checks**: Automatic verification that MCP server is functional after initialization
+- **Interactive Tool Calls**: Manual input mode for complex tool arguments
+- **Comprehensive Testing**: Full test coverage for MCP client and initialization workflows
+
+### 🔧 Technical Details
+
+- **Dependencies**: Streamlined Python-only dependency management
+- **Performance**: Optimized MCP client with better connection handling
+- **Reliability**: Enhanced error recovery and validation throughout the initialization process
+- **Documentation**: Updated all guides to reflect Python-first architecture
+
+---
+
+## v4.7.1 - 2025-09-19
+
+### 🚀 Major Features
+
+- **Pure Python MCP Client**: Complete migration from Node.js to Python-based MCP client
+- **Enhanced CLI**: Added `super-prompt mcp` subcommands with improved error handling
+- **Watch Mode**: New `super-prompt mcp run --watch` command for iterative development
+- **Better Diagnostics**: Enhanced `super-prompt mcp doctor` with troubleshooting suggestions
+
+### 🧰 Tooling Improvements
+
+- **Streamlined Architecture**: Removed Node.js dependencies and simplified build process
+- **Unified Python Entry Points**: Added `super-prompt-mcp` and `sp-mcp` console scripts
+- **Integration Tests**: Added comprehensive end-to-end tests for MCP client functionality
+- **Documentation Updates**: Updated all docs to reflect Python-first approach
+
+### 🔧 Breaking Changes
+
+- **Node.js MCP Client Removed**: `src/mcp-client.js` and related Node.js tooling deprecated
+- **Package Dependencies**: Removed `@modelcontextprotocol/sdk` from npm dependencies
+- **Script Updates**: All npm scripts now use Python commands instead of Node.js
+
+### 📦 Migration Guide
+
+For existing users:
+1. Update to v4.7.1: `npm install @cdw0424/super-prompt@latest`
+2. Replace Node.js commands:
+   - Old: `npx super-prompt mcp-client call <tool>`
+   - New: `super-prompt mcp call <tool>` or `python -m super_prompt.mcp_client call <tool>`
+3. Update MCP configurations to use Python commands instead of `npx`
+
+### 🔧 Version
+
+- Bumped project version to 4.7.1.
+
+---
+
 ## v4.7.0 - 2025-09-18
 
 ### 🚀 Features

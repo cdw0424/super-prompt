@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# Lightweight alias to super-prompt for concise CLI usage (e.g., `sp --architect "..."`)
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$SCRIPT_DIR/super-prompt" "$@"

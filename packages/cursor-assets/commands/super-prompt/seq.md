@@ -2,9 +2,8 @@
 description: seq command
 run: mcp
 server: super-prompt
-tool: sp.pipeline
+tool: sp_seq
 args:
-  tool: "seq"
   query: "${input}"
 ---
 

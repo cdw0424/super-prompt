@@ -2,7 +2,7 @@
 description: specify command
 run: mcp
 server: super-prompt
-tool: sp.specify
+tool: sp_specify
 args:
   query: "${input}"
 ---

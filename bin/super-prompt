@@ -38,52 +38,22 @@ resolve_project_root() {
 
 PROJECT_ROOT="$(resolve_project_root)"
 
-# Prefer project venv; fall back to package venv
-VENV_DIR_PROJECT="$PROJECT_ROOT/.super-prompt/venv"
-VENV_DIR_PACKAGE="$APP_HOME/.super-prompt/venv"
-
-# Resolve the correct Python executable from the venv.
-resolve_venv_python() {
-    local platform
-    platform="$(uname -s 2>/dev/null || echo "Unknown")"
-
-    # Try project venv first, then package venv
-    local candidates=()
-    case "$platform" in
-      Darwin|Linux|*BSD*)
-        candidates+=("$VENV_DIR_PROJECT/bin/python")
-        candidates+=("$VENV_DIR_PACKAGE/bin/python")
-        ;;
-      MINGW*|MSYS*|CYGWIN*|Windows_NT*)
-        candidates+=("$VENV_DIR_PROJECT/Scripts/python.exe")
-        candidates+=("$VENV_DIR_PACKAGE/Scripts/python.exe")
-        ;;
-      *)
-        candidates+=("$VENV_DIR_PROJECT/bin/python")
-        candidates+=("$VENV_DIR_PROJECT/Scripts/python.exe")
-        candidates+=("$VENV_DIR_PACKAGE/bin/python")
-        candidates+=("$VENV_DIR_PACKAGE/Scripts/python.exe")
-        ;;
-    esac
-
-    for py in "${candidates[@]}"; do
-      if [ -f "$py" ]; then
-        printf "%s" "$py"
-        return 0
-      fi
-    done
-
-    return 1
+resolve_python() {
+  if [ -n "${PYTHON:-}" ] && command -v "$PYTHON" >/dev/null 2>&1; then
+    printf "%s" "$PYTHON"
+    return 0
+  fi
+  for candidate in python3.12 python3.11 python3.10 python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      printf "%s" "$candidate"
+      return 0
+    fi
+  done
+  echo "-------- ERROR: No Python interpreter found (set PYTHON env)" >&2
+  return 1
 }
 
-# Find the venv Python interpreter.
-VENV_PYTHON=$(resolve_venv_python || true)
-
-# If the venv Python is not found, fall back to the system python3.
-if [ -z "${VENV_PYTHON:-}" ]; then
-    echo "-------- WARNING: venv not found. Falling back to system python3." >&2
-    VENV_PYTHON="python3"
-fi
+PYTHON_BIN="$(resolve_python)" || exit 1
 
 # With the new module-based approach, we no longer check for the existence
 # of a specific source file. The python executable will handle module resolution.
@@ -92,7 +62,9 @@ fi
 # Set package root for server usage
 export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
 # Ensure MCP clients default to the latest published package
-export SUPER_PROMPT_NPM_SPEC="@cdw0424/super-prompt@latest"
+# Do not pin or leak an npm spec by default.
+# Keeping env clean prevents accidental npx pulls of a remote version.
+unset SUPER_PROMPT_NPM_SPEC || true
 
 # Mode toggle validation and setup
 resolve_mode() {
@@ -210,7 +182,19 @@ route_codex_flags() {
     shift # consume the flag
     # Treat remaining args as a single query string
     local query="$*"
-    exec node "$APP_HOME/src/mcp-client.js" call "$TOOL" "--query=$query"
+    exec "$PYTHON_BIN" -c "
+import sys
+sys.path.insert(0, '$APP_HOME/packages/core-py')
+from super_prompt.mcp_client import MCPClient
+import asyncio
+
+async def call_tool():
+    async with MCPClient() as client:
+        result = await client.call_tool('$TOOL', {'query': '$query'})
+        print(result)
+
+asyncio.run(call_tool())
+"
   fi
 }
 
@@ -266,9 +250,34 @@ exec_mcp_tool() {
   export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
   if [ $# -gt 0 ]; then
     local query="$*"
-    exec node "$APP_HOME/src/mcp-client.js" call "$tool" "--query=$query"
+    exec "$PYTHON_BIN" -c "
+import sys
+sys.path.insert(0, '$APP_HOME/packages/core-py')
+from super_prompt.mcp_client import MCPClient
+import asyncio
+import json
+
+async def call_tool():
+    async with MCPClient() as client:
+        result = await client.call_tool('$tool', {'query': '$query'})
+        print(result)
+
+asyncio.run(call_tool())
+"
   else
-    exec node "$APP_HOME/src/mcp-client.js" call "$tool"
+    exec "$PYTHON_BIN" -c "
+import sys
+sys.path.insert(0, '$APP_HOME/packages/core-py')
+from super_prompt.mcp_client import MCPClient
+import asyncio
+
+async def call_tool():
+    async with MCPClient() as client:
+        result = await client.call_tool('$tool', {})
+        print(result)
+
+asyncio.run(call_tool())
+"
   fi
 }
 
@@ -279,16 +288,23 @@ case "$CMD" in
     export MCP_SERVER_MODE="1"  # Mark as MCP server mode
     # Ensure Python can import super_prompt from package sources without wheel install
     export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
-    exec "$VENV_PYTHON" -m super_prompt.mcp_server "$@"
+    exec "$PYTHON_BIN" -m super_prompt.mcp_stdio "$@"
     ;;
   super:init)
     shift
-    # Always use the Node MCP client to call sp.init so behavior is consistent across installs
+    # CLI에서 직접 init 실행 (전역 ~/.cursor/mcp.json 업데이트)
     export SUPER_PROMPT_ALLOW_INIT="true"
+    export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
     export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
     export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
     export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
-    exec node "$APP_HOME/src/mcp-client.js" call sp.init "$@"
+    exec "$PYTHON_BIN" -c "
+import sys
+sys.path.insert(0, '$APP_HOME/packages/core-py')
+from super_prompt.cli import init
+import typer
+typer.run(init)
+" "$@"
     ;;
   super:refresh)
     shift
@@ -296,7 +312,19 @@ case "$CMD" in
     export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
     export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
     export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
-    exec node "$APP_HOME/src/mcp-client.js" call sp.refresh "$@"
+    exec "$PYTHON_BIN" -c "
+import sys
+sys.path.insert(0, '$APP_HOME/packages/core-py')
+from super_prompt.mcp_client import MCPClient
+import asyncio
+
+async def refresh():
+    async with MCPClient() as client:
+        result = await client.call_tool('sp.refresh', {})
+        print(result)
+
+asyncio.run(refresh())
+" "$@"
     ;;
   codex-mode-on)
     exec_mcp_tool "sp.gpt_mode_on" "$@"
@@ -306,7 +334,19 @@ case "$CMD" in
     exec node "$APP_HOME/src/doctor.js"
     ;;
   --version|-v|version)
-    exec node "$APP_HOME/src/mcp-client.js" call sp.version
+    exec "$PYTHON_BIN" -c "
+import sys
+sys.path.insert(0, '$APP_HOME/packages/core-py')
+from super_prompt.mcp_client import MCPClient
+import asyncio
+
+async def get_version():
+    async with MCPClient() as client:
+        result = await client.call_tool('sp.version', {})
+        print(result)
+
+asyncio.run(get_version())
+"
     ;;
   architect|backend|frontend|security|performance|analyzer|qa|refactorer|devops|mentor|scribe|grok|db-expert|optimize|review|dev|doc-master|service-planner|debate|specify|plan|tasks|implement|seq|seq-ultra|high|translate|tr|wave|ultracompressed)
     TOOL=$(resolve_direct_tool "$CMD")

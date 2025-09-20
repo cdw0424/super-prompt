@@ -2,7 +2,7 @@
 description: wave command
 run: mcp
 server: super-prompt
-tool: sp.service-planner
+tool: sp_dev
 args:
   query: "${input}"
 ---

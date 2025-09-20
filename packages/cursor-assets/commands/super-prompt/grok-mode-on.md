@@ -2,7 +2,7 @@
 description: grok-mode-on command
 run: mcp
 server: super-prompt
-tool: sp.grok_mode_on
+tool: grok_mode_on
 ---
 
 🤖 Grok Mode On

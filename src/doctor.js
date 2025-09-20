@@ -45,16 +45,44 @@ function ensureMode(pr) {
 
 function runMcp(tool, args = []) {
   const root = pkgRoot();
-  const cmd = process.execPath; // node
-  const cli = path.join(root, 'src', 'mcp-client.js');
-  const a = [cli, 'call', tool, ...args];
+  const { spawn } = require('child_process');
+
+  // Find Python interpreter
+  const pythonCmd = findPython();
+  const cli = pythonCmd;
+  const a = [cli, '-c', `
+import sys
+sys.path.insert(0, '${root}/packages/core-py')
+from super_prompt.mcp_client import MCPClient
+import asyncio
+import json
+
+async def call_tool():
+    async with MCPClient() as client:
+        result = await client.call_tool('${tool}', {${args.map(arg => `'${arg.split('=')[0]}': '${arg.split('=')[1] || ''}'`).join(', ')}})
+        print(result)
+
+asyncio.run(call_tool())
+`];
+
+function findPython() {
+  const candidates = ['python3.12', 'python3.11', 'python3.10', 'python3', 'python'];
+  for (const cmd of candidates) {
+    try {
+      const { spawnSync } = require('child_process');
+      const result = spawnSync(cmd, ['--version']);
+      if (result.status === 0) return cmd;
+    } catch {}
+  }
+  return 'python3';
+}
   const env = {
     ...process.env,
     SUPER_PROMPT_PACKAGE_ROOT: root,
     SUPER_PROMPT_ALLOW_INIT: 'true',
     PYTHONPATH: `${path.join(root, 'packages', 'core-py')}:${process.env.PYTHONPATH || ''}`,
   };
-  const r = spawnSync(cmd, a, { encoding: 'utf8', env });
+  const r = spawnSync(cli, a, { encoding: 'utf8', env });
   return r;
 }
 
@@ -95,7 +123,7 @@ function main() {
   } else {
     log(`MCP bridge: FAIL (exit=${r.status})`);
     if (r.stderr) log(`stderr: ${r.stderr.trim()}`);
-    log('SUGGEST: ensure Python v3.10+ available and reinstall package to recreate venv');
+    log('SUGGEST: ensure Python 3.10+ is on PATH');
   }
 
   // 5) Memory write check (.super-prompt writable)

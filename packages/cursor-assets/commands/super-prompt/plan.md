@@ -2,7 +2,7 @@
 description: plan command
 run: mcp
 server: super-prompt
-tool: sp.plan
+tool: sp_plan
 args:
   query: "${input}"
 ---

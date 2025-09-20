@@ -74,6 +74,10 @@ async function main() {
 
     const toolName = payload.toolName || 'codex';
     const args = { ...payload.arguments };
+
+    // Ensure mode survives from payload to arguments
+    if (payload.mode && !args.mode) args.mode = payload.mode;
+
     args.prompt = payload.prompt;
     if (payload.conversationId) args.conversationId = payload.conversationId;
     if (payload.approvalPolicy) args['approval-policy'] = payload.approvalPolicy;

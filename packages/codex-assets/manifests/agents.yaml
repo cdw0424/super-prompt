@@ -188,3 +188,42 @@ workflows:
         ```bash
         super-prompt --sp-sdd-implement "Authentication system"
         ```
+
+---
+
+# MCP Stdout Discipline
+
+critical: All MCP-related code and files MUST NEVER use stdout for logging or output.
+
+## Why This Matters
+- MCP uses stdout exclusively for JSON-RPC protocol communication
+- Any accidental stdout usage corrupts the protocol stream
+- stdout pollution can cause MCP client disconnection and tool failures
+
+## Absolute Rules
+1. **NEVER use `print()` without `file=sys.stderr`** in MCP server code
+2. **NEVER use `console.log()`** in Node.js MCP clients (deprecated anyway)
+3. **ALWAYS use `file=sys.stderr`** for all logging in MCP-related Python code
+4. **ALWAYS use `console.error()`** for logging in Node.js code (if any remains)
+5. **Test stdout cleanliness** - MCP stdout must contain ONLY valid JSON-RPC
+
+## Code Examples
+```python
+# ✅ CORRECT
+print("Debug info", file=sys.stderr, flush=True)
+
+# ❌ WRONG - NEVER DO THIS
+print("Debug info")  # Pollutes stdout
+```
+
+## Files That Must Follow This Rule
+- packages/core-py/super_prompt/mcp_server.py
+- packages/core-py/super_prompt/mcp_client.py
+- packages/core-py/super_prompt/cli.py (MCP subcommands)
+- Any file in packages/core-py/super_prompt/ that interacts with MCP
+- Legacy bin/sp-mcp and related MCP launchers
+
+## Verification
+- Run MCP inspector: stdout should contain only {"jsonrpc":"2.0",...} messages
+- Any non-JSON output in stdout indicates a protocol violation
+- Use super-prompt mcp doctor to test MCP server connectivity

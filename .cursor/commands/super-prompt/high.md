@@ -1,12 +1,9 @@
 ---
-description: high command
+description: high command - Deep reasoning and strategic problem solving
 run: mcp
 server: super-prompt
-tool: sp.pipeline
+tool: sp_high
 args:
-  tool: "high"
   query: "${input}"
+  persona: "high"
 ---
-
-🧠 High Reasoning Deep reasoning and strategic problem solving with GPT-5 high
-model approach

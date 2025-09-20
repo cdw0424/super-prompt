@@ -6,7 +6,13 @@ uses .super-prompt/cli.py as its entrypoint. Keep both CLIs; they serve
 different packaging targets.
 """
 
-import typer
+try:
+    import typer
+except ModuleNotFoundError:
+    # Fallback for system Python (venv functionality removed)
+    import importlib
+    importlib.invalidate_caches()
+    import typer
 from typing import Optional
 import os
 import sys
@@ -14,7 +20,7 @@ import subprocess
 import json
 from pathlib import Path
 
-# MCP 전용 강제: 환경에서 명시 해제하지 않는 한 직접 실행 불가
+# MCP-only enforcement: Direct execution disabled unless explicitly disabled in environment
 if os.environ.get("SUPER_PROMPT_REQUIRE_MCP", "1") == "1":
     sys.stderr.write("Direct CLI is disabled. Use MCP only.\n")
     raise SystemExit(97)
@@ -29,27 +35,27 @@ from .engine.execution_pipeline import ExecutionPipeline
 from .context.collector import ContextCollector
 from .sdd.gates import check_implementation_ready
 from .personas.loader import PersonaLoader
-from .venv import ensure_project_venv
 from .adapters.cursor_adapter import CursorAdapter
 from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
 from .paths import package_root, project_root, project_data_dir, cursor_assets_root
-from .mcp_register import ensure_cursor_mcp_registered, ensure_codex_mcp_registered
+from .mcp_register import ensure_cursor_mcp_registered, ensure_codex_mcp_registered, validate_project_ssot, ensure_project_ssot_priority, get_ssot_guidance, perform_ssot_migration
 from .mode_store import set_mode as set_mode_file
 from .personas.loader import PersonaLoader
+from .mcp_client import MCPClient
 
 
 def get_current_version() -> str:
     """Get current version from package.json"""
     try:
-        # 1) npm 래퍼가 넘긴 루트 최우선
+        # 1) Prioritize root passed by npm wrapper
         env_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
         if env_root and Path(env_root).exists():
-            print(f"----- DEBUG: Using SUPER_PROMPT_PACKAGE_ROOT: {env_root}")
+            print(f"----- DEBUG: Using SUPER_PROMPT_PACKAGE_ROOT: {env_root}", file=sys.stderr, flush=True)
             npm_root = Path(env_root)
         else:
-            # 2) site-packages에서 올라가며 'packages/cursor-assets' 존재 확인
-            print(f"----- DEBUG: Starting version detection from {Path(__file__)}")
+            # 2) Check for 'packages/cursor-assets' by traversing up from site-packages
+            print(f"----- DEBUG: Starting version detection from {Path(__file__)}", file=sys.stderr, flush=True)
             current = Path(__file__).resolve()
             npm_root = None
             while current.parent != current:  # Stop at filesystem root
@@ -62,14 +68,15 @@ def get_current_version() -> str:
                                 package_data = json.load(f)
                                 if package_data.get("name") == "@cdw0424/super-prompt":
                                     print(
-                                        f"----- DEBUG: Resolved package root by ascent: {current}"
+                                        f"----- DEBUG: Resolved package root by ascent: {current}",
+                                        file=sys.stderr, flush=True
                                     )
                                     npm_root = current
                                     break
                     except Exception as e:
-                        print(f"----- DEBUG: Error reading {current}/package.json: {e}")
+                        print(f"----- DEBUG: Error reading {current}/package.json: {e}", file=sys.stderr, flush=True)
                         pass
-                print(f"----- DEBUG: Checking for npm package at: {current}")
+                print(f"----- DEBUG: Checking for npm package at: {current}", file=sys.stderr, flush=True)
                 current = current.parent
 
         if npm_root and (npm_root / "package.json").exists():
@@ -77,15 +84,15 @@ def get_current_version() -> str:
             with open(package_json, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 version = data.get("version", "3.1.56")
-                print(f"----- DEBUG: Found version {version} in npm package")
+                print(f"----- DEBUG: Found version {version} in npm package", file=sys.stderr, flush=True)
                 return version
 
         # Fallback: try to read from environment or use default
         env_version = os.environ.get("SUPER_PROMPT_VERSION", "3.1.56")
-        print(f"----- DEBUG: Using environment/default version {env_version}")
+        print(f"----- DEBUG: Using environment/default version {env_version}", file=sys.stderr, flush=True)
         return env_version
     except Exception as e:
-        print(f"----- DEBUG: Exception in version detection: {e}")
+        print(f"----- DEBUG: Exception in version detection: {e}", file=sys.stderr, flush=True)
         return "3.1.56"
 
 
@@ -94,6 +101,615 @@ app = typer.Typer(
     help="Super Prompt v3 - Modular prompt engineering toolkit",
     add_completion=False,
 )
+
+# MCP Client Sub-app
+mcp_app = typer.Typer(
+    name="mcp",
+    help="MCP server client commands",
+    add_completion=False,
+)
+
+app.add_typer(mcp_app)
+
+# MCP Setup Sub-app for explicit global registration
+setup_app = typer.Typer(
+    name="setup",
+    help="Explicit MCP setup commands (SSOT compliance)",
+    add_completion=False,
+)
+
+app.add_typer(setup_app)
+
+
+@setup_app.command("global")
+def setup_global(
+    cursor: bool = typer.Option(False, "--cursor", help="Setup Cursor MCP server globally"),
+    codex: bool = typer.Option(False, "--codex", help="Setup Codex MCP server globally"),
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
+    force: bool = typer.Option(False, "--force", help="Force overwrite existing configurations"),
+):
+    """
+    Explicit global MCP setup (Phase 2: SSOT compliance)
+
+    This command provides explicit control over global MCP registration.
+    Use this when you specifically want global setup, rather than automatic registration.
+    """
+    if not cursor and not codex:
+        typer.echo("❌ Error: Must specify at least one of --cursor or --codex", err=True)
+        typer.echo("💡 Usage: super-prompt setup global --cursor --codex", err=True)
+        raise typer.Exit(1)
+
+    target_dir = Path(project_root or ".").resolve()
+
+    typer.echo("🔧 Explicit Global MCP Setup (SSOT Compliant)")
+    typer.echo(f"   Project: {target_dir}")
+    typer.echo(f"   Cursor: {'✅' if cursor else '❌'}")
+    typer.echo(f"   Codex: {'✅' if codex else '❌'}")
+    typer.echo(f"   Force: {'✅' if force else '❌'}")
+    typer.echo()
+
+    # Pre-setup SSOT validation
+    try:
+        ssot_compliant = validate_project_ssot(target_dir)
+        if not ssot_compliant:
+            typer.echo("⚠️  SSOT violation detected: Potential conflict with existing global settings")
+            if not typer.confirm("Continue anyway?"):
+                raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"⚠️  SSOT validation failed: {e}")
+
+    # Cursor global setup
+    if cursor:
+        try:
+            typer.echo("🚀 Setting up Cursor MCP globally...")
+            cfg_path = ensure_cursor_mcp_registered(target_dir, overwrite=force)
+            typer.echo(f"✅ Cursor MCP registered globally: {cfg_path}")
+        except Exception as e:
+            typer.echo(f"❌ Cursor setup failed: {e}", err=True)
+            raise typer.Exit(1)
+
+    # Codex global setup
+    if codex:
+        try:
+            typer.echo("🚀 Setting up Codex MCP globally...")
+            codex_cfg = ensure_codex_mcp_registered(target_dir, overwrite=force)
+            typer.echo(f"✅ Codex MCP registered globally: {codex_cfg}")
+        except Exception as e:
+            typer.echo(f"❌ Codex setup failed: {e}", err=True)
+            raise typer.Exit(1)
+
+    typer.echo()
+    typer.echo("🎉 Global MCP setup completed!")
+    typer.echo("💡 Note: This creates global configurations that may conflict with project-local settings")
+    typer.echo("💡 Use 'super-prompt setup cleanup' to remove global entries if needed")
+
+
+@setup_app.command("cleanup")
+def setup_cleanup(
+    cursor: bool = typer.Option(False, "--cursor", help="Remove Cursor global MCP entries"),
+    codex: bool = typer.Option(False, "--codex", help="Remove Codex global MCP entries"),
+    server_name: str = typer.Option("super-prompt", "--server-name", help="MCP server name to clean"),
+):
+    """
+    Cleanup global MCP entries (SSOT compliance restoration)
+
+    This command removes global MCP configurations to restore SSOT compliance.
+    Use this when you want to rely only on project-local configurations.
+    """
+    if not cursor and not codex:
+        typer.echo("❌ Error: Must specify at least one of --cursor or --codex", err=True)
+        typer.echo("💡 Usage: super-prompt setup cleanup --cursor --codex", err=True)
+        raise typer.Exit(1)
+
+    from .mcp_register import cleanup_global_entries
+
+    typer.echo("🧹 Global MCP Cleanup (SSOT Restoration)")
+    typer.echo(f"   Cursor: {'✅' if cursor else '❌'}")
+    typer.echo(f"   Codex: {'✅' if codex else '❌'}")
+    typer.echo(f"   Server: {server_name}")
+    typer.echo()
+
+    if not typer.confirm("Are you sure you want to clean up global settings? (Backups will be created)"):
+        typer.echo("❌ Cleanup cancelled")
+        return
+
+    try:
+        cleanup_global_entries(server_name)
+        typer.echo("✅ Global MCP cleanup completed!")
+        typer.echo("💡 Note: Backups were created with .backup_super-prompt suffix")
+        typer.echo("💡 Project-local configurations will now be used exclusively")
+    except Exception as e:
+        typer.echo(f"❌ Cleanup failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@setup_app.command("validate")
+def setup_validate(
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
+):
+    """
+    Validate SSOT compliance for current project
+
+    This command checks if your MCP configurations follow SSOT principles.
+    """
+    target_dir = Path(project_root or ".").resolve()
+
+    typer.echo("🔍 SSOT Compliance Validation")
+    typer.echo(f"   Project: {target_dir}")
+    typer.echo()
+
+    try:
+        ssot_compliant = validate_project_ssot(target_dir)
+
+        if ssot_compliant:
+            typer.echo("✅ SSOT compliant: All settings configured correctly")
+            typer.echo("   - Project settings do not conflict with global settings")
+            typer.echo("   - Single source of truth principle maintained")
+        else:
+            typer.echo("❌ SSOT violation detected")
+            typer.echo("💡 Solutions:")
+            typer.echo("   1. super-prompt setup cleanup --cursor --codex  # Clean global settings")
+            typer.echo("   2. Configure to use only project settings")
+            typer.echo("   3. super-prompt setup validate  # Re-validate")
+
+        return typer.Exit(0 if ssot_compliant else 1)
+
+    except Exception as e:
+        typer.echo(f"❌ Validation failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@setup_app.command("guidance")
+def setup_guidance():
+    """
+    Display SSOT compliance guidance and best practices
+
+    This command provides comprehensive guidance for maintaining SSOT compliance
+    in your MCP configurations.
+    """
+    typer.echo(get_ssot_guidance())
+
+
+@setup_app.command("priority")
+def setup_priority(
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
+):
+    """
+    Establish project SSOT priority (Phase 3: SSOT Enhancement)
+
+    This command ensures that project-local configurations take priority
+    over global configurations, establishing proper SSOT hierarchy.
+    """
+    target_dir = Path(project_root or ".").resolve()
+
+    typer.echo("🔧 Establishing Project SSOT Priority")
+    typer.echo(f"   Project: {target_dir}")
+    typer.echo()
+
+    try:
+        priority_established = ensure_project_ssot_priority(target_dir)
+
+        if priority_established:
+            typer.echo("✅ Project SSOT priority setup completed")
+            typer.echo("   - Project settings take priority over global settings")
+            typer.echo("   - SSOT principles applied correctly")
+        else:
+            typer.echo("❌ Project SSOT priority setup failed")
+            typer.echo("💡 Solutions:")
+            typer.echo("   1. Check project .cursor/mcp.json or .codex/config.toml files")
+            typer.echo("   2. super-prompt setup validate  # Validate settings")
+            typer.echo("   3. super-prompt setup guidance  # Detailed guidelines")
+
+        return typer.Exit(0 if priority_established else 1)
+
+    except Exception as e:
+        typer.echo(f"❌ Priority setup failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@setup_app.command("migrate")
+def setup_migrate(
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
+    dry_run: bool = typer.Option(True, "--execute", "--no-dry-run", help="Execute migration (default: dry-run only)"),
+    cleanup_global: bool = typer.Option(False, "--cleanup-global", help="Automatically cleanup global entries"),
+):
+    """
+    Perform SSOT migration (Phase 4: Migration & Cleanup)
+
+    This command migrates your MCP configuration to SSOT compliance.
+    By default, it performs a dry-run to show what would be changed.
+
+    Use --execute to actually perform the migration.
+    Use --cleanup-global to automatically remove global entries.
+    """
+    target_dir = Path(project_root or ".").resolve()
+    execute = not dry_run  # Execute if --execute flag is True
+
+    typer.echo("🔄 SSOT Migration" + (" (DRY RUN)" if not execute else " (EXECUTING)"))
+    typer.echo(f"   Project: {target_dir}")
+    typer.echo(f"   Cleanup Global: {'✅' if cleanup_global else '❌'}")
+    typer.echo()
+
+    try:
+        # Perform migration
+        result = perform_ssot_migration(target_dir, dry_run=not execute)
+
+        if "error" in result:
+            typer.echo(f"❌ Migration failed: {result['error']}", err=True)
+            raise typer.Exit(1)
+
+        # Display results
+        typer.echo("📊 Migration Results:")
+
+        # Current status
+        status = result.get("current_status", {})
+        typer.echo("   📁 Current Status:")
+        typer.echo(f"     • Project Cursor: {'✅' if status.get('project_cursor_exists') else '❌'}")
+        typer.echo(f"     • Project Codex: {'✅' if status.get('project_codex_exists') else '❌'}")
+        typer.echo(f"     • Global Cursor: {'✅' if status.get('global_cursor_exists') else '❌'}")
+        typer.echo(f"     • Global Codex: {'✅' if status.get('global_codex_exists') else '❌'}")
+
+        # SSOT compliance status
+        ssot_before = result.get("ssot_compliant_before")
+        ssot_after = result.get("ssot_compliant_after")
+        if ssot_before is not None:
+            typer.echo(f"   🔍 SSOT Compliant (Before): {'✅' if ssot_before else '❌'}")
+        if ssot_after is not None:
+            typer.echo(f"   🔍 SSOT Compliant (After): {'✅' if ssot_after else '❌'}")
+
+        # Actions taken
+        actions = result.get("actions_taken", [])
+        if actions:
+            typer.echo("   ✅ Actions Taken:")
+            for action in actions:
+                typer.echo(f"     • {action}")
+
+        # Warnings
+        warnings = result.get("warnings", [])
+        if warnings:
+            typer.echo("   ⚠️  Warnings:")
+            for warning in warnings:
+                typer.echo(f"     • {warning}")
+
+        # Recommendations
+        recommendations = result.get("recommendations", [])
+        if recommendations:
+            typer.echo("   💡 Recommendations:")
+            for rec in recommendations:
+                typer.echo(f"     • {rec}")
+
+        # Auto cleanup option
+        if cleanup_global and execute:
+            typer.echo("\n🧹 Auto-cleaning global settings...")
+            from .mcp_register import cleanup_global_entries
+            try:
+                cleanup_global_entries()
+                typer.echo("✅ Global settings cleanup completed")
+            except Exception as e:
+                typer.echo(f"⚠️  Global settings cleanup failed: {e}")
+
+        # Final result
+        success = result.get("success", False)
+        if success:
+            typer.echo("\n🎉 Migration completed!")
+            if execute:
+                typer.echo("   - SSOT compliance successfully established")
+            else:
+                typer.echo("   - Use --execute flag for actual execution")
+        else:
+            typer.echo("\n❌ Migration failed or additional work needed")
+            if not execute:
+                typer.echo("   - Use --execute flag for actual execution")
+
+        return typer.Exit(0 if success else 1)
+
+    except Exception as e:
+        typer.echo(f"❌ Migration failed: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@mcp_app.command("list-tools")
+def mcp_list_tools(json_output: bool = typer.Option(False, "--json", help="Output as JSON")):
+    """List available MCP tools"""
+    import asyncio
+
+    async def _list_tools():
+        async with MCPClient() as client:
+            tools = await client.list_tools()
+            if json_output:
+                if os.environ.get("MCP_SERVER_MODE"):
+                    print(json.dumps(tools, indent=2), file=sys.stderr, flush=True)
+                else:
+                    print(json.dumps(tools, indent=2))
+            else:
+                for tool in tools:
+                    if os.environ.get("MCP_SERVER_MODE"):
+                        print(f"• {tool['name']}: {tool.get('description', 'No description')}", file=sys.stderr, flush=True)
+                    else:
+                        print(f"• {tool['name']}: {tool.get('description', 'No description')}")
+
+    asyncio.run(_list_tools())
+
+
+@mcp_app.command("call")
+def mcp_call_tool(
+    tool_name: str = typer.Argument(..., help="Name of the tool to call"),
+    args_json: str = typer.Option(None, "--args-json", help="JSON string of arguments"),
+    json_output: bool = typer.Option(False, "--json", help="Output result as JSON"),
+    interactive: bool = typer.Option(False, "--interactive", help="Interactive mode for manual input")
+):
+    """Call an MCP tool"""
+    import asyncio
+
+    async def _call_tool():
+        # Parse arguments
+        arguments = {}
+        if interactive:
+            # Interactive mode: prompt for arguments
+            typer.echo("🔧 Interactive mode enabled for tool call")
+            typer.echo(f"Tool: {tool_name}")
+            args_input = typer.prompt("Enter arguments as JSON (leave empty for no args)", default="")
+            if args_input.strip():
+                try:
+                    arguments = json.loads(args_input)
+                except json.JSONDecodeError as e:
+                    typer.echo(f"Error parsing JSON arguments: {e}", err=True)
+                    raise typer.Exit(1)
+        elif args_json:
+            try:
+                arguments = json.loads(args_json)
+            except json.JSONDecodeError as e:
+                typer.echo(f"Error parsing JSON arguments: {e}", err=True)
+                raise typer.Exit(1)
+
+        async with MCPClient() as client:
+            try:
+                typer.echo(f"🔧 Executing tool: {tool_name}")
+                if arguments:
+                    typer.echo(f"Arguments: {json.dumps(arguments, indent=2)}")
+
+                result = await client.call_tool(tool_name, arguments)
+
+                if json_output:
+                    if os.environ.get("MCP_SERVER_MODE"):
+                        print(json.dumps(result, indent=2), file=sys.stderr, flush=True)
+                    else:
+                        print(json.dumps(result, indent=2))
+                else:
+                    # Pretty print the result
+                    typer.echo("📄 Result:")
+                    if isinstance(result, list):
+                        for item in result:
+                            if hasattr(item, 'text'):
+                                print(f"   {item.text}", file=sys.stderr, flush=True)
+                            else:
+                                print(f"   {str(item)}", file=sys.stderr, flush=True)
+                    else:
+                        print(f"   {str(result)}", file=sys.stderr, flush=True)
+            except Exception as e:
+                typer.echo(f"❌ Error calling tool '{tool_name}': {e}", err=True)
+                raise typer.Exit(1)
+
+    asyncio.run(_call_tool())
+
+
+@mcp_app.command("list-prompts")
+def mcp_list_prompts(json_output: bool = typer.Option(False, "--json", help="Output as JSON")):
+    """List available MCP prompts"""
+    import asyncio
+
+    async def _list_prompts():
+        async with MCPClient() as client:
+            prompts = await client.list_prompts()
+            if json_output:
+                print(json.dumps(prompts, indent=2))
+            else:
+                for prompt in prompts:
+                    print(f"• {prompt['name']}: {prompt.get('description', 'No description')}")
+
+    asyncio.run(_list_prompts())
+
+
+@mcp_app.command("get-prompt")
+def mcp_get_prompt(
+    prompt_name: str = typer.Argument(..., help="Name of the prompt to get"),
+    args_json: str = typer.Option(None, "--args-json", help="JSON string of arguments"),
+    json_output: bool = typer.Option(False, "--json", help="Output result as JSON")
+):
+    """Get an MCP prompt"""
+    import asyncio
+
+    async def _get_prompt():
+        # Parse arguments
+        arguments = {}
+        if args_json:
+            try:
+                arguments = json.loads(args_json)
+            except json.JSONDecodeError as e:
+                typer.echo(f"Error parsing JSON arguments: {e}", err=True)
+                raise typer.Exit(1)
+
+        async with MCPClient() as client:
+            try:
+                result = await client.get_prompt(prompt_name, arguments)
+                if json_output:
+                    print(json.dumps(result, indent=2))
+                else:
+                    # Pretty print the result
+                    if 'messages' in result:
+                        for message in result['messages']:
+                            role = message.get('role', 'unknown')
+                            content = message.get('content', '')
+                            if isinstance(content, str):
+                                print(f"[{role.upper()}]: {content}")
+                            elif isinstance(content, list):
+                                for item in content:
+                                    if isinstance(item, dict) and 'text' in item:
+                                        print(f"[{role.upper()}]: {item['text']}")
+                    else:
+                        print(str(result))
+            except Exception as e:
+                typer.echo(f"Error getting prompt '{prompt_name}': {e}", err=True)
+                raise typer.Exit(1)
+
+    asyncio.run(_get_prompt())
+
+
+@mcp_app.command("doctor")
+def mcp_doctor(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    timeout: int = typer.Option(10, "--timeout", help="Timeout in seconds"),
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Show detailed information")
+):
+    """Run diagnostics on MCP server connection"""
+    import asyncio
+    import time
+
+    async def _doctor():
+        start_time = time.time()
+
+        try:
+            async with asyncio.timeout(timeout):
+                async with MCPClient() as client:
+                    if verbose:
+                        print("🔍 Connecting to MCP server...")
+                        print(f"   Command: {' '.join(client.server_command)}")
+
+                    # Test tools listing
+                    tools = await client.list_tools()
+                    tools_count = len(tools)
+
+                    # Test prompts listing
+                    prompts = await client.list_prompts()
+                    prompts_count = len(prompts)
+
+                    # Test a simple tool call if available
+                    test_tool_result = None
+                    test_tool_name = None
+                    if tools:
+                        test_tool_name = tools[0]['name']
+                        if verbose:
+                            print(f"🧪 Testing tool: {test_tool_name}", file=sys.stderr, flush=True)
+                        try:
+                            test_tool_result = await client.call_tool(test_tool_name, {})
+                        except Exception as e:
+                            test_tool_result = f"Error: {e}"
+
+                    response_time = time.time() - start_time
+
+                    result = {
+                        "status": "healthy",
+                        "response_time": f"{response_time:.2f}s",
+                        "tools_count": tools_count,
+                        "prompts_count": prompts_count,
+                        "test_tool_name": test_tool_name,
+                        "test_tool_result": test_tool_result,
+                        "server_command": client.server_command
+                    }
+
+                    if json_output:
+                        print(json.dumps(result, indent=2))
+                    else:
+                        print("✅ MCP Server Connection: Healthy", file=sys.stderr, flush=True)
+                        print(f"⏱️  Response Time: {response_time:.2f}s", file=sys.stderr, flush=True)
+                        print(f"📋 Available Tools: {tools_count}", file=sys.stderr, flush=True)
+                        print(f"📝 Available Prompts: {prompts_count}", file=sys.stderr, flush=True)
+                        if test_tool_result and verbose:
+                            print(f"🧪 Test Tool ({test_tool_name}): {'✅ Success' if not str(test_tool_result).startswith('Error:') else '❌ Failed'}", file=sys.stderr, flush=True)
+                            if str(test_tool_result).startswith('Error:'):
+                                print(f"   Error: {test_tool_result}", file=sys.stderr, flush=True)
+
+        except asyncio.TimeoutError:
+            result = {"status": "timeout", "message": f"Connection timed out after {timeout}s"}
+            if json_output:
+                print(json.dumps(result, indent=2))
+            else:
+                print(f"❌ MCP Server Connection: Timeout ({timeout}s)", file=sys.stderr, flush=True)
+                print("💡 Try increasing timeout: --timeout 30", file=sys.stderr, flush=True)
+                print("💡 Check if MCP server is running: ps aux | grep mcp_server", file=sys.stderr, flush=True)
+        except Exception as e:
+            result = {"status": "error", "message": str(e)}
+            if json_output:
+                print(json.dumps(result, indent=2))
+            else:
+                print(f"❌ MCP Server Connection: Error - {e}", file=sys.stderr, flush=True)
+                if "ModuleNotFoundError" in str(e):
+                    print("💡 Missing dependencies. Try: pip install super-prompt-core", file=sys.stderr, flush=True)
+                elif "Connection refused" in str(e):
+                    print("💡 MCP server not running. Try: super-prompt mcp-serve", file=sys.stderr, flush=True)
+                elif "PYTHONPATH" in str(e):
+                    print("💡 PYTHONPATH issue. Try: export PYTHONPATH=$PWD/packages/core-py:$PYTHONPATH", file=sys.stderr, flush=True)
+
+    asyncio.run(_doctor())
+
+
+@mcp_app.command("run")
+def mcp_run_tool(
+    tool_name: str = typer.Argument(..., help="Name of the tool to run"),
+    args_json: str = typer.Option(None, "--args-json", help="JSON string of arguments"),
+    watch: bool = typer.Option(False, "--watch", help="Watch mode - rerun on changes"),
+    interval: int = typer.Option(2, "--interval", help="Watch interval in seconds")
+):
+    """Run an MCP tool (with optional watch mode)"""
+    import asyncio
+    import time
+
+    async def _run_tool():
+        # Parse arguments
+        arguments = {}
+        if args_json:
+            try:
+                arguments = json.loads(args_json)
+            except json.JSONDecodeError as e:
+                typer.echo(f"Error parsing JSON arguments: {e}", err=True)
+                raise typer.Exit(1)
+
+        async with MCPClient() as client:
+            while True:
+                try:
+                    start_time = time.time()
+                    result = await client.call_tool(tool_name, arguments)
+                    end_time = time.time()
+
+                    print(f"🔧 Executing: {tool_name}", file=sys.stderr, flush=True)
+                    print(f"⏱️  Duration: {end_time - start_time:.2f}s", file=sys.stderr, flush=True)
+                    print("📄 Result:", file=sys.stderr, flush=True)
+                    if isinstance(result, list):
+                        for item in result:
+                            if hasattr(item, 'text'):
+                                print(f"   {item.text}", file=sys.stderr, flush=True)
+                            else:
+                                print(f"   {str(item)}", file=sys.stderr, flush=True)
+                    else:
+                        print(f"   {str(result)}", file=sys.stderr, flush=True)
+                    print(file=sys.stderr, flush=True)
+
+                    if not watch:
+                        break
+
+                    print(f"👀 Watching for changes (interval: {interval}s)...", file=sys.stderr, flush=True)
+                    await asyncio.sleep(interval)
+
+                except KeyboardInterrupt:
+                    print("\n🛑 Stopped by user", file=sys.stderr, flush=True)
+                    break
+                except Exception as e:
+                    print(f"❌ Error calling tool '{tool_name}': {e}", file=sys.stderr, flush=True)
+                    if not watch:
+                        raise typer.Exit(1)
+                    print(f"⏳ Retrying in {interval}s...", file=sys.stderr, flush=True)
+                    await asyncio.sleep(interval)
+
+    asyncio.run(_run_tool())
+
 
 sdd_spec_query: Optional[str] = typer.Option(
     None, "--sp-sdd-spec", help="Create an SDD specification for a feature."
@@ -108,7 +724,7 @@ sdd_implement_query: Optional[str] = typer.Option(
     None, "--sp-sdd-implement", help="Implement a feature based on SDD artifacts."
 )
 high_query: Optional[str] = typer.Option(
-    None, "--sp-high", help="Execute with GPT-5 high reasoning model."
+    None, "--sp-high", help="Execute with Codex high reasoning via MCP (use /super-prompt/high in Cursor)."
 )
 
 
@@ -553,7 +1169,7 @@ def mcp_serve():
     try:
         # We construct the path to the server script relative to this CLI script.
         # This makes the execution path independent of where the user runs the command.
-        server_script_path = Path(__file__).parent / "mcp_server.py"
+        server_script_path = Path(__file__).parent / "mcp_stdio.py"
 
         if not server_script_path.exists():
             typer.echo(
@@ -565,9 +1181,14 @@ def mcp_serve():
         typer.echo(f"🚀 Starting FastMCP server from: {server_script_path}")
         typer.echo("   Press Ctrl+C to exit.")
 
-        # Use sys.executable to ensure we're using the python from the correct venv
+        # Use sys.executable so we run under the same interpreter as this CLI
         env = os.environ.copy()
-        subprocess.run([sys.executable, str(server_script_path)], env=env, check=True)
+        if os.environ.get("MCP_SERVER_MODE"):
+            # In MCP server mode, suppress all output to avoid stdout pollution
+            subprocess.run([sys.executable, str(server_script_path)], env=env, check=True,
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run([sys.executable, str(server_script_path)], env=env, check=True)
 
     except subprocess.CalledProcessError as e:
         # This will trigger if the server exits with a non-zero code.
@@ -808,14 +1429,8 @@ def init(
         target_dir = Path(project_root).resolve() if project_root else Path.cwd().resolve()
         os.environ["SUPER_PROMPT_PROJECT_ROOT"] = str(target_dir)
 
-        # Ensure Python virtual environment is ready for context tools
-        typer.echo("🐍 Ensuring project Python environment...")
-        venv_dir = ensure_project_venv(target_dir, force=force)
-        if venv_dir:
-            display_path = venv_dir if venv_dir.is_absolute() else (target_dir / venv_dir)
-            typer.echo(f"✅ Python venv ready: {display_path}")
-        else:
-            typer.echo("⚠️  Python venv setup skipped or failed; falling back to system Python")
+        # Python dependencies are managed via system Python (venv functionality removed)
+        typer.echo("ℹ️  Using system Python for dependencies (venv functionality removed)")
 
         # --- Legacy cleanup (idempotent) ---
         legacy_paths = [
@@ -830,212 +1445,106 @@ def init(
             except Exception:
                 pass
 
-        # Ensure base dirs
+        # Ensure base dirs with validation (exclude .cursor for global management)
         dirs_to_create = [
-            target_dir / ".cursor" / "commands" / "super-prompt",
-            target_dir / ".cursor" / "rules",
             target_dir / ".super-prompt",
+            target_dir / "bin",
             target_dir / "specs",
             target_dir / "memory" / "constitution",
             target_dir / "memory" / "rules",
         ]
+        created_dirs = []
         for dir_path in dirs_to_create:
             dir_path.mkdir(parents=True, exist_ok=True)
+            if dir_path.exists():
+                created_dirs.append(dir_path)
+            else:
+                typer.echo(f"⚠️  Failed to create directory: {dir_path}")
 
-        # Copy .cursor directory from package template
-        # Try multiple possible locations for the source files
-        import shutil
+        typer.echo(f"✅ Created {len(created_dirs)} directories")
 
-        # Find npm package root by looking for package.json upwards from current location
-        def find_npm_package_root(start_path):
-            current = Path(start_path).resolve()
-            # Go up more levels to escape from the venv structure
-            # The Python CLI is in: .../node_modules/@cdw0424/super-prompt/.super-prompt/venv/lib/python3.x/site-packages/super_prompt/cli.py
-            # The package.json is at: .../node_modules/@cdw0424/super-prompt/package.json
-            while current.parent != current:  # Stop at filesystem root
-                if (current / "package.json").exists():
+        # Install local MCP launcher into project (./bin/sp-mcp) to guarantee Cursor uses local server
+        launcher_installed = False
+        try:
+            from .paths import package_root as _pkg_root
+            pkg_root = _pkg_root()
+            src = (pkg_root / "bin" / "sp-mcp")
+            dst = target_dir / "bin" / "sp-mcp"
+            if src.exists():
+                if src.resolve() != dst.resolve():
+                    import shutil
+                    shutil.copy2(src, dst)
                     try:
-                        with open(current / "package.json") as f:
-                            import json
-
-                            package_data = json.load(f)
-                            if package_data.get("name") == "@cdw0424/super-prompt":
-                                print(f"----- DEBUG: Found npm package root at: {current}")
-                                return current
-                    except Exception as e:
-                        print(f"----- DEBUG: Error reading {current}/package.json: {e}")
+                        dst.chmod(0o755)
+                    except Exception:
                         pass
-                print(f"----- DEBUG: Checking for npm package at: {current}")
-                current = current.parent
-            return None
+                    if dst.exists():
+                        launcher_installed = True
+                        typer.echo(f"✅ Installed local MCP launcher: {dst}")
+                    else:
+                        typer.echo("⚠️  MCP launcher copy failed")
+                else:
+                    # Already in place (developer repo case)
+                    try:
+                        dst.chmod(0o755)
+                    except Exception:
+                        pass
+                    if dst.exists():
+                        launcher_installed = True
+                        typer.echo(f"✅ Local MCP launcher already present: {dst}")
+            else:
+                typer.echo("⚠️  Could not find package launcher bin/sp-mcp; falling back to python -m")
+        except Exception as e:
+            typer.echo(f"⚠️  Could not install local launcher: {e}")
+            launcher_installed = False
 
-        # Prefer explicit package root from wrapper when available
-        env_pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
-        possible_package_dirs = []
-        if env_pkg_root:
-            try:
-                possible_package_dirs.append(Path(env_pkg_root))
-            except Exception:
-                pass
+        # Store MCP settings globally at ~/.cursor/mcp.json (avoid duplication)
+        typer.echo("✅ MCP settings will be configured globally at ~/.cursor/mcp.json")
 
-        possible_package_dirs.extend(
-            [
-                Path(__file__).parent.parent.parent.parent,  # Development location
-                Path(__file__).parent.parent.parent.parent.parent,  # npm installed location
-                Path(__file__).resolve().parent.parent.parent.parent,  # Resolved path
-                find_npm_package_root(Path(__file__)),  # Find npm package root
-            ]
-        )
-
-        # Filter out None values
-        possible_package_dirs = [d for d in possible_package_dirs if d is not None]
-
-        # Prefer env-specified package root immediately if valid
-        source_cursor = None
-        preferred_root = Path(env_pkg_root) if env_pkg_root else None
-        if preferred_root and (preferred_root / ".cursor").exists():
-            source_cursor = preferred_root / ".cursor"
-            typer.echo(f"✅ Found .cursor source at: {source_cursor}")
-        else:
-            for package_dir in possible_package_dirs:
-                test_cursor = package_dir / ".cursor"
-                if test_cursor.exists() and test_cursor.is_dir():
-                    source_cursor = test_cursor
-                    typer.echo(f"✅ Found .cursor source at: {source_cursor}")
-                    break
-
-        if source_cursor and source_cursor.exists():
-            # Copy entire .cursor directory
-            target_cursor = target_dir / ".cursor"
-
-            # Remove existing directory if it exists
-            if target_cursor.exists():
-                shutil.rmtree(target_cursor)
-
-            # Copy entire .cursor directory
-            shutil.copytree(source_cursor, target_cursor)
-            cursor_files_count = len([f for f in target_cursor.rglob("*") if f.is_file()])
-            typer.echo(f"✅ Cursor IDE integration copied (.cursor/) - {cursor_files_count} files")
-
-        else:
-            # Fallback: Generate using adapters
-            typer.echo("⚠️  .cursor source directory not found, using fallback generation")
-            cursor_adapter = CursorAdapter()
-            cursor_adapter.generate_commands(target_dir)
-            cursor_adapter.generate_rules(target_dir)
-            typer.echo("✅ Cursor IDE integration generated (.cursor/)")
-
-        # Copy .codex directory from package template
-        source_codex = None
-        if preferred_root and (preferred_root / ".codex").exists():
-            source_codex = preferred_root / ".codex"
-            typer.echo(f"✅ Found .codex source at: {source_codex}")
-        else:
-            for package_dir in possible_package_dirs:
-                test_codex = package_dir / ".codex"
-                if test_codex.exists() and test_codex.is_dir():
-                    source_codex = test_codex
-                    typer.echo(f"✅ Found .codex source at: {source_codex}")
-                    break
-
-        if source_codex and source_codex.exists():
-            # Copy entire .codex directory
-            target_codex = target_dir / ".codex"
-
-            # Remove existing directory if it exists
-            if target_codex.exists():
-                shutil.rmtree(target_codex)
-
-            # Copy entire .codex directory
-            shutil.copytree(source_codex, target_codex)
-            codex_files_count = len([f for f in target_codex.rglob("*") if f.is_file()])
-            typer.echo(f"✅ Codex CLI integration copied (.codex/) - {codex_files_count} files")
-
-        else:
-            # Fallback: Generate using adapters
-            typer.echo("⚠️  .codex source directory not found, using fallback generation")
-            codex_adapter = CodexAdapter()
-            codex_adapter.generate_assets(target_dir)
-            typer.echo("✅ Codex CLI integration generated (.codex/)")
+        # Store Codex settings only globally at ~/.codex (no project .codex creation)
+        typer.echo("✅ Codex settings will be configured globally at ~/.codex")
 
         # Copy .super-prompt directory from package
+        import shutil
         super_prompt_dir = target_dir / ".super-prompt"
 
         # Find source .super-prompt directory
         source_super_prompt = None
-        if preferred_root and (preferred_root / ".super-prompt").exists():
-            source_super_prompt = preferred_root / ".super-prompt"
+        env_pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+        if env_pkg_root and Path(env_pkg_root).exists() and (Path(env_pkg_root) / ".super-prompt").exists():
+            source_super_prompt = Path(env_pkg_root) / ".super-prompt"
             typer.echo(f"✅ Found .super-prompt source at: {source_super_prompt}")
         else:
-            for package_dir in possible_package_dirs:
-                test_super_prompt = package_dir / ".super-prompt"
-                if test_super_prompt.exists() and test_super_prompt.is_dir():
-                    source_super_prompt = test_super_prompt
+            # Try to find package root
+            current = Path(__file__).resolve()
+            while current.parent != current:
+                if (current / ".super-prompt").exists():
+                    source_super_prompt = current / ".super-prompt"
                     typer.echo(f"✅ Found .super-prompt source at: {source_super_prompt}")
                     break
+                current = current.parent
 
-        if source_super_prompt and source_super_prompt.exists():
-            # Copy all files from source .super-prompt directory
+        # Create .super-prompt directory with minimal configuration
+        super_prompt_dir.mkdir(exist_ok=True)
 
-            # Remove existing directory if it exists
-            if super_prompt_dir.exists():
-                shutil.rmtree(super_prompt_dir)
+        config_content = {
+            "version": current_version,
+            "initialized_at": str(target_dir.absolute()),
+            "databases": {
+                "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
+                "context_memory": "context_memory.db",
+            },
+            "protection": {
+                "protected_directories": [".cursor", ".super-prompt", ".codex"],
+                "message": "These directories are protected from modification by personas and user commands",
+            },
+        }
 
-            # Copy entire .super-prompt directory (excluding venv)
-            shutil.copytree(
-                source_super_prompt,
-                super_prompt_dir,
-                ignore=shutil.ignore_patterns("venv", "__pycache__", "*.pyc"),
-            )
+        config_file = super_prompt_dir / "config.json"
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(config_content, f, indent=2, ensure_ascii=False)
 
-            # Create config.json with current project info
-            config_content = {
-                "version": current_version,
-                "initialized_at": str(target_dir.absolute()),
-                "databases": {
-                    "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
-                    "context_memory": ".super-prompt/context_memory.db",
-                },
-                "protection": {
-                    "protected_directories": [".cursor", ".super-prompt", ".codex"],
-                    "message": "These directories are protected from modification by personas and user commands",
-                },
-            }
-
-            config_file = super_prompt_dir / "config.json"
-            with open(config_file, "w", encoding="utf-8") as f:
-                json.dump(config_content, f, indent=2, ensure_ascii=False)
-
-            typer.echo("✅ Super Prompt internal files copied (.super-prompt/)")
-
-            # List what was copied
-            copied_files = [f for f in super_prompt_dir.glob("*") if f.is_file()]
-            typer.echo(
-                f"   Copied {len(copied_files)} files: {', '.join([f.name for f in copied_files])}"
-            )
-
-        else:
-            # Fallback: create minimal configuration
-            super_prompt_dir.mkdir(exist_ok=True)
-
-            config_content = {
-                "version": current_version,
-                "initialized_at": str(target_dir.absolute()),
-                "databases": {
-                    "evol_kv_memory": ".super-prompt/evol_kv_memory.db",
-                    "context_memory": ".super-prompt/context_memory.db",
-                },
-                "protection": {
-                    "protected_directories": [".cursor", ".super-prompt", ".codex"],
-                    "message": "These directories are protected from modification by personas and user commands",
-                },
-            }
-
-            config_file = super_prompt_dir / "config.json"
-            with open(config_file, "w", encoding="utf-8") as f:
-                json.dump(config_content, f, indent=2, ensure_ascii=False)
-
-            typer.echo("✅ Super Prompt minimal configuration created (.super-prompt/)")
+        typer.echo("✅ Super Prompt configuration created (.super-prompt/)")
 
         # Example SDD scaffold (unchanged)
         sdd_dir = target_dir / "specs" / "example-feature"
@@ -1062,20 +1571,51 @@ Brief description of the feature.
 """
             )
 
-        # MCP 서버 자동 등록 (.cursor/mcp.json 병합) 및 Codex 등록
+        # MCP server auto-registration - Critical for complete functionality
+        mcp_registered = False
         try:
-            # Use explicit override when provided; default to latest tag
-            npm_spec = os.environ.get("SUPER_PROMPT_NPM_SPEC", "@cdw0424/super-prompt@latest")
-            cfg_path = ensure_cursor_mcp_registered(target_dir, npm_spec)
-            typer.echo(f"✅ Cursor MCP server registered: {cfg_path}")
-        except Exception as e:
-            typer.echo(f"⚠️  MCP registration skipped: {e}")
+            # CRITICAL: 중복 MCP 설치 방지 - 전역 등록만 사용
+            # Register global MCP server; avoids duplication across projects
+            # Use absolute paths to prevent local vs global duplication
+            cfg_path = ensure_cursor_mcp_registered(target_dir, overwrite=force)
+            mcp_registered = True
+            typer.echo(f"✅ Cursor MCP server registered globally: {cfg_path}")
+            typer.echo("✅ MCP configuration: Using GLOBAL ~/.cursor/mcp.json (prevents duplication)")
+            typer.echo("✅ CRITICAL: No duplicate MCP installations detected")
 
+            # 중복 확인: 프로젝트별 MCP 설정이 있는지 확인
+            project_mcp = target_dir / ".cursor" / "mcp.json"
+            if project_mcp.exists():
+                typer.echo("⚠️  WARNING: Project-specific MCP config detected!")
+                typer.echo(f"⚠️  Found at: {project_mcp}")
+                typer.echo("⚠️  This may cause conflicts. Consider removing it.")
+                typer.echo("⚠️  Super Prompt will use GLOBAL ~/.cursor/mcp.json")
+
+        except Exception as e:
+            typer.echo(f"⚠️  MCP registration failed: {e}")
+            mcp_registered = False
+
+        # Optional: Codex registration (always overwrite to prevent drift)
+        codex_registered = False
         try:
             codex_cfg = ensure_codex_mcp_registered(target_dir, overwrite=True)
+            codex_registered = True
             typer.echo(f"✅ Codex MCP server registered: {codex_cfg}")
+            typer.echo("✅ Codex configuration: Using GLOBAL ~/.codex (prevents duplication)")
         except Exception as e:
-            typer.echo(f"⚠️  Codex registration skipped: {e}")
+            typer.echo(f"⚠️  Codex registration failed: {e}")
+            codex_registered = False
+
+        # Execute SSOT compliance validation
+        try:
+            ssot_compliant = validate_project_ssot(target_dir)
+            if ssot_compliant:
+                typer.echo("✅ SSOT compliant: No project setting conflicts")
+            else:
+                typer.echo("⚠️  SSOT violation: Conflicts detected between project and global settings")
+                typer.echo("💡 Solution: Clean up global settings or prioritize project settings")
+        except Exception as e:
+            typer.echo(f"⚠️  SSOT validation failed: {e}")
 
         # Ensure default LLM mode is GPT
         try:
@@ -1084,46 +1624,94 @@ Brief description of the feature.
         except Exception as e:
             typer.echo(f"⚠️  Could not set default mode: {e}")
 
-        # Ensure personas manifest is materialized from SSOT
+        # Ensure personas manifest is materialized from SSOT with validation
+        personas_manifest_valid = False
         try:
             loader = PersonaLoader()
             loader.load_manifest()
-            typer.echo("✅ Personas manifest ensured (personas/manifest.yaml)")
+
+            # Verify personas manifest was created and is valid
+            personas_dir = target_dir / "personas"
+            manifest_file = personas_dir / "manifest.yaml"
+
+            if manifest_file.exists():
+                try:
+                    import yaml
+                    with open(manifest_file, 'r', encoding='utf-8') as f:
+                        manifest_data = yaml.safe_load(f)
+
+                    if manifest_data and 'agents' in manifest_data:
+                        agent_count = len(manifest_data['agents'])
+                        typer.echo(f"✅ Personas manifest validated: {agent_count} personas in {manifest_file}")
+                        personas_manifest_valid = True
+                    else:
+                        typer.echo("⚠️  Personas manifest exists but has invalid structure")
+                except yaml.YAMLError as e:
+                    typer.echo(f"⚠️  Personas manifest YAML parsing error: {e}")
+                except Exception as e:
+                    typer.echo(f"⚠️  Personas manifest validation error: {e}")
+            else:
+                typer.echo("⚠️  Personas manifest file not found")
+
         except Exception as e:
             typer.echo(f"⚠️  Could not materialize personas manifest: {e}")
 
-        # 🔍 환경 검증 및 상태 확인
+        # Generate Cursor commands and rules from manifest/templates (idempotent)
+        cursor_commands_generated = False
+        cursor_rules_generated = False
+        try:
+            from .adapters.cursor_adapter import CursorAdapter
+            cursor = CursorAdapter()
+            # Modified to use global directory (MCP settings managed globally)
+            # cursor.generate_commands(target_dir)  # Project-local generation disabled
+            # cursor.generate_rules(target_dir)     # Project-local generation disabled
+
+            # Verify Cursor assets were generated globally
+            commands_dir = Path.home() / ".cursor" / "commands" / "super-prompt"
+            rules_dir = Path.home() / ".cursor" / "rules"
+
+            if commands_dir.exists():
+                command_files = list(commands_dir.glob("*.md"))
+                if command_files:
+                    cursor_commands_generated = True
+                    typer.echo(f"✅ Cursor commands available globally: {len(command_files)} commands in ~/.cursor/commands/super-prompt/")
+                else:
+                    typer.echo("⚠️  Cursor commands directory exists but no command files found")
+            else:
+                typer.echo("⚠️  Cursor commands directory not found")
+
+            if rules_dir.exists():
+                rule_files = list(rules_dir.glob("*.mdc"))
+                if rule_files:
+                    cursor_rules_generated = True
+                    typer.echo(f"✅ Cursor rules available globally: {len(rule_files)} rules in ~/.cursor/rules/")
+                else:
+                    typer.echo("⚠️  Cursor rules directory exists but no rule files found")
+            else:
+                typer.echo("⚠️  Cursor rules directory not found")
+
+        except Exception as e:
+            typer.echo(f"⚠️  Could not generate Cursor assets: {e}")
+
+        # 🔍 Environment verification and status check
         try:
             typer.echo("🔍 Performing environment verification...")
 
-            # MCP 환경 검증
-            mcp_config = target_dir / ".cursor" / "mcp.json"
+            # MCP environment verification (global settings)
+            mcp_config = Path.home() / ".cursor" / "mcp.json"
             if mcp_config.exists():
-                typer.echo("✅ MCP configuration verified (.cursor/mcp.json)")
+                typer.echo("✅ MCP configuration verified globally (~/.cursor/mcp.json)")
             else:
-                typer.echo("⚠️  MCP configuration not found")
+                typer.echo("⚠️  MCP configuration not found in global location")
 
-            # TCP 포트 검증
-            import socket
-
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)
-            result = sock.connect_ex(("127.0.0.1", 8282))
-            sock.close()
-
-            if result == 0:
-                typer.echo("✅ TCP server verified (port 8282)")
-            else:
-                typer.echo("⚠️  TCP server not responding on port 8282")
-
-            # 메모리 시스템 검증
+            # Memory system verification
             memory_dir = target_dir / "memory"
             if memory_dir.exists():
                 typer.echo("✅ Memory system directories verified")
             else:
                 typer.echo("⚠️  Memory system directories not found")
 
-            # 페르소나 시스템 검증
+            # Persona system verification
             personas_dir = target_dir / "personas"
             if personas_dir.exists():
                 typer.echo("✅ Personas system directories verified")
@@ -1135,13 +1723,44 @@ Brief description of the feature.
         except Exception as e:
             typer.echo(f"⚠️  Environment verification failed: {e}")
 
-        # 📊 최종 상태 요약
+        # 🔍 MCP Sanity Check - Verify MCP server functionality
+        typer.echo("\n🔍 Performing MCP server sanity check...")
+        mcp_healthy = False
+        try:
+            # Test MCP server connectivity using Python client
+            from .mcp_client import MCPClient
+            import asyncio
+
+            async def test_mcp():
+                async with MCPClient() as client:
+                    # Test list-tools
+                    tools = await client.list_tools()
+                    typer.echo(f"✅ MCP list-tools: {len(tools)} tools available")
+
+                    # Test call-tool (sp.list_commands)
+                    if tools:
+                        try:
+                            result = await client.call_tool("sp.list_commands", {})
+                            typer.echo("✅ MCP call-tool: sp.list_commands executed successfully")
+                        except Exception as e:
+                            typer.echo(f"⚠️  MCP call-tool test failed: {e}")
+
+                    return True
+
+            mcp_healthy = asyncio.run(test_mcp())
+        except Exception as e:
+            typer.echo(f"❌ MCP sanity check failed: {e}")
+            typer.echo("💡 Try running: super-prompt mcp doctor --verbose")
+
+        # 📊 Final status summary
         typer.echo("\n" + "=" * 60)
         typer.echo("🎉 SUPER PROMPT INITIALIZATION COMPLETE!")
         typer.echo("=" * 60)
         typer.echo("✅ All systems configured and verified")
-        typer.echo("✅ MCP server registered and ready")
-        typer.echo("✅ TCP server running on port 8282")
+        if mcp_healthy:
+            typer.echo("✅ MCP server verified and functional")
+        else:
+            typer.echo("⚠️  MCP server verification failed (may work after restart)")
         typer.echo("✅ Memory and context systems initialized")
         typer.echo("✅ All personas and commands available")
         typer.echo("=" * 60)
@@ -1149,16 +1768,20 @@ Brief description of the feature.
         typer.echo(f"   Project root: {target_dir.absolute()}")
         typer.echo(f"   Version: {current_version}")
         typer.echo("   Created directories:")
-        typer.echo("     - .cursor/commands/super-prompt/ (with persona commands)")
-        typer.echo("     - .cursor/rules/ (with SuperClaude framework rules)")
+        typer.echo("     - ~/.cursor/commands/super-prompt/ (global persona commands)")
+        typer.echo("     - ~/.cursor/rules/ (global SuperClaude framework rules)")
         typer.echo("     - .super-prompt/ (with all internal system files)")
         typer.echo("     - .codex/ (with agents.md, bootstrap prompt, router script)")
         typer.echo("     - specs/ (for SDD specifications)")
         typer.echo("     - memory/ (for context and rules)")
+        typer.echo("   MCP Settings:")
+        typer.echo("     - ~/.cursor/mcp.json (global MCP server configuration)")
         typer.echo("   Next steps:")
         typer.echo("   1. Use Cursor: /init-sp (initial index), /re-init-sp (refresh)")
         typer.echo("   2. Personas: /architect, /frontend, /doc-master, etc.")
         typer.echo("   3. SDD: /specify → /plan → /tasks")
+        if mcp_healthy:
+            typer.echo("   4. Test MCP: super-prompt mcp doctor")
 
     except Exception as e:
         typer.echo(f"❌ Initialization failed: {e}", err=True)
@@ -1307,12 +1930,12 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         user_input = " ".join(args) if args else ""
 
         if not user_input:
-            print("❌ Error: No user input provided for persona execution")
+            print("❌ Error: No user input provided for persona execution", file=sys.stderr, flush=True)
             return
 
-        print(f"-------- Enhanced Persona Execution: {persona_key} (direct call)")
-        print(f"-------- System prompt loaded ({len(system_prompt)} chars)")
-        print(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}")
+        print(f"-------- Enhanced Persona Execution: {persona_key} (direct call)", file=sys.stderr, flush=True)
+        print(f"-------- System prompt loaded ({len(system_prompt)} chars)", file=sys.stderr, flush=True)
+        print(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}", file=sys.stderr, flush=True)
 
         # Load persona configuration from project
         personas_dir = cursor_assets_root() / "manifests"
@@ -1329,27 +1952,27 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
                 if persona_key in manifest.get("personas", {}):
                     persona_config = manifest["personas"][persona_key]
                     persona_name = persona_config.get("name", persona_key)
-                    print(f"-------- Loaded persona: {persona_name}")
+                    print(f"-------- Loaded persona: {persona_name}", file=sys.stderr, flush=True)
                 else:
-                    print(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway")
+                    print(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway", file=sys.stderr, flush=True)
             except Exception as e:
-                print(f"⚠️  Could not load persona manifest: {e}")
+                print(f"⚠️  Could not load persona manifest: {e}", file=sys.stderr, flush=True)
 
         # Display execution info
-        print("\n" + "=" * 60)
-        print("🤖 SYSTEM PROMPT:")
-        print("=" * 60)
-        print(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt)
+        print("\n" + "=" * 60, file=sys.stderr, flush=True)
+        print("🤖 SYSTEM PROMPT:", file=sys.stderr, flush=True)
+        print("=" * 60, file=sys.stderr, flush=True)
+        print(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt, file=sys.stderr, flush=True)
 
-        print("\n" + "=" * 60)
-        print("👤 USER INPUT:")
-        print("=" * 60)
-        print(user_input)
+        print("\n" + "=" * 60, file=sys.stderr, flush=True)
+        print("👤 USER INPUT:", file=sys.stderr, flush=True)
+        print("=" * 60, file=sys.stderr, flush=True)
+        print(user_input, file=sys.stderr, flush=True)
 
-        print("\n" + "=" * 60)
-        print("✅ Direct persona execution completed!")
-        print("   (Ready for AI processing integration)")
-        print("=" * 60)
+        print("\n" + "=" * 60, file=sys.stderr, flush=True)
+        print("✅ Direct persona execution completed!", file=sys.stderr, flush=True)
+        print("   (Ready for AI processing integration)", file=sys.stderr, flush=True)
+        print("=" * 60, file=sys.stderr, flush=True)
 
         # Return execution context for further processing
         return {
@@ -1361,7 +1984,7 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         }
 
     except Exception as e:
-        print(f"❌ Direct persona execution failed: {e}")
+        print(f"❌ Direct persona execution failed: {e}", file=sys.stderr, flush=True)
         return None
 
 

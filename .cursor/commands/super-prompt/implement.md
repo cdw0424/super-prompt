@@ -2,7 +2,7 @@
 description: implement command
 run: mcp
 server: super-prompt
-tool: sp.implement
+tool: sp_implement
 args:
   query: "${input}"
 ---

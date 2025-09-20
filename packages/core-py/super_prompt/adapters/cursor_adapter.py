@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional, Tuple
 import os
 import yaml
 from ..paths import cursor_assets_root
+from ..mcp_app import _normalize_query
 
 
 class CursorAdapter:
@@ -31,6 +32,7 @@ class CursorAdapter:
             "gpt-mode-off",
             "grok-mode-on",
             "grok-mode-off",
+            "confession-high",  # Requires multiple parameters
         }
 
     def _resolve_tool_name(self, persona_key: str) -> str:

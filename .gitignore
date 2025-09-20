@@ -21,6 +21,7 @@ __pycache__/
 *.db-shm
 *.db-wal
 *.db-journal
+context_memory.db
 
 # Avoid local npm cache churn being tracked by Git
 .npm-cache/

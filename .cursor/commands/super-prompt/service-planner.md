@@ -2,9 +2,8 @@
 description: service-planner command
 run: mcp
 server: super-prompt
-tool: sp.pipeline
+tool: sp_service_planner
 args:
-  tool: "service-planner"
   query: "${input}"
 ---
 

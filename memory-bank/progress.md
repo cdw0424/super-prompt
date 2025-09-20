@@ -114,6 +114,13 @@
 
 - [x] Import/module loading issues in analyzer processor
 - [x] Subprocess execution model successfully implemented
+- [x] **MCP Context Manager Error**: RESOLVED - Fixed circular self-assignment in memory_span functions
+  - Root cause: 'memory_span = memory_span' circular references causing context manager protocol errors
+  - Solution: Removed unnecessary self-assignments in both utils/span_manager.py and core/memory_manager.py
+  - Impact: All MCP tools (sp_high, sp_grok, etc.) now work correctly with context managers
+  - ✅ Test: Verified with Korean query "우주의 기원에 대해 알려줘" - working correctly
+  - ✅ Test: Verified with English query "What is the origin of the universe?" - working correctly
+  - ✅ Test: All context manager functionality verified through comprehensive testing
 
 ### Current
 

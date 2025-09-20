@@ -2,7 +2,7 @@
 description: gpt-mode-on command
 run: mcp
 server: super-prompt
-tool: sp.gpt_mode_on
+tool: gpt_mode_on
 ---
 
 💻 GPT Mode On
