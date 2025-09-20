@@ -10,12 +10,12 @@ args:
 
 # **specify - Super Prompt MCP Tool**
 
-**Expert Focus**: Specialized analysis and guidance for specify
+**Expert Focus**: Specialized analysis and guidance
 
 ## Usage
 /super-prompt/specify "your query here"
 
 ## Features
-- MCP-based execution for reliability
+- MCP-based execution
 - Mode-aware optimization (GPT/Grok)
-- Specialized specify analysis
+- Comprehensive analysis results

@@ -10,12 +10,12 @@ args:
 
 # **plan - Super Prompt MCP Tool**
 
-**Expert Focus**: Specialized analysis and guidance for plan
+**Expert Focus**: Specialized analysis and guidance
 
 ## Usage
 /super-prompt/plan "your query here"
 
 ## Features
-- MCP-based execution for reliability
+- MCP-based execution
 - Mode-aware optimization (GPT/Grok)
-- Specialized plan analysis
+- Comprehensive analysis results

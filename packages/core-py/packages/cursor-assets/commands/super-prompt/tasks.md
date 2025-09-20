@@ -10,12 +10,12 @@ args:
 
 # **tasks - Super Prompt MCP Tool**
 
-**Expert Focus**: Specialized analysis and guidance for tasks
+**Expert Focus**: Specialized analysis and guidance
 
 ## Usage
 /super-prompt/tasks "your query here"
 
 ## Features
-- MCP-based execution for reliability
+- MCP-based execution
 - Mode-aware optimization (GPT/Grok)
-- Specialized tasks analysis
+- Comprehensive analysis results
