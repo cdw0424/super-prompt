@@ -730,6 +730,37 @@ def sp_devops(query: str, persona: str = "devops"):
         return f"Devops analysis error: {str(e)}"
 
 
+# SDD (Spec-Driven Development) Workflow Tools
+@mcp.tool()
+def sp_specify(query: str, persona: str = "specify"):
+    """SDD Phase 1: Requirements specification and gathering"""
+    try:
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        return run_prompt_based_workflow("specify", query)
+    except Exception as e:
+        return f"SDD Specify error: {str(e)}"
+
+
+@mcp.tool()
+def sp_plan(query: str, persona: str = "plan"):
+    """SDD Phase 2: Implementation planning and technical roadmap"""
+    try:
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        return run_prompt_based_workflow("plan", query)
+    except Exception as e:
+        return f"SDD Plan error: {str(e)}"
+
+
+@mcp.tool()
+def sp_tasks(query: str, persona: str = "tasks"):
+    """SDD Phase 3: Task breakdown and project execution planning"""
+    try:
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        return run_prompt_based_workflow("tasks", query)
+    except Exception as e:
+        return f"SDD Tasks error: {str(e)}"
+
+
 @mcp.tool()
 def sp_high(query: str, persona: str = "high") -> str:
     """Execute high-level reasoning and strategic problem solving using codex CLI"""
