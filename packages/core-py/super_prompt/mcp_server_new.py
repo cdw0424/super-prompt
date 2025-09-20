@@ -805,3 +805,13 @@ def sp_high(query: str, persona: str = "high") -> str:
         return "Codex CLI not found. Please ensure codex is installed and in PATH"
     except Exception as e:
         return f"High analysis error: {str(e)}"
+
+
+@mcp.tool()
+def sp_troubleshooting(query: str, persona: str = "troubleshooting"):
+    """Troubleshooting: Systematic problem diagnosis, root cause analysis, and resolution strategies"""
+    try:
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        return run_prompt_based_workflow("troubleshooting", query)
+    except Exception as e:
+        return f"Troubleshooting error: {str(e)}"

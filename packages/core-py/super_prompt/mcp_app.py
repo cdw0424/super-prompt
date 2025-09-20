@@ -174,11 +174,11 @@ def create_app():
         """Service planning: Service design, customer journey, and implementation strategy"""
         return run_prompt_based_workflow("service_planner", query)
 
-    # Translation
-    @app.tool(name="sp_tr")
-    def tr(query: str) -> str:
-        """Translation: Cultural adaptation, technical accuracy, and localization"""
-        return run_prompt_based_workflow("tr", query)
+    # Troubleshooting
+    @app.tool(name="sp_troubleshooting")
+    def troubleshooting(query: str) -> str:
+        """Troubleshooting: Systematic problem diagnosis, root cause analysis, and resolution strategies"""
+        return run_prompt_based_workflow("troubleshooting", query)
 
     # Documentation refactoring
     @app.tool(name="sp_docs_refector")
@@ -277,7 +277,7 @@ def create_app():
             "sp_ultracompressed - Maximum insight with minimum words",
             "sp_wave - Trend analysis and market forecasting",
             "sp_service_planner - Service design and customer experience",
-            "sp_tr - Translation and localization",
+            "sp_troubleshooting - Systematic problem diagnosis and resolution",
             "sp_docs_refector - Documentation organization and maintenance",
             "sp_gpt_mode_on - Enable GPT mode for structured analysis",
             "sp_grok_mode_on - Enable Grok mode for creative analysis",
