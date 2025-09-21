@@ -1,4 +1,4 @@
-# Super Prompt v5.0.5
+# Super Prompt v5.1.0
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -141,13 +141,15 @@ Super Prompt automatically detects your project's context and applies the most a
 | **API Design** | GPT-5 Low Fast | Max |
 | **Refactoring** | Grok Code Fast | Max |
 
-## What’s new in 5.0.5
+## What’s new in 5.1.0
 
-- **FastMCP aware stdio launcher** – `bin/sp-mcp` now defers to the official FastMCP runtime when the `mcp` package is available and falls back to an async JSON-RPC loop when it is not.
-- **Accurate tool names** – every `@mcp.tool` registration specifies the canonical SSOT name (for example `sp_init`, `sp_list_commands`), fixing the "no tools" symptom in Cursor.
-- **Synchronized versioning** – Node package, Python core, and runtime banners now report `5.0.5`, avoiding metadata drift.
-- **Documentation refresh** – README and CHANGELOG are fully updated in English with current setup and troubleshooting guidance.
-- **Python dependency alignment** – the Python core declares `mcp>=0.4.0`, ensuring FastMCP support is available immediately after installation.
+- **Enhanced MCP server architecture** – Improved modularity with stateless stdio entry points and better component separation.
+- **Persona pipeline modernization** – Replaced legacy pipeline helpers with modern prompt-based workflows for all personas.
+- **SDD architecture integration** – Added comprehensive Spec Kit lifecycle guidance with new architecture knowledge base.
+- **Full Spec Kit persona coverage** – Restored MCP coverage for all Spec Kit personas using shared workflow executor.
+- **Troubleshooting persona enhancement** – Updated prompts, overlays, and command metadata for better debugging capabilities.
+- **Asset validation improvements** – Enhanced project bootstrap processes and configuration validation.
+- **Documentation standardization** – Complete README and CHANGELOG refresh in English with current guidance.
 
 ## Overview
 
@@ -340,6 +342,6 @@ These workflows ensure **consistent quality**, **comprehensive problem-solving**
 
 1. `npm install` – refreshes `package-lock.json`.
 2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local testing).
-3. `npm publish` – publishes `@cdw0424/super-prompt@5.0.5` with synchronized Python assets.
+3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.0` with synchronized Python assets.
 
 Super Prompt is MIT licensed. Contributions and issues are welcome at [https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).

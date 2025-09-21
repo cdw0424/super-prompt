@@ -1,5 +1,18 @@
 # Changelog
 
+## v5.1.0 — 2025-09-21
+
+- Enhanced MCP server architecture with improved modularity and stateless stdio entry points
+- Updated persona pipeline system with prompt-based workflows replacing legacy pipeline helpers
+- Refactored MCP server into modular components for better maintainability
+- Added new SDD architecture module with comprehensive Spec Kit lifecycle guidance
+- Improved asset validation and project bootstrap processes
+- Restored full MCP coverage for all Spec Kit personas with shared workflow executor
+- Enhanced troubleshooting persona with updated prompts and command metadata
+- Synchronized versioning across Node package, Python core, and runtime banners
+- Updated documentation and README with current setup guidance in English
+- Cleaned up deprecated GitHub workflow files and redundant manifest configurations
+
 ## v5.0.5 — 2025-09-21
 
 - Detect FastMCP automatically and fall back to a lightweight stdio loop when the runtime is unavailable, ensuring MCP tools always register.
