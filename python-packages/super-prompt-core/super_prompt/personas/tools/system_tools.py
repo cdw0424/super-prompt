@@ -300,11 +300,8 @@ def sp_version() -> str:
     """Get the current version of Super Prompt"""
     try:
         with memory_span("sp.version") as span_id:
-            try:
-                ver = _pkg_version("super-prompt")
-            except Exception:
-                ver = "unknown"
-            result = f"Super Prompt v{ver}"
+            # Use the bundled package version
+            result = f"Super Prompt v{_PACKAGE_VERSION}"
             return result
     except Exception as e:
         progress.show_error(f"Version check failed: {str(e)}")

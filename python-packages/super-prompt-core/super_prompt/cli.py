@@ -9,7 +9,7 @@ different packaging targets.
 try:
     import typer
 except ModuleNotFoundError:
-    # Fallback for system Python (venv functionality removed)
+    # Fallback for system Python
     import importlib
     importlib.invalidate_caches()
     import typer
@@ -20,12 +20,22 @@ import subprocess
 import json
 from pathlib import Path
 
-# MCP-only enforcement: Direct execution disabled unless explicitly disabled in environment
-# For testing purposes, allow direct execution when SUPER_PROMPT_ALLOW_DIRECT is set
-# CLI mode에서는 MCP 전용 모드를 완전히 비활성화하여 편리한 사용성을 제공
-if (os.environ.get("SUPER_PROMPT_REQUIRE_MCP", "1") == "1" and
-    os.environ.get("SUPER_PROMPT_ALLOW_DIRECT") != "true" and
-    os.environ.get("SUPER_PROMPT_CLI_MODE") != "1"):
+# MCP-only enforcement (safe defaults, zero-config CLI)
+# Default behavior: allow direct CLI unless explicitly forced to MCP-only via env
+_argv = list(sys.argv)
+_first = _argv[1] if len(_argv) > 1 else ""
+_cli_like_commands = {"init", "super:init", "refresh", "super:refresh", "--version", "-v", "version"}
+_is_cli_command = _first in _cli_like_commands
+
+# Treat CLI-like invocations as CLI mode automatically
+if _is_cli_command:
+    os.environ["SUPER_PROMPT_CLI_MODE"] = "1"
+
+cli_mode = os.environ.get("SUPER_PROMPT_CLI_MODE") == "1"
+require_mcp = os.environ.get("SUPER_PROMPT_REQUIRE_MCP", "0") == "1"  # default off
+allow_direct = os.environ.get("SUPER_PROMPT_ALLOW_DIRECT") == "true"
+
+if not cli_mode and require_mcp and not allow_direct:
     sys.stderr.write("Direct CLI is disabled. Use MCP only.\n")
     sys.stderr.write("To enable direct CLI: SUPER_PROMPT_ALLOW_DIRECT=true\n")
     raise SystemExit(97)
@@ -296,7 +306,7 @@ def setup_priority(
         else:
             typer.echo("❌ Project SSOT priority setup failed")
             typer.echo("💡 Solutions:")
-            typer.echo("   1. Check project .cursor/mcp.json or .codex/config.toml files")
+            typer.echo("   1. Check global ~/.cursor/mcp.json or ~/.codex/config.toml files")
             typer.echo("   2. super-prompt setup validate  # Validate settings")
             typer.echo("   3. super-prompt setup guidance  # Detailed guidelines")
 
@@ -1339,8 +1349,8 @@ def init(
         target_dir = Path(project_root).resolve() if project_root else Path.cwd().resolve()
         os.environ["SUPER_PROMPT_PROJECT_ROOT"] = str(target_dir)
 
-        # Python dependencies are managed via system Python (venv functionality removed)
-        typer.echo("ℹ️  Using system Python for dependencies (venv functionality removed)")
+        # Python dependencies are managed via system Python
+        typer.echo("ℹ️  Using system Python for dependencies")
 
         # --- Legacy cleanup (idempotent) ---
         legacy_paths = [
@@ -1523,76 +1533,75 @@ Brief description of the feature.
                 sys.stderr.write("DEBUG: About to copy Python packages\n")
                 sys.stderr.flush()
 
-            # Python 패키지 파일들 복사 (npm 패키지에서 직접 복사)
+            # Python 패키지 파일 복사 (npm에 번들된 super_prompt-core → .super-prompt/lib)
             try:
                 import shutil
-                import sys
-                import os
 
-                # 직접 stderr로 디버깅 메시지 출력 (CLI 모드에서는 비활성화)
-                if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                    sys.stderr.write("DEBUG: Starting Python package copy\n")
-                    sys.stderr.flush()
-
-                    # 디버깅: 현재 실행 중인 파일 위치 확인
-                    current_file = Path(__file__)
-                    sys.stderr.write(f"DEBUG: current_file: {current_file}\n")
-                    sys.stderr.flush()
-
-                    # 가장 간단한 방법: 현재 스크립트의 위치에서 super_prompt 찾기
-                    script_dir = current_file.parent
-                    sys.stderr.write(f"DEBUG: script_dir: {script_dir}\n")
-                    sys.stderr.flush()
-
-                    # super_prompt 폴더 찾기
-                    npm_package_path = script_dir / "super_prompt"
-                    sys.stderr.write(f"DEBUG: Looking for super_prompt at: {npm_package_path}\n")
-                    sys.stderr.flush()
-
-                    if npm_package_path.exists():
-                        sys.stderr.write(f"DEBUG: Found super_prompt at: {npm_package_path}\n")
-                        sys.stderr.flush()
-
-                    # .super-prompt/lib/ 폴더 생성 (먼저 생성해야 함)
-                    super_prompt_dir = target_dir / ".super-prompt"
-                    super_prompt_dir.mkdir(parents=True, exist_ok=True)
-                    lib_dir = super_prompt_dir / "lib"
-                    lib_dir.mkdir(parents=True, exist_ok=True)
-
-                    # super_prompt 폴더 복사
-                    dest_super_prompt = lib_dir / "super_prompt"
-                    if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                        sys.stderr.write(f"DEBUG: Copying to: {dest_super_prompt}\n")
-                        sys.stderr.flush()
-
-                    if dest_super_prompt.exists():
-                        shutil.rmtree(dest_super_prompt)
-                    shutil.copytree(npm_package_path, dest_super_prompt)
-
-                    # .pth 파일 생성
-                    pth_file = lib_dir / "super_prompt.pth"
-                    pth_file.write_text("")
-
-                    # 복사된 파일들 확인
-                    py_files = list(dest_super_prompt.rglob("*.py"))
-                    if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                        sys.stderr.write(f"DEBUG: Successfully copied {len(py_files)} Python files\n")
-                        sys.stderr.flush()
-
-                        if py_files:
-                            sys.stderr.write(f"DEBUG: First few files: {py_files[:3]}\n")
-                            sys.stderr.flush()
+                current_file = Path(__file__)
+                # Python 패키지 루트 찾기: python-packages/super-prompt-core
+                package_root = None
+                # 1. 환경 변수에서 찾기
+                env_pkg_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
+                if env_pkg_root and Path(env_pkg_root).exists():
+                    package_root = Path(env_pkg_root)
                 else:
-                    if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                        sys.stderr.write(f"DEBUG: super_prompt not found at {npm_package_path}\n")
-                        sys.stderr.flush()
+                    # 2. 파일 위치에서 찾기 (상대 경로)
+                    p = current_file.parent  # super_prompt/
+                    while p != p.parent:
+                        if (p / "python-packages" / "super-prompt-core").exists():
+                            package_root = p / "python-packages" / "super-prompt-core"
+                            break
+                        p = p.parent
 
-            except Exception as e:
-                # 디버깅을 위해 예외 정보 출력 (CLI 모드에서는 비활성화)
-                import traceback
+                if not package_root or not package_root.exists():
+                    if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
+                        sys.stderr.write(f"DEBUG: Python package root not found at {package_root}\n")
+                        sys.stderr.flush()
+                    raise FileNotFoundError(f"Python package root not found")
+
                 if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                    sys.stderr.write(f"DEBUG: Python package copy failed: {e}\n")
+                    sys.stderr.write(f"DEBUG: Starting Python package copy from {package_root}\n")
                     sys.stderr.flush()
+
+                # 준비: 대상 디렉토리 생성
+                super_prompt_dir = target_dir / ".super-prompt"
+                super_prompt_dir.mkdir(parents=True, exist_ok=True)
+                lib_dir = super_prompt_dir / "lib"
+                lib_dir.mkdir(parents=True, exist_ok=True)
+
+                # 기존 Python 패키지 제거
+                existing_pkg = lib_dir / "super_prompt"
+                if existing_pkg.exists():
+                    shutil.rmtree(existing_pkg)
+
+                # super-prompt-core/super_prompt 폴더만 복사 (Python 패키지)
+                source_package = package_root / "super_prompt"
+                if source_package.exists():
+                    shutil.copytree(source_package, lib_dir / "super_prompt", dirs_exist_ok=True)
+                else:
+                    # 폴백: 전체 복사 후 불필요한 파일 제거
+                    shutil.copytree(package_root, lib_dir / "super_prompt", dirs_exist_ok=True)
+                    # 불필요한 파일들 제거
+                    unnecessary_files = ["pyproject.toml", "README.md", "pytest.ini"]
+                    for file in unnecessary_files:
+                        unnecessary_path = lib_dir / "super_prompt" / file
+                        if unnecessary_path.exists():
+                            if unnecessary_path.is_file():
+                                unnecessary_path.unlink()
+                            else:
+                                shutil.rmtree(unnecessary_path)
+
+                # .pth 파일 (PYTHONPATH 대체용)
+                (lib_dir / "super_prompt.pth").write_text("")
+
+                if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
+                    py_files = list((lib_dir / "super_prompt").rglob("*.py"))
+                    sys.stderr.write(f"DEBUG: Copied Python package to {lib_dir}, found {len(py_files)} python files\n")
+                    sys.stderr.flush()
+            except Exception as e:
+                if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
+                    import traceback
+                    sys.stderr.write(f"DEBUG: Python package copy failed: {e}\n")
                     sys.stderr.write(f"DEBUG: traceback: {traceback.format_exc()}\n")
                     sys.stderr.flush()
 
@@ -1606,7 +1615,11 @@ Brief description of the feature.
 
             if interactive:
                 try:
-                    user_input = typer.prompt("Enter project root path (press Enter to use current directory)", default=str(target_dir))
+                    # 입력 프롬프트 가독성 향상을 위한 공백 추가
+                    typer.echo("")  # 빈 줄 추가
+                    typer.echo("=" * 60)
+                    user_input = typer.prompt("📁 Input your project root path", default=str(target_dir))
+                    typer.echo("=" * 60)
                     if user_input.strip():
                         project_root_input = user_input
                 except Exception:
@@ -1624,18 +1637,24 @@ Brief description of the feature.
             if interactive:
                 try:
                     # MCP 서버 경로 확인
+                    typer.echo("")  # 빈 줄 추가
+                    typer.echo("=" * 60)
                     mcp_input = typer.prompt(
-                        f"Enter MCP server path (press Enter to use {mcp_server_path})",
+                        f"🔧 Input your MCP server path",
                         default=mcp_server_path
                     )
+                    typer.echo("=" * 60)
                     if mcp_input.strip():
                         mcp_server_path = mcp_input
 
                     # Python 패키지 경로 확인
+                    typer.echo("")  # 빈 줄 추가
+                    typer.echo("=" * 60)
                     python_input = typer.prompt(
-                        f"Enter Python package path (press Enter to use {python_package_path})",
+                        f"📦 Input your Python package path",
                         default=python_package_path
                     )
+                    typer.echo("=" * 60)
                     if python_input.strip():
                         python_package_path = python_input
 
@@ -1684,7 +1703,7 @@ Brief description of the feature.
                         "mcpServerPath": mcp_server_path,
                         "pythonPackagePath": python_package_path,
                         "mode": "gpt",
-                        "version": "5.2.32",
+                        "version": "5.2.35",
                         "pythonPath": python_package_path
                     }
                     with open(config_file, 'w') as f:
@@ -1712,94 +1731,8 @@ Brief description of the feature.
                     with open(cache_file, 'w') as f:
                         json.dump(cache_data, f, indent=2)
 
-                # Python 패키지 파일들 복사 (npm 패키지에서 직접 복사)
-                try:
-                    import shutil
-                    import sys
-                    import os
-
-                    # 직접 stderr로 디버깅 메시지 출력 (CLI 모드에서는 비활성화)
-                    if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                        sys.stderr.write("DEBUG: Starting Python package copy\n")
-                        sys.stderr.flush()
-
-                        # 디버깅: 현재 실행 중인 파일 위치 확인
-                        current_file = Path(__file__)
-                        sys.stderr.write(f"DEBUG: current_file: {current_file}\n")
-                        sys.stderr.flush()
-
-                        # 가장 간단한 방법: 현재 스크립트의 위치에서 super_prompt 찾기
-                        script_dir = current_file.parent
-                        sys.stderr.write(f"DEBUG: script_dir: {script_dir}\n")
-                        sys.stderr.flush()
-
-                        # super_prompt 폴더 찾기
-                        npm_package_path = script_dir / "super_prompt"
-                        sys.stderr.write(f"DEBUG: Looking for super_prompt at: {npm_package_path}\n")
-                        sys.stderr.flush()
-
-                        if npm_package_path.exists():
-                            sys.stderr.write(f"DEBUG: Found super_prompt at: {npm_package_path}\n")
-                            sys.stderr.flush()
-
-                            # super_prompt 폴더 복사
-                            dest_super_prompt = lib_dir / "super_prompt"
-                            sys.stderr.write(f"DEBUG: Copying to: {dest_super_prompt}\n")
-                            sys.stderr.flush()
-
-                        if dest_super_prompt.exists():
-                            shutil.rmtree(dest_super_prompt)
-                        shutil.copytree(npm_package_path, dest_super_prompt)
-
-                        # .pth 파일 생성
-                        pth_file = lib_dir / "super_prompt.pth"
-                        pth_file.write_text("")
-
-                        # 복사된 파일들 확인
-                        py_files = list(dest_super_prompt.rglob("*.py"))
-                        if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                            sys.stderr.write(f"DEBUG: Successfully copied {len(py_files)} Python files\n")
-                            sys.stderr.flush()
-
-                            if py_files:
-                                sys.stderr.write(f"DEBUG: First few files: {py_files[:3]}\n")
-                                sys.stderr.flush()
-                    else:
-                        if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                            sys.stderr.write(f"DEBUG: super_prompt not found at {npm_package_path}\n")
-                            sys.stderr.flush()
-
-                        # 대안: 다른 위치에서 찾기
-                        for root_path in [script_dir.parent, script_dir.parent.parent, script_dir.parent.parent.parent]:
-                            alt_path = root_path / "super_prompt"
-                            if alt_path.exists():
-                                if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                                    sys.stderr.write(f"DEBUG: Found super_prompt at alternative path: {alt_path}\n")
-                                    sys.stderr.flush()
-
-                                dest_super_prompt = lib_dir / "super_prompt"
-                                if dest_super_prompt.exists():
-                                    shutil.rmtree(dest_super_prompt)
-                                shutil.copytree(alt_path, dest_super_prompt)
-
-                                pth_file = lib_dir / "super_prompt.pth"
-                                pth_file.write_text("")
-
-                                py_files = list(dest_super_prompt.rglob("*.py"))
-                                if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                                    sys.stderr.write(f"DEBUG: Successfully copied {len(py_files)} Python files from alternative path\n")
-                                    sys.stderr.flush()
-                                break
-
-                except Exception as e:
-                    # 디버깅을 위해 예외 정보 출력 (CLI 모드에서는 비활성화)
-                    import traceback
-                    if os.environ.get("SUPER_PROMPT_CLI_MODE") != "1":
-                        sys.stderr.write(f"DEBUG: Python package copy failed: {e}\n")
-                        sys.stderr.flush()
-                        sys.stderr.write(f"DEBUG: traceback: {traceback.format_exc()}\n")
-                        sys.stderr.flush()
-                    pass  # Python 패키지 복사 실패 시 조용히 처리
+                # (중복 제거) 위에서 이미 복사 수행함
+                pass
 
             except Exception:
                 pass  # 조용히 실패 처리
@@ -1843,33 +1776,8 @@ Brief description of the feature.
             except Exception:
                 pass  # 조용히 실패 처리
 
-            # 5. MCP 설정 생성 (상대 경로 사용) - 가장 중요한 부분
-            # .super-prompt/lib 폴더의 절대경로 계산
-            super_prompt_lib_path = python_package_path  # 사용자가 지정한 Python 패키지 경로 사용
-
-            project_mcp = target_dir / ".cursor" / "mcp.json"
-            project_mcp_cfg = {
-                "mcpServers": {
-                    "super-prompt": {
-                        "type": "stdio",
-                        "command": mcp_server_path,  # 사용자가 지정한 MCP 서버 경로 사용
-                        "args": [],
-                        "env": {
-                            "SUPER_PROMPT_ALLOW_INIT": "true",
-                            "SUPER_PROMPT_REQUIRE_MCP": "1",
-                            "SUPER_PROMPT_PROJECT_ROOT": project_root_input,
-                            "PYTHONUNBUFFERED": "1",
-                            "PYTHONUTF8": "1",
-                            "PYTHONPATH": super_prompt_lib_path,  # 사용자가 지정한 Python 패키지 경로를 PYTHONPATH에 추가
-                        }
-                    }
-                }
-            }
-
-            # 프로젝트별 MCP 설정 파일 생성
-            project_mcp.parent.mkdir(parents=True, exist_ok=True)
-            with open(project_mcp, 'w') as f:
-                json.dump(project_mcp_cfg, f, indent=2)
+            # 5. 전역 MCP 설정 사용 (프로젝트 로컬 MCP 설정 생성하지 않음)
+            # MCP 설정은 전역 ~/.cursor/mcp.json에서만 관리됨 (SSOT 준수)
 
             # 6. 추가 디렉토리들 생성
             try:

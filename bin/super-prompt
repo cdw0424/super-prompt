@@ -23,6 +23,12 @@ resolve_app_home() {
 
 APP_HOME="$(resolve_app_home)"
 
+# Auto-switch to latest npm global binary when a Homebrew/older wrapper is first on PATH
+# This allows zero-config usage: if a newer binary exists at ~/.local/bin, re-exec there.
+if [ -x "/Users/choi-dong-won/.local/bin/super-prompt" ] && [ "$(command -v super-prompt)" != "/Users/choi-dong-won/.local/bin/super-prompt" ]; then
+  exec /Users/choi-dong-won/.local/bin/super-prompt "$@"
+fi
+
 # Find the project root (git root or current directory).
 resolve_project_root() {
   if command -v git &>/dev/null; then
@@ -278,9 +284,12 @@ exec_mcp_tool() {
     export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
     echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
   else
-    export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
-    echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+    export PYTHONPATH="$APP_HOME/python-packages/super-prompt-core:$PYTHONPATH"
+    echo "-------- DEBUG: Using package path $APP_HOME/python-packages/super-prompt-core" >&2
   fi
+
+  # Python 패키지 루트를 환경변수로 전달
+  export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
 
   echo "-------- DEBUG: exec_mcp_tool called with tool=$tool" >&2
   echo "-------- DEBUG: APP_HOME = $APP_HOME" >&2
@@ -347,8 +356,8 @@ case "$CMD" in
       export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
       echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
     else
-      export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
-      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+      export PYTHONPATH="$APP_HOME/python-packages/super-prompt-core:$PYTHONPATH"
+      echo "-------- DEBUG: Using package path $APP_HOME/python-packages/super-prompt-core" >&2
     fi
 
     echo "-------- DEBUG: mcp-serve mode detected" >&2
@@ -382,7 +391,7 @@ case "$CMD" in
       echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
     else
       export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
-      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+      echo "-------- DEBUG: Using package path $APP_HOME/python-packages/super-prompt-core" >&2
     fi
 
     export SUPER_PROMPT_DEBUG="1"  # 디버깅 모드 활성화
@@ -449,8 +458,8 @@ except Exception as e:
       export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
       echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
     else
-      export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
-      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+      export PYTHONPATH="$APP_HOME/python-packages/super-prompt-core:$PYTHONPATH"
+      echo "-------- DEBUG: Using package path $APP_HOME/python-packages/super-prompt-core" >&2
     fi
 
     echo "-------- DEBUG: super:refresh command detected" >&2
@@ -500,8 +509,8 @@ asyncio.run(refresh())
       export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
       echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
     else
-      export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
-      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+      export PYTHONPATH="$APP_HOME/python-packages/super-prompt-core:$PYTHONPATH"
+      echo "-------- DEBUG: Using package path $APP_HOME/python-packages/super-prompt-core" >&2
     fi
 
     echo "-------- DEBUG: version command detected" >&2

@@ -42,7 +42,7 @@ def safe_string(value: Any) -> str:
         return str(value)
 
 
-# Using system Python (venv functionality removed)
+# Using system Python
 
 
 

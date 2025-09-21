@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 function copyLatestWheel() {
-  const src = path.join(__dirname, '..', 'packages', 'core-py', 'dist');
+  const src = path.join(__dirname, '..', 'python-packages', 'super-prompt-core', 'dist');
   const dst = path.join(__dirname, '..', 'dist');
 
   // Clean up existing dist directory first
@@ -13,13 +13,13 @@ function copyLatestWheel() {
   }
 
   if (!fs.existsSync(src)) {
-    console.error('No packages/core-py/dist found; skipping wheel copy');
+    console.error('No python-packages/super-prompt-core/dist found; skipping wheel copy');
     return;
   }
 
   const wheels = fs.readdirSync(src).filter(f => f.endsWith('.whl') && f.startsWith('super_prompt_core-'));
   if (wheels.length === 0) {
-    console.error('No core-py wheel found; skipping wheel copy');
+    console.error('No super-prompt-core wheel found; skipping wheel copy');
     return;
   }
 

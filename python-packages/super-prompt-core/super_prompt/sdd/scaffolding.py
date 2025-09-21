@@ -724,12 +724,9 @@ MANIFEST
 
 # Virtual environments
 .env
-.venv
 env/
-venv/
 ENV/
 env.bak/
-venv.bak/
 
 # IDE
 .vscode/

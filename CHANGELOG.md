@@ -1,7 +1,37 @@
 # Changelog
 
-## v5.2.32 — 2025-09-21
+## v5.2.41 — 2025-09-21
 
+- **Version Update**: Latest version with all improvements and bug fixes
+
+## v5.2.40 — 2025-09-21
+
+- **Python Package Auto-Installation**: npm install 후 super:init 실행 시 Python 패키지가 자동으로 `.super-prompt/lib/`에 복사됨
+- **Enhanced Package Path Resolution**: `SUPER_PROMPT_PACKAGE_ROOT` 환경변수로 Python 패키지 위치 자동 감지
+- **Updated PYTHONPATH**: `python-packages/super-prompt-core` 경로로 Python 패키지 참조
+- **Improved Init Process**: npm 설치만으로 모든 Python 파일이 프로젝트에 자동 세팅됨
+- **Global MCP Only**: MCP 설정을 전역 `~/.cursor/mcp.json`에서만 관리 (프로젝트 로컬 MCP 설정 제거)
+
+## v5.2.39 — 2025-09-21
+
+- **Python Package Auto-Installation**: npm install 후 super:init 실행 시 Python 패키지가 자동으로 `.super-prompt/lib/`에 복사됨
+- **Enhanced Package Path Resolution**: `SUPER_PROMPT_PACKAGE_ROOT` 환경변수로 Python 패키지 위치 자동 감지
+- **Updated PYTHONPATH**: `python-packages/super-prompt-core` 경로로 Python 패키지 참조
+- **Improved Init Process**: npm 설치만으로 모든 Python 파일이 프로젝트에 자동 세팅됨
+- **Global MCP Only**: MCP 설정을 전역 `~/.cursor/mcp.json`에서만 관리 (프로젝트 로컬 MCP 설정 제거)
+
+## v5.2.38 — 2025-09-21
+
+- **Bundled Python Copy Fix**: During init, Python package is now copied from the bundled install location reliably into `.super-prompt/lib/super_prompt/`
+- **Auto CLI Detection**: CLI invocations (init/refresh/version) automatically enable CLI mode even if env vars are absent
+- **Zero-Config Guarantee**: No env vars or PATH editing required; old wrappers are auto-bypassed and CLI mode is enforced
+- **Auto-switch Wrapper**: If a Homebrew/old wrapper is first in PATH, auto re-exec to npm global binary (~/.local/bin/super-prompt)
+- **Fixed Version Display Issue**: Version information now correctly shows the actual package version instead of "unknown"
+- **Removed Venv References**: Completely removed all virtual environment references and messages
+- **Cleaned Up Dependencies Message**: Changed "venv functionality removed" to clean "Using system Python"
+- **Enhanced CLI Prompt Readability**: Added visual separators and clear formatting for user input prompts
+- **Improved Interactive Initialization**: User inputs now have clear visual boundaries with decorative separators
+- **Better Input Prompts**: Added emojis and clear formatting for project root, MCP server, and Python package paths
 - **Enhanced CLI Mode**: All CLI commands now work without requiring SUPER_PROMPT_ALLOW_DIRECT=true
 - **Improved CLI User Experience**: CLI mode automatically disables MCP-only enforcement for better usability
 - **Simplified CLI Usage**: No need to set environment variables for basic CLI operations
