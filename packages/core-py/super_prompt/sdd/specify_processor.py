@@ -334,14 +334,14 @@ class SpecifyProcessor:
         with open(spec_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        print(f"----- Specification created: {spec_path}")
+        # Specification created successfully
         return spec_path
 
 def main():
     """Main CLI entry point"""
     if len(sys.argv) < 2:
-        print("----- Usage: /specify [feature description]")
-        print("----- Example: /specify Create user authentication system")
+        # Usage: /specify [feature description]
+        # Example: /specify Create user authentication system
         sys.exit(1)
 
     user_input = ' '.join(sys.argv[1:])
@@ -350,12 +350,11 @@ def main():
         processor = SpecifyProcessor()
         spec_path = processor.create_spec_file(user_input)
 
-        print("----- Specification created successfully!")
-        print(f"----- Next: Run /plan to create implementation plan")
-        print(f"----- File: {spec_path}")
+        # Specification created successfully
+        # Next: Run /plan to create implementation plan
 
     except Exception as e:
-        print(f"----- Error creating specification: {e}")
+        # Error creating specification
         sys.exit(1)
 
 if __name__ == "__main__":

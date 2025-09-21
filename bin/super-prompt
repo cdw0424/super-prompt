@@ -252,7 +252,9 @@ exec_mcp_tool() {
     local query="$*"
     exec "$PYTHON_BIN" -c "
 import sys
+print('-------- DEBUG: sys.path before:', sys.path[:3])
 sys.path.insert(0, '$APP_HOME/packages/core-py')
+print('-------- DEBUG: sys.path after:', sys.path[:3])
 from super_prompt.mcp_client import MCPClient
 import asyncio
 import json
@@ -267,7 +269,9 @@ asyncio.run(call_tool())
   else
     exec "$PYTHON_BIN" -c "
 import sys
+print('-------- DEBUG: sys.path before:', sys.path[:3])
 sys.path.insert(0, '$APP_HOME/packages/core-py')
+print('-------- DEBUG: sys.path after:', sys.path[:3])
 from super_prompt.mcp_client import MCPClient
 import asyncio
 
@@ -336,7 +340,9 @@ asyncio.run(refresh())
   --version|-v|version)
     exec "$PYTHON_BIN" -c "
 import sys
+print('-------- DEBUG: sys.path before:', sys.path[:3])
 sys.path.insert(0, '$APP_HOME/packages/core-py')
+print('-------- DEBUG: sys.path after:', sys.path[:3])
 from super_prompt.mcp_client import MCPClient
 import asyncio
 

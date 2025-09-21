@@ -9,6 +9,7 @@ import os
 import sys
 import builtins
 from pathlib import Path
+from typing import Optional
 
 # MCP SDK initialization
 from .mcp.version_detection import import_mcp_components, create_fallback_mcp
@@ -54,7 +55,9 @@ if _HAS_MCP and FastMCP:
 
     except Exception as e:
         mcp, _ = create_fallback_mcp()
-else:
+
+# Ensure mcp is always defined for import
+if 'mcp' not in globals() or mcp is None:
     mcp, _ = create_fallback_mcp()
 
 # Import and register tools
@@ -67,6 +70,7 @@ from .personas.tools.system_tools import (
 from .personas import tools as persona_tools
 
 from .tools.registry import REGISTERED_TOOL_ANNOTATIONS
+from .sdd.architecture import render_sdd_brief, list_sdd_sections
 
 # Mode and persona management
 from .mode_store import get_mode, set_mode
@@ -106,6 +110,8 @@ MODE_PERSONA_MAP = {
 
 # Track registered tools to prevent duplicates
 _REGISTERED_TOOLS: set = set()
+# Store tool functions for stdio server access
+_TOOL_REGISTRY: dict = {}
 
 
 def _register_tool_once(tool_name: str):
@@ -113,6 +119,8 @@ def _register_tool_once(tool_name: str):
     def decorator(func):
         if tool_name not in _REGISTERED_TOOLS:
             _REGISTERED_TOOLS.add(tool_name)
+            # Store function in registry for stdio server access
+            _TOOL_REGISTRY[tool_name] = func
             try:
                 return mcp.tool()(func)
             except Exception as e:
@@ -125,6 +133,64 @@ def _register_tool_once(tool_name: str):
             # Return original function without MCP decoration
             return func
     return decorator
+
+
+def _resolve_persona_label(persona_key: str) -> str:
+    """Resolve a human-friendly label for logging."""
+    try:
+        from .personas.pipeline_manager import PIPELINE_CONFIGS
+        config = PIPELINE_CONFIGS.get(persona_key)
+        if config and getattr(config, "label", None):
+            return config.label
+    except Exception:
+        pass
+    text = persona_key.replace('-', ' ').replace('_', ' ').strip()
+    return text.title() if text else "Persona"
+
+
+def _register_persona_tool(tool_name: str, persona_key: str):
+    """Factory to register MCP persona tools with consistent behavior."""
+
+    label = _resolve_persona_label(persona_key)
+
+    @_register_tool_once(tool_name)
+    def _persona_tool(query: str, persona: str = persona_key):
+        try:
+            span_name = f"persona_{persona_key}_{hash(query) % 10000}"
+            with memory_span(span_name) as span_id:
+                progress.show_progress(f"Running {label} analysis for: {query[:50]}...")
+
+                collector = ContextCollector()
+                context_result = collector.collect_context(query, max_tokens=8000)
+
+                span_manager.write_event(span_id, {
+                    "type": "persona_analysis_started",
+                    "persona": persona_key,
+                    "query": query,
+                    "context_files": len(context_result.get("files", []))
+                })
+
+                from .personas.pipeline_manager import PersonaPipeline
+                pipeline = PersonaPipeline()
+                result = pipeline.run_persona(persona_key, query)
+
+                span_manager.write_event(span_id, {
+                    "type": "persona_analysis_completed",
+                    "persona": persona_key,
+                    "success": True
+                })
+
+                response = result.text if hasattr(result, 'text') else str(result)
+                progress.show_success(f"{label} analysis completed")
+                return response
+
+        except Exception as exc:
+            progress.show_error(f"{label} analysis failed: {str(exc)}")
+            return f"{label} analysis error: {str(exc)}"
+
+    _persona_tool.__name__ = tool_name.replace('.', '_')
+    _persona_tool.__doc__ = f"{label} persona: {tool_name} analysis"
+    return _persona_tool
 
 
 def get_active_persona(query_type: str = "default") -> str:
@@ -198,6 +264,8 @@ def sp_context_collect(query: str, max_tokens: int = 16000) -> str:
         progress.show_error(f"Context collection failed: {str(e)}")
         return f"Context collection error: {str(e)}"
 
+_TOOL_REGISTRY["sp_context_collect"] = sp_context_collect
+
 @mcp.tool()
 def sp_context_clear_cache() -> str:
     """Clear the context collection cache"""
@@ -217,6 +285,8 @@ def sp_context_clear_cache() -> str:
     except Exception as e:
         progress.show_error(f"Cache clear failed: {str(e)}")
         return f"Cache clear error: {str(e)}"
+
+_TOOL_REGISTRY["sp_context_clear_cache"] = sp_context_clear_cache
 
 @mcp.tool()
 def sp_memory_stats() -> str:
@@ -256,31 +326,42 @@ def sp_memory_stats() -> str:
     except Exception as e:
         return f"Memory stats error: {str(e)}"
 
+_TOOL_REGISTRY["sp_memory_stats"] = sp_memory_stats
+
 # Minimal built-in tools
 @mcp.tool()
 def sp_health() -> str:
     """Check if Super Prompt MCP server is healthy"""
     return "Super Prompt MCP server is running"
 
+# Register in tool registry for stdio access
+_TOOL_REGISTRY["sp_health"] = sp_health
+
 
 # Register MCP tools with decorators
-@mcp.tool()
+@mcp.tool(name="sp.version")
 def sp_version_mcp() -> str:
     """Get the current version of Super Prompt"""
     return sp_version()
 
+_TOOL_REGISTRY["sp.version"] = sp_version_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_list_commands")
 def sp_list_commands_mcp() -> str:
     """List all available Super Prompt commands"""
     return sp_list_commands()
 
+_TOOL_REGISTRY["sp_list_commands"] = sp_list_commands_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_list_personas")
 def sp_list_personas_mcp() -> str:
     """List available Super Prompt personas"""
     result = list_personas()
     return result.text if hasattr(result, 'text') else str(result)
+
+_TOOL_REGISTRY["sp_list_personas"] = sp_list_personas_mcp
 
 
 # Import TextContent for MCP responses
@@ -293,60 +374,76 @@ except ImportError:
     _, TextContent = create_fallback_mcp()
 
 
-@mcp.tool()
+@mcp.tool(name="sp_init")
 def sp_init_mcp(force: bool = False):
     """Initialize Super Prompt for current project"""
     result = init(force=force)
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_init"] = sp_init_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_refresh")
 def sp_refresh_mcp():
     """Refresh Super Prompt assets in current project"""
     result = refresh()
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_refresh"] = sp_refresh_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_mode_get")
 def sp_mode_get_mcp():
     """Get current LLM mode (gpt|grok)"""
     result = mode_get()
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_mode_get"] = sp_mode_get_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_mode_set")
 def sp_mode_set_mcp(mode: str):
     """Set LLM mode to 'gpt' or 'grok'"""
     result = mode_set(mode)
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_mode_set"] = sp_mode_set_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_grok_mode_on")
 def sp_grok_mode_on_mcp():
     """Switch LLM mode to grok"""
     result = grok_mode_on()
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_grok_mode_on"] = sp_grok_mode_on_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_gpt_mode_on")
 def sp_gpt_mode_on_mcp():
     """Switch LLM mode to gpt"""
     result = gpt_mode_on()
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_gpt_mode_on"] = sp_gpt_mode_on_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_grok_mode_off")
 def sp_grok_mode_off_mcp():
     """Turn off Grok mode"""
     result = grok_mode_off()
     return result.text if hasattr(result, 'text') else str(result)
 
+_TOOL_REGISTRY["sp_grok_mode_off"] = sp_grok_mode_off_mcp
 
-@mcp.tool()
+
+@mcp.tool(name="sp_gpt_mode_off")
 def sp_gpt_mode_off_mcp():
     """Turn off GPT mode"""
     result = gpt_mode_off()
     return result.text if hasattr(result, 'text') else str(result)
+
+_TOOL_REGISTRY["sp_gpt_mode_off"] = sp_gpt_mode_off_mcp
 
 
 # Persona-based analysis tools with Context Management Protocol
@@ -758,6 +855,24 @@ def sp_devops(query: str, persona: str = "devops"):
         return f"Devops analysis error: {str(e)}"
 
 
+# Additional persona tools registered via helper
+sp_dev = _register_persona_tool("sp_dev", "dev")
+sp_refactorer = _register_persona_tool("sp_refactorer", "refactorer")
+sp_optimize = _register_persona_tool("sp_optimize", "optimize")
+sp_doc_master = _register_persona_tool("sp_doc_master", "doc-master")
+sp_docs_refector = _register_persona_tool("sp_docs_refector", "docs-refector")
+sp_db_expert = _register_persona_tool("sp_db_expert", "db-expert")
+sp_review = _register_persona_tool("sp_review", "review")
+sp_mentor = _register_persona_tool("sp_mentor", "mentor")
+sp_scribe = _register_persona_tool("sp_scribe", "scribe")
+sp_debate = _register_persona_tool("sp_debate", "debate")
+sp_service_planner = _register_persona_tool("sp_service_planner", "service-planner")
+sp_ultracompressed = _register_persona_tool("sp_ultracompressed", "ultracompressed")
+sp_seq = _register_persona_tool("sp_seq", "seq")
+sp_seq_ultra = _register_persona_tool("sp_seq_ultra", "seq-ultra")
+sp_tr = _register_persona_tool("sp_tr", "tr")
+sp_implement = _register_persona_tool("sp_implement", "implement")
+
 # SDD (Spec-Driven Development) Workflow Tools
 @mcp.tool()
 def sp_specify(query: str, persona: str = "specify"):
@@ -767,6 +882,8 @@ def sp_specify(query: str, persona: str = "specify"):
         return run_prompt_based_workflow("specify", query)
     except Exception as e:
         return f"SDD Specify error: {str(e)}"
+
+_TOOL_REGISTRY["sp_specify"] = sp_specify
 
 
 @mcp.tool()
@@ -778,6 +895,8 @@ def sp_plan(query: str, persona: str = "plan"):
     except Exception as e:
         return f"SDD Plan error: {str(e)}"
 
+_TOOL_REGISTRY["sp_plan"] = sp_plan
+
 
 @mcp.tool()
 def sp_tasks(query: str, persona: str = "tasks"):
@@ -788,51 +907,24 @@ def sp_tasks(query: str, persona: str = "tasks"):
     except Exception as e:
         return f"SDD Tasks error: {str(e)}"
 
+_TOOL_REGISTRY["sp_tasks"] = sp_tasks
 
-@mcp.tool()
-def sp_high(query: str, persona: str = "high") -> str:
-    """Execute high-level reasoning and strategic problem solving using codex CLI"""
+
+@mcp.tool(name="sp.sdd_architecture")
+def sp_sdd_architecture(section: str = "", persona: Optional[str] = None):
+    """Surface the Spec-Driven Development architecture playbook."""
     try:
-        import subprocess
-        import os
+        target_section = section.strip() or None
+        brief = render_sdd_brief(target_section, persona)
+        if target_section:
+            return brief
+        available = ", ".join(list_sdd_sections())
+        return f"{brief}\n\nSections available: {available}"
+    except ValueError as exc:
+        available = ", ".join(list_sdd_sections())
+        return f"SDD architecture error: {exc}. Known sections: {available}"
 
-        # Build codex CLI command for high reasoning
-        plan_query = f"Plan mode: {query}. Provide a comprehensive strategic plan with numbered steps and implementation guidance."
-        cmd = [
-            "codex", "exec",
-            "--sandbox", "read-only",
-            "-c", 'reasoning_effort="high"',
-            "-c", 'tools.web_search=true',
-            "-c", 'show_raw_agent_reasoning=true',
-            "-C", os.getcwd(),
-            plan_query
-        ]
-
-        # Execute the command
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=300,  # 5 minute timeout
-            env=os.environ.copy()
-        )
-
-        if result.returncode == 0:
-            output = result.stdout.strip()
-            if output:
-                return output
-            else:
-                return "Codex CLI executed successfully but returned no output"
-        else:
-            error_output = result.stderr.strip()
-            return f"Codex CLI execution failed (exit code {result.returncode}):\n{error_output}"
-
-    except subprocess.TimeoutExpired:
-        return "Codex CLI execution timed out after 5 minutes"
-    except FileNotFoundError:
-        return "Codex CLI not found. Please ensure codex is installed and in PATH"
-    except Exception as e:
-        return f"High analysis error: {str(e)}"
+_TOOL_REGISTRY["sp.sdd_architecture"] = sp_sdd_architecture
 
 
 @mcp.tool()
@@ -845,5 +937,5 @@ def sp_troubleshooting(query: str, persona: str = "troubleshooting"):
         return f"Troubleshooting error: {str(e)}"
 
 
-# Export the mcp instance for use by mcp_stdio.py
-__all__ = ['mcp']
+# Export the mcp instance and tool registry for use by mcp_stdio.py
+__all__ = ['mcp', '_TOOL_REGISTRY']

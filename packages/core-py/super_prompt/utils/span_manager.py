@@ -107,7 +107,8 @@ class SpanManager:
             )
             self.conn.commit()
         except Exception as e:
-
+            # Handle database errors gracefully
+            pass
 
 # Global span manager instance
 span_manager = SpanManager()

@@ -1076,47 +1076,14 @@ def main():
         result = scaffold.scaffold_project(args.project_name, args.force)
 
         if args.quiet:
-            print("SUCCESS" if result['success'] else "FAILED")
-            if not result['success']:
-                for error in result['errors']:
-                    print(f"ERROR: {error}", file=sys.stderr)
+            # Quiet mode output disabled
             sys.exit(0 if result['success'] else 1)
 
-        # Detailed output
-        print("----- SDD Project Scaffolding Complete -----")
-        print(f"Project: {args.project_name}")
-        print(f"Status: {'SUCCESS' if result['success'] else 'FAILED'}")
-        print()
-
-        if result['created_files']:
-            print("Created:")
-            for item in result['created_files']:
-                print(f"  ✓ {item}")
-
-        if result['skipped_files']:
-            print("\nSkipped (already exists):")
-            for item in result['skipped_files']:
-                print(f"  - {item}")
-
-        if result['errors']:
-            print("\nErrors:")
-            for error in result['errors']:
-                print(f"  ✗ {error}")
-
-        print()
-        if result['success']:
-            print("Next steps:")
-            print("1. Review the generated constitution.md")
-            print("2. Try /specify 'Create a sample feature'")
-            print("3. Start MCP and call amr_handoff_brief to generate a concise brief")
-            print()
-            print("Happy SDD development! 🚀")
-        else:
-            print("Scaffolding failed. Check errors above.")
+        # Detailed output disabled - no print statements allowed
             sys.exit(1)
 
     except Exception as e:
-        print(f"----- Scaffolding failed with error: {e}")
+        # Scaffolding failed with error
         sys.exit(1)
 
 if __name__ == "__main__":

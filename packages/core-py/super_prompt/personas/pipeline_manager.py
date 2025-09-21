@@ -12,6 +12,8 @@ from typing import Dict, Any, Optional, List, Callable, Union, Tuple
 from ..core.memory_manager import progress
 from ..analysis.project_analyzer import analyze_project_context
 from ..codex.integration import call_codex_assistance, should_use_codex_assistance, summarize_situation_for_codex
+from ..sdd.architecture import generate_sdd_persona_overlay
+from ..prompts.workflow_executor import run_prompt_based_workflow
 
 
 @dataclass
@@ -121,6 +123,12 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         memory_tag="pipeline_dev",
         empty_prompt="🚀 Dev pipeline activated. Describe the feature or bug fix to implement.",
     ),
+    "implement": PersonaPipelineConfig(
+        persona="implement",
+        label="Implement",
+        memory_tag="pipeline_implement",
+        empty_prompt="🛠️ Implement pipeline activated. Provide the executable steps or code changes to deliver.",
+    ),
     "grok": PersonaPipelineConfig(
         persona="grok",
         label="Grok",
@@ -154,10 +162,10 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
     ),
     "tr": PersonaPipelineConfig(
         persona="tr",
-        label="Translate",
-        memory_tag="pipeline_translate",
-        use_codex=False,
-        empty_prompt="🌐 Translate pipeline activated. Please provide source text and target locale.",
+        label="Troubleshooting",
+        memory_tag="pipeline_troubleshooting",
+        use_codex=True,
+        empty_prompt="🛠️ Troubleshooting pipeline activated. Describe the incident, symptoms, or failing task to diagnose.",
     ),
     "doc-master": PersonaPipelineConfig(
         persona="doc-master",
@@ -232,51 +240,22 @@ class PersonaPipeline:
                 if not config:
                     raise ValueError(f"Unknown persona: {persona_name}")
 
-                # Import the persona prompt module directly
-                try:
-                    # Get the current mode and generate prompt
-                    from ..mode_store import get_mode
-                    current_mode = get_mode() or "gpt"
+                prompt_output = run_prompt_based_workflow(persona_name, query)
 
-                    # Import and call the prompt function directly
-                    if persona_name == "architect":
-                        from .architect_prompts import get_architect_prompt
-                        prompt = get_architect_prompt(current_mode, query)
-                    elif persona_name == "analyzer":
-                        from .analyzer_prompts import get_analyzer_prompt
-                        prompt = get_analyzer_prompt(current_mode, query)
-                    elif persona_name == "backend":
-                        from .backend_prompts import get_backend_prompt
-                        prompt = get_backend_prompt(current_mode, query)
-                    elif persona_name == "frontend":
-                        from .frontend_prompts import get_frontend_prompt
-                        prompt = get_frontend_prompt(current_mode, query)
-                    elif persona_name == "high":
-                        from .high_prompts import get_high_prompt
-                        prompt = get_high_prompt(current_mode, query)
-                    else:
-                        raise ValueError(f"No prompt function available for persona: {persona_name}")
+                if not prompt_output or prompt_output.startswith("Error:"):
+                    fallback_reason = prompt_output if prompt_output else "Prompt template unavailable"
+                    prompt_output = (
+                        f"Persona '{persona_name}' fallback response for query: "
+                        f"{query[:100]}{'...' if len(query) > 100 else ''}.\n"
+                        f"Reason: {fallback_reason}"
+                    )
 
-                    # Here we would normally call LLM, but for now return the prompt
-                    # TODO: Integrate with actual LLM provider
-                    result_text = f"[{persona_name.upper()}] Analysis Prompt Generated:\n\n{prompt}"
+                result_text = f"[{persona_name.upper()}] Analysis Prompt Generated:\n\n{prompt_output}"
 
-                    # Create a result object
-                    result = type('Result', (), {'text': result_text})()
+                sdd_overlay = generate_sdd_persona_overlay(persona_name, query)
+                if sdd_overlay:
+                    result_text = f"{result_text}\n\n---\n{sdd_overlay}"
 
-                    self.span_manager.end_span(span_id, "ok")
-                    return result
-
-                except ImportError as ie:
-                    result_text = f"[{persona_name.upper()}] Import error: {ie}"
-                    result = type('Result', (), {'text': result_text})()
-                    self.span_manager.end_span(span_id, "error", {"error": str(ie)})
-                    return result
-
-                # Fallback to simple response if prompt module not found
-                result_text = f"Persona '{persona_name}' analysis completed for query: {query[:100]}{'...' if len(query) > 100 else ''}"
-
-                # Create a result object
                 result = type('Result', (), {'text': result_text})()
 
                 self.span_manager.end_span(span_id, "ok")
@@ -318,6 +297,7 @@ PIPELINE_ALIASES: Dict[str, str] = {
     "doc-master": "doc-master",
     "docs-refector": "docs-refector",
     "dev": "dev",
+    "implement": "implement",
     "grok": "grok",
     "db-expert": "db-expert",
     "database": "db-expert",
@@ -329,6 +309,8 @@ PIPELINE_ALIASES: Dict[str, str] = {
     "service": "service-planner",
     "translate": "tr",
     "translator": "tr",
+    "troubleshoot": "tr",
+    "trouble": "tr",
     "tr": "tr",
     "ultra": "ultracompressed",
     "ultracompressed": "ultracompressed",
@@ -354,12 +336,13 @@ PIPELINE_LABELS: Dict[str, str] = {
     "mentor": "Mentor",
     "scribe": "Scribe",
     "dev": "Dev",
+    "implement": "Implement",
     "grok": "Grok",
     "db-expert": "DB Expert",
     "optimize": "Optimize",
     "review": "Review",
     "service-planner": "Service Planner",
-    "tr": "Translate",
+    "tr": "Troubleshooting",
     "doc-master": "Doc Master",
     "docs-refector": "Docs Refector",
     "ultracompressed": "Ultra Compressed",

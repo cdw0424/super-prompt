@@ -60,7 +60,7 @@ class PersonaLoader:
             return 0
 
         if yaml is None:
-            print("-------- Warning: PyYAML not installed; skipping persona manifest load", file=sys.stderr, flush=True)
+            # PyYAML not installed; skipping persona manifest load
             return 0
 
         try:
@@ -93,17 +93,15 @@ class PersonaLoader:
                     self.personas[persona.name] = persona
                     loaded_count += 1
 
-                    print(f"-------- persona: loaded '{persona.name}' ({persona.role_type})", file=sys.stderr, flush=True)
-
                 except Exception as persona_error:
-                    print(f"-------- persona: failed to load '{persona_name}': {persona_error}", file=sys.stderr, flush=True)
+                    # Failed to load persona
                     continue
 
-            print(f"-------- persona: total {loaded_count} personas loaded successfully", file=sys.stderr, flush=True)
+            # Personas loaded successfully
             return loaded_count
 
         except Exception as e:
-            print(f"-------- Error loading persona manifest: {e}", file=sys.stderr, flush=True)
+            # Error loading persona manifest
             return 0
 
     def _create_default_manifest(self):

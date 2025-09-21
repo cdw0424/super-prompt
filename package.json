@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "5.0.0",
-  "description": "Super Prompt v5.0.0 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
+  "version": "5.0.5",
+  "description": "Super Prompt v5.0.5 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
@@ -25,7 +25,8 @@
     "sp:mcp:python": "python -m super_prompt.mcp_client",
     "sp:mcp:list-tools": "python -m super_prompt.mcp_client list-tools",
     "sp:mcp:call": "python -m super_prompt.mcp_client call",
-    "ssot:verify": "node scripts/ssot/verify-ssot.js"
+    "ssot:verify": "node scripts/ssot/verify-ssot.js",
+    "sp:verify:all": "npm run ssot:verify && npm run build && echo '✅ All verifications passed'"
   },
   "keywords": [
     "ai",
@@ -61,7 +62,6 @@
     "dist/",
     "templates/",
     "packages/core-py/",
-    "packages/cursor-assets/",
     "packages/codex-assets/",
     "install.js",
     "README.md",

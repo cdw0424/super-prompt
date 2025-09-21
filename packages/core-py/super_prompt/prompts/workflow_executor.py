@@ -1,5 +1,5 @@
 """
-Prompt-Based Workflow Executor for Super Prompt v5.0.0
+Prompt-Based Workflow Executor for Super Prompt v5.0.5
 Executes persona-specific prompts based on mode selection
 """
 
@@ -45,7 +45,14 @@ class PromptWorkflowExecutor:
             mode = self.get_current_mode()
 
         prompts = self.gpt_prompts if mode == 'gpt' else self.grok_prompts
-        return prompts.get(persona.lower())
+        key = persona.lower()
+        if key in prompts:
+            return prompts[key]
+        alt = key.replace('-', '_')
+        if alt in prompts:
+            return prompts[alt]
+        alt = key.replace('_', '-')
+        return prompts.get(alt)
 
     def execute_workflow(self, persona: str, query: str, mode: Optional[str] = None) -> str:
         """Execute a prompt-based workflow for the given persona"""

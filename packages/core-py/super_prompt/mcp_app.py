@@ -1,7 +1,14 @@
 # packages/core-py/super_prompt/mcp_app.py
-# Complete MCP application with all Super Prompt v5.0.0 personas
+# Complete MCP application with all Super Prompt v5.0.5 personas
 
 from .prompts.workflow_executor import run_prompt_based_workflow
+
+
+def _normalize_query(query: str) -> str:
+    """Normalize user query by stripping whitespace and handling empty queries"""
+    if not query or not isinstance(query, str):
+        return ""
+    return query.strip()
 
 
 def create_app():
@@ -285,7 +292,7 @@ def create_app():
             "sp_list_commands - List all available commands"
         ]
 
-        result = "🚀 **Super Prompt v5.0.0 - Available Commands:**\n\n"
+        result = "🚀 **Super Prompt v5.0.5 - Available Commands:**\n\n"
         for cmd in commands:
             result += f"• {cmd}\n"
 

@@ -1,5 +1,5 @@
 """
-Super Prompt v5.0.0 Prompt Templates Module
+Super Prompt v5.0.5 Prompt Templates Module
 Contains GPT and Grok optimized prompt templates for all personas
 """
 

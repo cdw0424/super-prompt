@@ -1,101 +1,64 @@
-#!/usr/bin/env node
-'use strict';
+#!/usr/bin/env bash
 
-// Super Prompt MCP launcher
-// - Spawns the Python MCP server (stdio)
-// - Uses system Python interpreter (env PYTHON override supported)
-// - Writes logs to stderr only; stdout is reserved for MCP protocol
+# Super Prompt MCP launcher
+# - Spawns the Python MCP server (stdio)
+# - Uses system Python interpreter (env PYTHON override supported)
+# - Writes logs to stderr only; stdout is reserved for MCP protocol
 
-const { spawn, spawnSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+# Find the root of the super-prompt installation package.
+# Use the script's own path instead of $0 to avoid issues with bash -c
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_HOME="$(dirname "$SCRIPT_DIR")"
+export APP_HOME
 
-function resolveProjectRoot() {
-  // Prefer workspace folder passed by Cursor (PWD), fallback to git root, then cwd
-  const cwd = process.cwd();
-  try {
-    // If .git exists somewhere up the tree, use it as project root
-    let dir = cwd;
-    // Stop at filesystem root
-    while (true) {
-      if (fs.existsSync(path.join(dir, '.git'))) return dir;
-      const parent = path.dirname(dir);
-      if (parent === dir) break;
-      dir = parent;
-    }
-  } catch (_) {}
-  return cwd;
+# Find the project root (git root or current directory).
+resolve_project_root() {
+  if command -v git &>/dev/null; then
+    local root
+    root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ -n "$root" ]; then
+      printf "%s" "$root"
+      return 0
+    fi
+  fi
+  printf "%s" "$(pwd)"
 }
 
-function resolvePackageRoot() {
-  // Package root = parent of bin/
-  return path.join(__dirname, '..');
+PROJECT_ROOT="$(resolve_project_root)"
+
+# Resolve Python interpreter
+resolve_python() {
+  if [ -n "${PYTHON:-}" ] && command -v "$PYTHON" >/dev/null 2>&1; then
+    printf "%s" "$PYTHON"
+    return 0
+  fi
+  for candidate in python3.13 python3.12 python3.11 python3.10 python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      printf "%s" "$candidate"
+      return 0
+    fi
+  done
+  echo "-------- ERROR: No Python interpreter found (set PYTHON env)" >&2
+  return 1
 }
 
-function resolvePython() {
-  const candidates = [];
-  if (process.env.PYTHON) candidates.push(process.env.PYTHON);
-  if (process.platform === 'win32') {
-    candidates.push('python');
-    candidates.push('py');
-  } else {
-    candidates.push('python3.12');
-    candidates.push('python3.11');
-    candidates.push('python3.10');
-    candidates.push('python3');
-    candidates.push('python');
-  }
+PYTHON_BIN="$(resolve_python)"
+echo "-------- MCP: Python found: $PYTHON_BIN" >&2
 
-  for (const cmd of candidates) {
-    try {
-      const result = spawnSync(cmd, ['--version'], { stdio: 'ignore' });
-      if (result.status === 0) return cmd;
-    } catch (_) {
-      // continue
-    }
-  }
+# Set environment variables
+export MCP_SERVER_MODE="1"
+export SUPER_PROMPT_PROJECT_ROOT="$PROJECT_ROOT"
+export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+export PYTHONUNBUFFERED="1"
+export PYTHONUTF8="1"
 
-  return process.platform === 'win32' ? 'python' : 'python3';
-}
+# Launch MCP server via module path
 
-// Legacy server checking removed - using stateless approach
+# Execute MCP server with proper stdio handling
+echo "-------- MCP: Executing Python module" >&2
+echo "-------- MCP: PYTHONPATH: $APP_HOME/packages/core-py" >&2
+echo "-------- MCP: Python binary: $PYTHON_BIN" >&2
+echo "-------- MCP: App home: $APP_HOME" >&2
 
-function main() {
-  const projectRoot = process.env.SUPER_PROMPT_PROJECT_ROOT || resolveProjectRoot();
-  const packageRoot = process.env.SUPER_PROMPT_PACKAGE_ROOT || resolvePackageRoot();
-
-  // Resolve interpreter once per invocation
-  const py = resolvePython();
-
-  const env = {
-    ...process.env,
-    MCP_SERVER_MODE: '1',
-    SUPER_PROMPT_PROJECT_ROOT: projectRoot,
-    SUPER_PROMPT_PACKAGE_ROOT: packageRoot,
-    // Ensure Python can import our bundled core package during dev/local usage
-    PYTHONPATH: [
-      path.join(packageRoot, 'packages', 'core-py'),
-      process.env.PYTHONPATH || ''
-    ].filter(Boolean).join(':'),
-    PYTHONUNBUFFERED: '1',
-    PYTHONUTF8: '1',
-  };
-
-  // Launch MCP server via module path
-  const args = ['-m', 'super_prompt.mcp_stdio'];
-
-  const proc = spawn(py, args, {
-    env,
-    stdio: ['inherit', 'inherit', 'inherit'], // stdout carries protocol; server logs must use stderr
-  });
-
-  proc.on('exit', (code, signal) => {
-    if (signal) {
-      process.exit(1);
-      return;
-    }
-    process.exit(code == null ? 1 : code);
-  });
-}
-
-main();
+PYTHONPATH="$APP_HOME/packages/core-py" "$PYTHON_BIN" -m super_prompt.mcp_stdio

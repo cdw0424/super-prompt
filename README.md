@@ -1,142 +1,33 @@
-# Super Prompt v5.0.0: Pure Python MCP Dual IDE Prompt Engineering Toolkit
+# Super Prompt v5.0.5
 
-## 🚀 **v5.0.0 Major Architecture Update**
-
-**Complete transition to prompt-based workflow architecture!**
-
-### ✨ **What's New in v5.0.0**
-- **🔄 프롬프트 기반 워크플로우**: 모든 페르소나 함수가 프롬프트 기반으로 변환
-- **🎯 모드별 특화**: GPT/Grok 모드별 최적화된 프롬프트 템플릿
-- **🧹 코드 정리**: 불필요한 파이프라인 코드 제거 및 최적화
-- **📈 성능 향상**: 간소화된 아키텍처로 더 빠른 응답 속도
-
-[![PyPI version](https://img.shields.io/pypi/v/super-prompt-core.svg)](https://pypi.org/project/super-prompt-core/)
-[![Python versions](https://img.shields.io/pypi/pyversions/super-prompt-core.svg)](https://pypi.org/project/super-prompt-core/)
+[![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
-**🚀 The Ultimate Dual IDE Prompt Engineering Toolkit with Pure Python MCP
-Implementation**
+Super Prompt enables Cursor to apply language-specific optimized personas and guidelines, maximizing development performance. It provides a pure Python MCP server with specialized personas, model routing rules, and command-line tooling in a single npm package, allowing you to install, initialize, and register the MCP server in one step.
 
-### ❗ Important: Enable Super‑Prompt MCP in Cursor
+## Quick Start
 
-To use Super‑Prompt inside Cursor, ensure the Super‑Prompt MCP is enabled in
-Cursor after initialization.
-
-- Open Cursor → Settings → MCP and enable the Super‑Prompt server
-- If you don’t see it, restart Cursor after running project initialization
-- In chat, you should see slash command autocomplete like
-  `/super-prompt/architect`
-
-See the setup guide: [Cursor MCP Setup Guide](docs/cursor-mcp-setting-guide.md)
-
----
-
-Super Prompt delivers advanced MCP (Model Context Protocol) implementation with
-comprehensive development tools, seamless Cursor and Codex IDE integration, and
-intelligent persona system.
-
-### 🏗️ **New Architecture: Prompt-Based Workflow**
-
-#### **🔄 프롬프트 기반 변환**
-- **이전**: 복잡한 `_run_persona_pipeline` + `_PIPELINE_CONFIGS`
-- **현재**: 간단한 `run_prompt_based_workflow` + 모드별 프롬프트 템플릿
-
-#### **🎯 모드별 특화**
-- **GPT 모드**: 구조화된 분석, 실용적 해결 방안
-- **Grok 모드**: 최대한 진실된 분석, 현실적 고려사항
-
-#### **📈 성능 최적화**
-- 불필요한 파이프라인 로직 제거
-- 프롬프트 템플릿 기반 빠른 응답
-- 메모리 사용량 감소
-
-### 🧭 Philosophy
-
-- **Command First**: Explicit commands/flags take precedence and are executed
-  immediately.
-- **SSOT**: Single Source of Truth — personas manifest → `.cursor/rules` →
-  `AGENTS.md`.
-- **SDD**: Spec → Plan → Implement, with Acceptance Self‑Check before merge.
-- **AMR**: Default to medium reasoning; switch to high for deep planning; return
-  to medium for execution.
-- **Safety**: English logs start with `-----`; never print secrets (mask like
-  `sk-***`).
-
-This philosophy powers a dual‑IDE workflow (Cursor + Codex) and underpins our
-model recommendation below for consistent, fast, and reliable results.
-
-### 🔍 Confession Mode (Double‑Check)
-
-- **What it is**: An automatic self‑audit appended to the end of every MCP tool
-  response.
-- **What it includes**:
-  - Summary of what was done
-  - Unknowns and potential risks
-  - Recommended countermeasures (verification/rollback/alternatives)
-  - Completion timestamp
-- **Scope**: Enabled by default for all Super Prompt MCP tool outputs in
-  Cursor/Codex.
-- **Purpose**: Standardizes a “double‑check” step to improve reliability and
-  transparency of results.
-
-### ✅ Recommended IDE Models (Cursor)
-
-- Use both models together for best results:
-  - GPT‑5 Codex (low, fast, max context)
-  - Grok Code (fast, max context)
-
----
-
-## ⚡ Quick Start
-
-### 1) Install
+### Installation
 
 ```bash
-# ⭐ 추천: Python 전용 설치 (Pure Python MCP 구현)
-pip install super-prompt-core
-
-# 설치 확인
-super-prompt --help
-super-prompt mcp --help
+# Install globally (recommended for system-wide usage)
+npm install -g @cdw0424/super-prompt@latest
 ```
 
-### 2) Initialize project assets
+### Project Setup
 
 ```bash
-# 프로젝트 초기화 (모든 assets 자동 구성)
-super-prompt super:init
-
-# 또는 Python 모듈 직접 실행
-python -m super_prompt super:init
+# Initialize Super Prompt assets in your workspace
+super-prompt super:init --force
 ```
 
-### 3) MCP Client Usage
+### Cursor Configuration
 
-```bash
-# MCP 서버 상태 확인
-super-prompt mcp doctor
+1. Open **Cursor → Settings → MCP**
+2. Add the following configuration:
 
-# 사용 가능한 도구 목록
-super-prompt mcp list-tools
-
-# 도구 호출 (대화형 모드)
-super-prompt mcp call sp.list_commands --interactive
-
-# 도구 호출 (JSON 인자)
-super-prompt mcp call sp.architect --args-json '{"query": "design user auth system"}'
-```
-
-### 4) Enable in Cursor (MCP)
-
-Open Cursor → Settings → MCP and enable the Super‑Prompt server (restart Cursor
-if needed). After enabling, slash commands will autocomplete in chat.
-
-MCP details (stdio)
-- Transport: stdio (local child process). Cursor also supports HTTP/SSE, but stdio is recommended for local development. citeturn0search1
-- Config locations: project `.cursor/mcp.json` (recommended) or global `~/.cursor/mcp.json`. Same schema in both. citeturn0search1turn0search2
-- Minimal config:
-
-```
+```json
 {
   "mcpServers": {
     "super-prompt": {
@@ -155,230 +46,300 @@ MCP details (stdio)
 }
 ```
 
-Programmatic registration: Cursor exposes an Extension API (`vscode.cursor.mcp.registerServer`) for dynamic registration from extensions, useful in enterprise setups. citeturn0search3
+3. Restart Cursor and start using personas!
 
-### 4.1) MCP Inspector로 로컬 stdio 서버 디버깅 (선택)
-
-```
-# 프로젝트 루트에서 실행
-npx @modelcontextprotocol/inspector node ./bin/sp-mcp
-
-# 브라우저에서 http://localhost:6274 접속 → Tools 호출 테스트
-```
-
-Inspector는 브라우저 기반 디버거로, stdio MCP 서버와의 상호작용을 시각적으로 점검할 수 있습니다. Node 22+ 필요. citeturn0search3
-
-### 5) Model Modes (GPT vs Grok)
-
-- Modes are mutually exclusive; default is GPT.
-- In Cursor, toggle with slash commands (these persist the mode to
-  `.super-prompt/mode.json` and switch the active provider):
-
-```
- /super-prompt/gpt-mode-on
- /super-prompt/grok-mode-on
- /super-prompt/gpt-mode-off
- /super-prompt/grok-mode-off
-```
-
-- What happens:
-  - `grok-mode-on`: sets mode to Grok (disables Codex AMR prompts), new chats
-    use Grok.
-  - `gpt-mode-on`: sets mode to GPT (enables Codex AMR prompts), new chats use
-    GPT‑5 Codex.
-  - `gpt-mode-off`/`grok-mode-off`: clear explicit mode; system will fall back
-    to defaults.
-
-- Codex CLI toggles (same behavior, affects both Cursor and Codex):
+### First Usage
 
 ```bash
-# Turn on GPT mode
-sp gpt-mode-on
+# Get architecture help
+/super-prompt/architect "Design a user authentication system"
 
-# Turn on Grok mode
-sp grok-mode-on
-
-# Turn off explicit GPT/Grok mode (revert to default)
-sp gpt-mode-off
-sp grok-mode-off
+/super-prompt/backend "Implement REST API endpoints"
+/super-prompt/frontend "Build React login component"
 ```
 
-### 6) Codex Dependencies (for High Reasoning)
+## Model Mode Configuration
 
-The `sp_high` tool uses **CLI-only execution** with automatic setup and authentication. It always starts with `sudo npm install` and handles login automatically.
+Super Prompt supports different AI models with specialized capabilities:
 
-#### Prerequisites
-- **OpenAI CLI**: Install via `pip install openai`
-- **Codex CLI**: Will be installed automatically via `sudo npm install -g @openai/codex@latest`
-- **OpenAI Login**: Will be prompted automatically if not logged in
-- **sudo access**: Required for npm global installation
+### GPT Mode (Default)
+- **Best for**: Structured reasoning, code generation, and technical documentation
+- **When to use**: General development tasks, API design, code reviews
+- **Commands**:
+  ```bash
+  /super-prompt/gpt-mode-on   # Enable GPT mode
+  /super-prompt/gpt-mode-off  # Disable GPT mode
+  ```
 
-#### How It Works
-1. **Always Update CLI**: `sudo npm install -g @openai/codex@latest` (runs every time)
-2. **Check Login Status**: `openai api keys.list`
-3. **Auto Login**: If not logged in, launches `openai login` interactively
-4. **Retry After Login**: If login succeeds, retries the entire process
-5. **Execute Query**: Runs `openai codex high-plan` with your query
+### Grok Mode
+- **Best for**: Creative problem-solving, innovative approaches, and complex reasoning
+- **When to use**: Architecture decisions, debugging complex issues, innovative solutions
+- **Commands**:
+  ```bash
+  /super-prompt/grok-mode-on   # Enable Grok mode
+  /super-prompt/grok-mode-off  # Disable Grok mode
+  ```
 
-#### Execution Flow
+### Mode-Specific Personas
+
+| Persona | GPT Mode Focus | Grok Mode Focus |
+|---------|---------------|-----------------|
+| **Architect** | Structured design patterns | Creative architectural solutions |
+| **Backend** | Standard frameworks & patterns | Innovative backend approaches |
+| **Frontend** | UI/UX best practices | Creative user experiences |
+| **Analyzer** | Systematic code analysis | Deep insight generation |
+| **Doc Master** | Technical documentation | Creative content structure |
+
+### Recommended Model Configuration
+
+For optimal performance in Cursor, we recommend using **max mode** with these AI models:
+
+#### **Primary Recommendation: Grok Code Fast**
 ```bash
-# Every time you run /high:
-sudo npm install -g @openai/codex@latest  # Always first
-openai api keys.list                      # Check login
-# If not logged in:
-openai login                             # Interactive login
-# Then retry from step 1
-openai codex high-plan                   # Execute query
+# In Cursor Settings → AI → Model Configuration
+Model: Grok Code Fast
+Mode: Max
 ```
 
-#### Troubleshooting sp_high Errors
+**Why Grok Code Fast?**
+- **Superior reasoning**: Advanced logical reasoning capabilities
+- **Creative solutions**: Generates innovative approaches to complex problems
+- **Context awareness**: Better understanding of project context and dependencies
+- **Performance optimized**: Fast response times with high-quality output
 
-If you encounter errors:
+#### **Alternative: GPT-5 Low Fast**
+```bash
+# In Cursor Settings → AI → Model Configuration
+Model: GPT-5 Low Fast
+Mode: Max
+```
+
+**When to use GPT-5 Low Fast:**
+- **Structured tasks**: API design, documentation, code reviews
+- **Consistency needed**: Following established patterns and best practices
+- **Large codebases**: Better handling of extensive context windows
+- **Enterprise environments**: Familiar interface for team collaboration
+
+### Automatic Mode Detection
+
+Super Prompt automatically detects your project's context and applies the most appropriate mode:
+
+- **New Projects**: Starts in GPT mode for structured planning
+- **Complex Debugging**: Switches to Grok mode for creative problem-solving
+- **Documentation**: Uses GPT mode for clear, structured writing
+- **Innovation Tasks**: Applies Grok mode for breakthrough thinking
+
+### Mode Selection Guidelines
+
+| **Task Type** | **Recommended Model** | **Mode** |
+|---------------|----------------------|----------|
+| **Architecture Design** | Grok Code Fast | Max |
+| **Code Generation** | Grok Code Fast | Max |
+| **Debugging** | Grok Code Fast | Max |
+| **Code Review** | GPT-5 Low Fast | Max |
+| **Documentation** | GPT-5 Low Fast | Max |
+| **API Design** | GPT-5 Low Fast | Max |
+| **Refactoring** | Grok Code Fast | Max |
+
+## What’s new in 5.0.5
+
+- **FastMCP aware stdio launcher** – `bin/sp-mcp` now defers to the official FastMCP runtime when the `mcp` package is available and falls back to an async JSON-RPC loop when it is not.
+- **Accurate tool names** – every `@mcp.tool` registration specifies the canonical SSOT name (for example `sp_init`, `sp_list_commands`), fixing the "no tools" symptom in Cursor.
+- **Synchronized versioning** – Node package, Python core, and runtime banners now report `5.0.5`, avoiding metadata drift.
+- **Documentation refresh** – README and CHANGELOG are fully updated in English with current setup and troubleshooting guidance.
+- **Python dependency alignment** – the Python core declares `mcp>=0.4.0`, ensuring FastMCP support is available immediately after installation.
+
+## Overview
+
+Super Prompt provides two core entry points designed to maximize development performance in Cursor:
+
+- `super-prompt` – project initialization, MCP diagnostics, and persona utilities
+- `sp-mcp` – stdio MCP server for Cursor usage
+
+Internally, it follows these principles:
+
+- **Single Source of Truth** – personas manifest → `.cursor/rules` → Cursor workspace configuration
+- **Language-Specific Optimization Routing** – automatically applies optimal personas and guidelines for each programming language
+- **Performance-Centric Logging** – all logs start with `--------` and sensitive information is masked (`sk-***`)
+
+## Project Philosophy
+
+### **Performance-First Development**
+
+Super Prompt is built on the belief that **development productivity is maximized when AI assistance is tailored to specific programming languages and development contexts**. We reject the one-size-fits-all approach and instead provide specialized personas that understand the nuances of different programming paradigms.
+
+### **Language-Specific Intelligence**
+
+Each programming language has its own idioms, best practices, and common patterns. Super Prompt automatically detects your project's language context and applies the most appropriate AI persona:
+
+- **Python**: Focuses on readability, testing, and framework-specific patterns
+- **JavaScript/TypeScript**: Emphasizes async patterns, modern ES features, and web development best practices
+- **Java**: Prioritizes object-oriented design, performance optimization, and enterprise patterns
+- **Go**: Centers on simplicity, concurrency patterns, and cloud-native development
+- **Rust**: Focuses on memory safety, performance optimization, and systems programming
+
+### **Contextual Intelligence**
+
+Beyond language-specific optimization, Super Prompt understands your development context:
+
+- **Framework Detection**: Automatically recognizes React, Vue, Django, FastAPI, Spring Boot, and other frameworks
+- **Project Structure Analysis**: Analyzes your codebase to provide contextually relevant suggestions
+- **Development Phase Awareness**: Adapts guidance based on whether you're prototyping, refactoring, or optimizing
+
+### **Seamless Integration**
+
+We believe AI assistance should **enhance, not replace, developer workflow**. Super Prompt integrates deeply with Cursor while maintaining:
+
+- **Zero Configuration**: Works out of the box with sensible defaults
+- **Transparent Operation**: Clear logging and predictable behavior
+- **Fallback Resilience**: Graceful degradation when dependencies are unavailable
+- **Performance Optimization**: Minimal latency impact on development workflow
+
+### **Continuous Evolution**
+
+Super Prompt evolves with the development ecosystem. We regularly update personas to reflect:
+
+- **Emerging Language Features**: Support for new language versions and features
+- **Framework Updates**: Compatibility with latest framework versions
+- **Best Practice Changes**: Updated guidance as industry standards evolve
+- **Performance Improvements**: Optimized execution and reduced latency
+
+## Core Development Workflows
+
+Super Prompt provides structured workflows that ensure high-quality development outcomes. Our core methodologies include **Spec-Driven Development (SDD)**, **Confession Mode**, and **Double-Check** validation.
+
+### **Spec-Driven Development (SDD)**
+
+SDD ensures every feature starts with clear specifications and follows a structured development process:
+
+> Tip: you can surface the Spec Kit playbook on demand with
+> `./bin/super-prompt mcp call sp.sdd_architecture --args-json '{"persona": "architect"}'`
+> to get persona-aligned guardrails before you run the slash commands.
+
+#### **SDD Workflow Phases:**
+
+1. **📋 SPEC Phase** (Requirements & Planning)
+   ```bash
+   # Create comprehensive specifications
+   /super-prompt/specify "Design a user authentication system with OAuth2"
+   ```
+
+2. **🎯 PLAN Phase** (Architecture & Roadmap)
+   ```bash
+   # Develop technical implementation plan
+   /super-prompt/plan "Create implementation roadmap for OAuth2 auth system"
+   ```
+
+3. **⚡ TASKS Phase** (Execution Planning)
+   ```bash
+   # Break down into actionable development tasks
+   /super-prompt/tasks "Break down OAuth2 implementation into specific tasks"
+   ```
+
+#### **SDD Benefits:**
+- **Structured Approach**: Eliminates guesswork and ensures comprehensive planning
+- **Quality Assurance**: Built-in validation at each phase
+- **Scalable Development**: Works for both small features and large projects
+- **Documentation First**: Specifications serve as living documentation
+
+### **Confession Mode**
+
+A unique debugging methodology where you "confess" all known issues and context to get comprehensive solutions:
+
+#### **When to Use Confession Mode:**
+- Complex debugging scenarios
+- Multi-component system issues
+- Performance bottlenecks
+- Integration problems
+- Legacy code refactoring
+
+#### **Confession Mode Workflow:**
+```bash
+# Comprehensive issue analysis with full context
+/super-prompt/troubleshooting "My React app has performance issues, memory leaks, and slow rendering - full confession needed"
+
+/super-prompt/security "Security audit needed for authentication system with known vulnerabilities"
+```
+
+#### **Confession Mode Benefits:**
+- **Full Context Analysis**: No issue is too complex or multi-faceted
+- **Comprehensive Solutions**: Addresses root causes, not just symptoms
+- **Prevention Focus**: Identifies potential future issues
+- **Knowledge Transfer**: Documents solutions for team learning
+
+### **Double-Check Validation**
+
+Every critical decision and implementation goes through rigorous validation:
+
+#### **Double-Check Workflow:**
+```bash
+# Initial implementation
+/super-prompt/architect "Design scalable microservices architecture"
+
+# Validation and verification
+/super-prompt/review "Review the proposed microservices design for scalability"
+
+# Quality assurance
+/super-prompt/qa "Perform quality assurance on the architecture design"
+```
+
+#### **Double-Check Benefits:**
+- **Quality Assurance**: Multiple validation layers prevent issues
+- **Consistency**: Ensures alignment with best practices and standards
+- **Risk Mitigation**: Early identification of potential problems
+- **Continuous Improvement**: Feedback loops drive better outcomes
+
+### **Integrated Workflow Example**
+
+For a new feature development:
 
 ```bash
-# Manual setup (if automatic fails)
-pip install openai
-sudo npm install -g @openai/codex@latest
-openai login
+# 1. SDD Phase - Specification
+/super-prompt/specify "Build a real-time chat feature with WebSocket"
 
-# Check status
-python -c "from super_prompt.codex.client import get_codex_status; import json; print(json.dumps(get_codex_status(), indent=2))"
+# 2. SDD Phase - Planning
+/super-prompt/plan "Technical roadmap for WebSocket chat implementation"
+
+# 3. SDD Phase - Task Breakdown
+/super-prompt/tasks "Detailed tasks for chat feature development"
+
+# 4. Implementation with Double-Check
+/super-prompt/backend "Implement WebSocket server for real-time chat"
+/super-prompt/frontend "Build React chat component"
+/super-prompt/review "Review complete chat implementation"
+
+# 5. Confession Mode for Issues
+/super-prompt/troubleshooting "Chat feature has connection issues and performance problems"
+
+# 6. Final Quality Assurance
+/super-prompt/qa "End-to-end testing and quality validation"
 ```
 
-Common error messages and solutions:
-- **"sudo: command not found"**: Install sudo or run as root
-- **"npm: command not found"**: Install Node.js and npm
-- **"Codex login failed"**: Run `openai login` manually
-- **"Permission denied"**: Ensure you have sudo access or run as root
+### **Workflow Selection Guide**
 
-**Note**: The tool always updates the CLI first and handles authentication automatically.
+| **Scenario** | **Recommended Workflow** | **Primary Tool** |
+|-------------|-------------------------|------------------|
+| New feature planning | SDD (SPEC → PLAN → TASKS) | `/super-prompt/specify` |
+| Complex debugging | Confession Mode | `/super-prompt/troubleshooting` |
+| Architecture decisions | Double-Check | `/super-prompt/architect` + `/super-prompt/review` |
+| Code quality issues | Double-Check | `/super-prompt/qa` + `/super-prompt/review` |
+| Security concerns | Confession Mode | `/super-prompt/security` |
+| Performance problems | Confession Mode | `/super-prompt/performance` |
 
-The enhanced error handling provides actionable hints to resolve dependency issues quickly.
+These workflows ensure **consistent quality**, **comprehensive problem-solving**, and **scalable development practices** across all your projects.
 
-### 7) Use in Cursor IDE
+## Troubleshooting
 
-1. Set models as recommended above (GPT‑5 Codex low fast max + Grok Code fast
-   max).
-2. In Cursor chat, use slash commands:
+| Symptom | Resolution |
+| --- | --- |
+| Cursor reports "no tools available" | Check `~/.cursor/mcp.log` for `-------- MCP:` entries. If FastMCP is missing, install the runtime manually: `pip install mcp`. The fallback server will operate automatically once the CLI reconnects. |
+| `sp_high` missing or duplicated | The 5.0.5 release registers a single `sp_high` backed by the persona pipeline. Restart `sp-mcp` to reload the registry. |
+| Stdout parse errors | Ensure you never print to stdout in custom scripts. Super Prompt reserves stdout for JSON-RPC; use `--------`-prefixed logs on stderr. |
 
-```
- /super-prompt/architect "design a REST API"
-/super-prompt/dev "implement authentication"
-```
+## Release workflow
 
-### 8) Use in Codex (flag commands)
+1. `npm install` – refreshes `package-lock.json`.
+2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local testing).
+3. `npm publish` – publishes `@cdw0424/super-prompt@5.0.5` with synchronized Python assets.
 
-In Codex, enter flags directly in chat (no `super-prompt` prefix). Recommended
-flags use the `--sp-` prefix (both forms are accepted):
-
-```
---sp-architect "design a REST API"
---sp-dev "implement authentication"
-```
-
-### 9) CLI usage
-
-#### Python MCP 클라이언트 (권장)
-
-```bash
-# 도구 목록 조회
-python -m super_prompt.mcp_client list-tools
-
-# 도구 호출
-python -m super_prompt.mcp_client call sp.architect --args-json '{"query": "design a REST API"}'
-
-# 프롬프트 목록 조회
-python -m super_prompt.mcp_client list-prompts
-
-# 연결 상태 진단
-python -m super_prompt.mcp_client doctor
-```
-
-#### Typer CLI (Python 패키지 설치 시)
-
-```bash
-super-prompt --version
-super-prompt mcp-serve
-super-prompt super:init
-super-prompt doctor
-super-prompt mcp list-tools
-super-prompt mcp call sp.architect --args-json '{"query": "design a REST API"}'
-```
-
-#### NPM CLI (기존 방식 유지)
-
-```bash
-npx super-prompt --version
-npx super-prompt mcp-serve
-super-prompt --version  # 글로벌 설치 시
-```
-
-### 📦 Architecture (v4.7.0)
-
-Super Prompt는 **Python 우선 아키텍처**로 전환하며 npm 생태계를 완전히 지원합니다:
-
-```
-super-prompt/
-├── bin/
-│   ├── super-prompt        # Bash CLI (npm 호환)
-│   └── sp-mcp             # Python MCP 서버 launcher
-├── packages/core-py/
-│   ├── super_prompt/      # Python MCP 서버 (핵심 로직)
-│   │   ├── mcp_client.py  # 🆕 Python MCP 클라이언트
-│   │   └── cli.py         # Typer CLI with MCP commands
-│   └── tests/             # 단위 테스트
-├── packages/cursor-assets/  # IDE 통합 파일들
-└── install.js             # Python 환경 자동 구성
-```
-
-**아키텍처 설계 원칙:**
-- 🐍 **Python 우선**: 순수 Python MCP 클라이언트로 전환
-- ⚡ **성능 최적화**: Python의 고성능 MCP SDK 활용
-- 🔧 **자동 구성**: npm 설치 시 Python MCP 클라이언트 자동 구성
-- 🚀 **점진적 마이그레이션**: Node.js 클라이언트에서 Python으로 전환 중
-
-### Unified MCP pipeline
-
-- Every `/super-prompt/<persona>` command now routes through a shared
-  `sp.pipeline` helper.
-- The pipeline always performs: memory lookup → prompt/context analysis →
-  Codex/persona execution → plan + execution guidance → confession double-check
-  → memory update.
-
----
-
-## 🛠️ Available Tools
-
-### Development
-
-- `architect` - System architecture design
-- `backend` - Backend development
-- `frontend` - Frontend development
-- `dev` - General development
-- `refactorer` - Code refactoring
-- `optimize` - Performance optimization
-
-### Quality & Analysis
-
-- `analyzer` - Code analysis
-- `security` - Security review
-- `performance` - Performance analysis
-- `qa` - Quality assurance
-- `review` - Code review
-
-### Advanced
-
-- `high` - Strategic analysis
-- `doc-master` - Documentation
-- `db-expert` - Database expertise
-
----
-
-## 📚 Links
-
-- **[Changelog](CHANGELOG.md)**: Version history
-- **[Issues](https://github.com/cdw0424/super-prompt/issues)**: Report bugs
-
-## 📄 License
-
-MIT © [Daniel Choi](https://github.com/cdw0424)
+Super Prompt is MIT licensed. Contributions and issues are welcome at [https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).

@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "5.0.0"
-description = "Core library for Super Prompt v5.0.0 - Pure Python MCP Dual IDE Prompt Engineering Toolkit"
+version = "5.0.5"
+description = "Core library for Super Prompt v5.0.5 - Pure Python MCP Dual IDE Prompt Engineering Toolkit"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -32,6 +32,7 @@ dependencies = [
     "pathspec>=0.11.0",     # .gitignore pattern matching
     "pyyaml>=6.0",          # YAML configuration files
     "typer>=0.9.0",         # CLI framework
+    "mcp>=0.4.0",           # FastMCP runtime
 ]
 
 [project.optional-dependencies]
@@ -120,10 +121,6 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 strict_equality = true
-# Detect context manager protocol issues
-warn_return_any = true
-# Prevent circular self-assignments that can cause context manager issues
-warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
 module = [

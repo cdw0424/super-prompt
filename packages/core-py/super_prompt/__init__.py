@@ -1,7 +1,4 @@
-"""
-Super Prompt Core Library v4.0.39
-Modular architecture for prompt engineering and development workflow management.
-"""
+"""Super Prompt Core Library v5.0.5."""
 
-__version__ = "4.0.39"
+__version__ = "5.0.5"
 __all__ = ["engine", "context", "sdd", "personas", "adapters", "validation"]

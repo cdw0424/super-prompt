@@ -43,7 +43,8 @@ class CursorAdapter:
     def log(self, message: str) -> None:
         """Uniform adapter log output with required prefix."""
         try:
-            print(f"-------- {message}")
+            # Logging disabled - no print statements allowed
+            pass
         except Exception:
             # Best-effort logging; never break flow due to logging
             pass
@@ -69,7 +70,8 @@ class CursorAdapter:
         debug = os.environ.get("SUPER_PROMPT_DEBUG") == "1"
         def d(msg: str) -> None:
             if debug:
-                print(msg)
+                # Debug logging disabled - no print statements allowed
+                pass
 
         d(f"🔍 DEBUG: CursorAdapter called with project_root={project_root}")
         commands_dir = project_root / ".cursor" / "commands" / "super-prompt"
