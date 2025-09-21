@@ -1,5 +1,17 @@
 # Changelog
 
+## v5.1.5 — 2025-09-21
+
+- Simplified Quick Start: Streamlined installation with project-local setup as the primary method.
+- Version synchronization fix: All version displays now correctly show v5.1.5 across CLI, runtime banners, and documentation.
+- Enhanced MCP server architecture with improved modularity and stateless stdio entry points.
+- Updated persona pipeline system with prompt-based workflows replacing legacy pipeline helpers.
+- Refactored MCP server into modular components for better maintainability.
+- Added new SDD architecture module with comprehensive Spec Kit lifecycle guidance.
+- Improved asset validation and project bootstrap processes.
+- Restored full MCP coverage for all Spec Kit personas with shared workflow executor.
+- Enhanced troubleshooting persona with updated prompts and command metadata.
+
 ## v5.1.4 — 2025-09-21
 
 - Enhanced troubleshooting guide: Comprehensive installation troubleshooting for legacy version issues.

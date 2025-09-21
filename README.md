@@ -1,4 +1,4 @@
-# Super Prompt v5.1.4
+# Super Prompt v5.1.5
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,20 +11,15 @@ Super Prompt enables Cursor to apply language-specific optimized personas and gu
 ### Installation
 
 ```bash
-# Install the latest version globally (recommended for system-wide usage)
-npm install -g @cdw0424/super-prompt@latest
-
-# Or install a specific version if needed
-# npm install -g @cdw0424/super-prompt@5.1.3
+# Install the latest version in your project
+npm install @cdw0424/super-prompt@latest
 ```
-
-> **💡 Always install the latest version** (`@latest`) to get the newest features, bug fixes, and improvements!
 
 ### Project Setup
 
 ```bash
 # Initialize Super Prompt assets in your workspace
-super-prompt super:init --force
+./node_modules/.bin/super-prompt super:init --force
 ```
 
 ### Cursor Configuration
@@ -146,10 +141,10 @@ Super Prompt automatically detects your project's context and applies the most a
 | **API Design** | GPT-5 Low Fast | Max |
 | **Refactoring** | Grok Code Fast | Max |
 
-## What’s new in 5.1.4
+## What’s new in 5.1.5
 
-- **Enhanced troubleshooting guide** – Comprehensive installation troubleshooting for legacy version issues.
-- **Version synchronization fix** – All version displays now correctly show v5.1.4 across CLI, runtime banners, and documentation.
+- **Simplified Quick Start** – Streamlined installation with project-local setup as the primary method.
+- **Version synchronization fix** – All version displays now correctly show v5.1.5 across CLI, runtime banners, and documentation.
 - **Enhanced MCP server architecture** – Improved modularity with stateless stdio entry points and better component separation.
 - **Persona pipeline modernization** – Replaced legacy pipeline helpers with modern prompt-based workflows for all personas.
 - **SDD architecture integration** – Added comprehensive Spec Kit lifecycle guidance with new architecture knowledge base.
@@ -341,7 +336,7 @@ These workflows ensure **consistent quality**, **comprehensive problem-solving**
 
 | Symptom | Resolution |
 | --- | --- |
-| **Version shows older release (e.g., v1.0.4) after installation** | `npm view @cdw0424/super-prompt version` now returns 5.1.4, so the registry is serving the new build. When you see the banner report v1.0.4 after installation, the CLI is being launched from an older copy that's still on your machine—most often a globally installed 1.0.4 or a project lockfile pinned to that number.<br><br>**Do this once to flush the stale install:**<br><br>`npm uninstall -g @cdw0424/super-prompt   # removes the old global copy`<br>`npm cache clean --force                  # optional, clears cached tarballs`<br><br>**Then reinstall the new release (pick the style you want per project):**<br><br>`# global upgrade (if you rely on the super-prompt binary in PATH)`<br>`npm install -g @cdw0424/super-prompt@latest`<br><br>`# project-local (preferred for workspace isolation)`<br>`npm install @cdw0424/super-prompt@latest`<br>`npx @cdw0424/super-prompt@latest super:init   # or ./node_modules/.bin/super-prompt super:init`<br><br>**If the project already had a package-lock.json or npm-shrinkwrap.json, make sure it doesn't pin the old version; delete the lockfile or bump the semver entry to ^5.1.4 before reinstalling.**<br><br>**After reinstalling, rerun super:init (or ./bin/super-prompt super:init) and the banner will show v5.1.4 \| @cdw0424/super-prompt, confirming the newer code is in use.**<br><br>*Note: npm will always deliver the latest tarball, but Node's install flow can't guess your intent about existing copies. If a machine already has an older global install, the shell will keep launching that binary until it's removed or upgraded. Likewise, a project's package-lock.json can legitimately pin an older release. Automatically ripping those out during install would break reproducibility, so the CLI leaves that decision to you.*<br><br>*If you want to force the newest version every time, add a one-line script to your bootstrap (for example, in your project's postinstall):*<br><br>`"scripts": {`<br>&nbsp;&nbsp;`"postinstall": "npx --yes npm@latest install @cdw0424/super-prompt@latest"`<br>`}`<br><br>*Or, for global installs on shared machines:*<br><br>`npm install -g @cdw0424/super-prompt@latest`<br>`super-prompt super:init --force`<br><br>*That way each environment explicitly refreshes to 5.1.4 (or whatever's current) before initialization, without the tool destroying user-managed installations behind the scenes.* |
+| **Version shows older release (e.g., v1.0.4) after installation** | `npm view @cdw0424/super-prompt version` now returns 5.1.5, so the registry is serving the new build. When you see the banner report v1.0.4 after installation, the CLI is being launched from an older copy that's still on your machine—most often a globally installed 1.0.4 or a project lockfile pinned to that number.<br><br>**Do this once to flush the stale install:**<br><br>`npm uninstall -g @cdw0424/super-prompt   # removes the old global copy`<br>`npm cache clean --force                  # optional, clears cached tarballs`<br><br>**Then reinstall the new release (pick the style you want per project):**<br><br>`# global upgrade (if you rely on the super-prompt binary in PATH)`<br>`npm install -g @cdw0424/super-prompt@latest`<br><br>`# project-local (preferred for workspace isolation)`<br>`npm install @cdw0424/super-prompt@latest`<br>`npx @cdw0424/super-prompt@latest super:init   # or ./node_modules/.bin/super-prompt super:init`<br><br>**If the project already had a package-lock.json or npm-shrinkwrap.json, make sure it doesn't pin the old version; delete the lockfile or bump the semver entry to ^5.1.5 before reinstalling.**<br><br>**After reinstalling, rerun super:init (or ./bin/super-prompt super:init) and the banner will show v5.1.5 \| @cdw0424/super-prompt, confirming the newer code is in use.**<br><br>*Note: npm will always deliver the latest tarball, but Node's install flow can't guess your intent about existing copies. If a machine already has an older global install, the shell will keep launching that binary until it's removed or upgraded. Likewise, a project's package-lock.json can legitimately pin an older release. Automatically ripping those out during install would break reproducibility, so the CLI leaves that decision to you.*<br><br>*If you want to force the newest version every time, add a one-line script to your bootstrap (for example, in your project's postinstall):*<br><br>`"scripts": {`<br>&nbsp;&nbsp;`"postinstall": "npx --yes npm@latest install @cdw0424/super-prompt@latest"`<br>`}`<br><br>*Or, for global installs on shared machines:*<br><br>`npm install -g @cdw0424/super-prompt@latest`<br>`super-prompt super:init --force`<br><br>*That way each environment explicitly refreshes to 5.1.5 (or whatever's current) before initialization, without the tool destroying user-managed installations behind the scenes.* |
 | Cursor reports "no tools available" | Check `~/.cursor/mcp.log` for `-------- MCP:` entries. If FastMCP is missing, install the runtime manually: `pip install mcp`. The fallback server will operate automatically once the CLI reconnects. |
 | `sp_high` missing or duplicated | The 5.0.5 release registers a single `sp_high` backed by the persona pipeline. Restart `sp-mcp` to reload the registry. |
 | Stdout parse errors | Ensure you never print to stdout in custom scripts. Super Prompt reserves stdout for JSON-RPC; use `--------`-prefixed logs on stderr. |
@@ -350,6 +345,6 @@ These workflows ensure **consistent quality**, **comprehensive problem-solving**
 
 1. `npm install` – refreshes `package-lock.json`.
 2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local testing).
-3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.4` with synchronized Python assets.
+3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.5` with synchronized Python assets.
 
 Super Prompt is MIT licensed. Contributions and issues are welcome at [https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).
