@@ -41,7 +41,8 @@ function main() {
     const hasServer = lines.some(l => l.trim() === 'server: super-prompt');
     const toolLine = lines.find(l => l.trim().startsWith('tool: '));
     const hasTool = !!toolLine;
-    const hasValidTool = hasTool && (/^tool:\s+sp\.[A-Za-z0-9_-]+$/.test(toolLine.trim()) || /^tool:\s+sp\.pipeline$/.test(toolLine.trim()));
+    const toolOkRegex = /^(tool:\s+)(sp[._][A-Za-z0-9_-]+|sp\.pipeline)$/;
+    const hasValidTool = hasTool && toolOkRegex.test(toolLine.trim());
 
     // illegal top-level autorun (must be nested under args:)
     const topLevelAutorun = lines.some(l => /^autorun:\s*/.test(l.trim()));
@@ -51,7 +52,7 @@ function main() {
       const miss = [];
       if (!hasRun) miss.push('run:mcp');
       if (!hasServer) miss.push('server:super-prompt');
-      if (!hasValidTool) miss.push('tool:sp.* or sp.pipeline');
+      if (!hasValidTool) miss.push('tool:sp_<name> or sp.<name> or sp.pipeline');
       if (topLevelAutorun) miss.push('top-level autorun (must be under args)');
       issues.push({file, msg: 'invalid frontmatter', details: miss});
     }
@@ -64,7 +65,7 @@ function main() {
     }
     process.exit(1);
   }
-  console.log('-------- verify-asset-commands: OK');
+  console.error('-------- verify-asset-commands: OK');
 }
 
 main();

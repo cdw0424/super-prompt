@@ -13,6 +13,12 @@ from pathlib import Path
 # MCP SDK initialization
 from .mcp.version_detection import import_mcp_components, create_fallback_mcp
 
+# Suppress MCP library warnings
+import logging
+logging.getLogger('mcp').setLevel(logging.ERROR)
+logging.getLogger('mcp.server').setLevel(logging.ERROR)
+logging.getLogger('mcp.server.fastmcp').setLevel(logging.ERROR)
+
 # Initialize MCP components
 try:
     FastMCP, TextContent, _MCP_VERSION = import_mcp_components()
@@ -97,6 +103,28 @@ MODE_PERSONA_MAP = {
     },
     "default": "architect"  # Default mode
 }
+
+# Track registered tools to prevent duplicates
+_REGISTERED_TOOLS: set = set()
+
+
+def _register_tool_once(tool_name: str):
+    """Helper to register MCP tool only once to prevent duplicates"""
+    def decorator(func):
+        if tool_name not in _REGISTERED_TOOLS:
+            _REGISTERED_TOOLS.add(tool_name)
+            try:
+                return mcp.tool()(func)
+            except Exception as e:
+                # If tool already exists, just return original function
+                if "already exists" in str(e).lower():
+                    return func
+                else:
+                    raise
+        else:
+            # Return original function without MCP decoration
+            return func
+    return decorator
 
 
 def get_active_persona(query_type: str = "default") -> str:
@@ -322,7 +350,7 @@ def sp_gpt_mode_off_mcp():
 
 
 # Persona-based analysis tools with Context Management Protocol
-@mcp.tool()
+@_register_tool_once("sp_high")
 def sp_high(query: str, persona: str = "high"):
     """High persona: sp_high analysis"""
     try:
@@ -433,7 +461,7 @@ def sp_gpt(query: str, persona: str = "gpt"):
         progress.show_error(f"Gpt analysis failed: {str(e)}")
         return f"Gpt analysis error: {str(e)}"
 
-@mcp.tool()
+@_register_tool_once("sp_analyzer")
 def sp_analyzer(query: str, persona: str = "analyzer"):
     """Analyzer persona: sp_analyzer analysis"""
     try:
@@ -470,7 +498,7 @@ def sp_analyzer(query: str, persona: str = "analyzer"):
         progress.show_error(f"Analyzer analysis failed: {str(e)}")
         return f"Analyzer analysis error: {str(e)}"
 
-@mcp.tool()
+@_register_tool_once("sp_architect")
 def sp_architect(query: str, persona: str = "architect"):
     """Architect persona: sp_architect analysis"""
     try:
@@ -581,7 +609,7 @@ def sp_security(query: str, persona: str = "security"):
         progress.show_error(f"Security analysis failed: {str(e)}")
         return f"Security analysis error: {str(e)}"
 
-@mcp.tool()
+@_register_tool_once("sp_frontend")
 def sp_frontend(query: str, persona: str = "frontend"):
     """Frontend persona: sp_frontend analysis"""
     try:
@@ -618,7 +646,7 @@ def sp_frontend(query: str, persona: str = "frontend"):
         progress.show_error(f"Frontend analysis failed: {str(e)}")
         return f"Frontend analysis error: {str(e)}"
 
-@mcp.tool()
+@_register_tool_once("sp_backend")
 def sp_backend(query: str, persona: str = "backend"):
     """Backend persona: sp_backend analysis"""
     try:
@@ -815,3 +843,7 @@ def sp_troubleshooting(query: str, persona: str = "troubleshooting"):
         return run_prompt_based_workflow("troubleshooting", query)
     except Exception as e:
         return f"Troubleshooting error: {str(e)}"
+
+
+# Export the mcp instance for use by mcp_stdio.py
+__all__ = ['mcp']

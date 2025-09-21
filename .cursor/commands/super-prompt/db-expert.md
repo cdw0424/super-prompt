@@ -5,9 +5,14 @@ server: super-prompt
 tool: sp_db_expert
 args:
   query: "${input}"
+  persona: "db-expert"
+## Execution Mode
+
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+
 ---
 
-# 🗄️ **DB Expert - Database Design & Optimization Specialist**
+# **db-expert - Super Prompt MCP Tool**
 
 **Expert Focus**: Database architecture, query optimization, and data modeling
 

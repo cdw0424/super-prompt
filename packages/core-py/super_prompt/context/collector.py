@@ -114,7 +114,7 @@ class ContextCollector:
 
             return pathspec.PathSpec.from_lines('gitwildmatch', patterns)
         except Exception as e:
-            print(f"--------context-collector: Failed to load .gitignore: {e}")
+            # Silent error handling for clean MCP operation
             return None
 
     def _is_ignored(self, path: Path) -> bool:
@@ -384,7 +384,8 @@ class ContextCollector:
                     break
 
             except Exception as e:
-                print(f"--------context-collector: Error reading {file_path}: {e}")
+                # Silent error handling for clean MCP operation
+                pass
             continue
 
         return context_parts

@@ -1,143 +1,16 @@
 ---
 description: analyzer command - Systematic root cause analysis
-run: inline
-script: |
-  const { spawn } = require('child_process');
-  const path = require('path');
+run: mcp
+server: super-prompt
+tool: sp_analyzer
+args:
+  query: "${input}"
+  persona: "analyzer"
+## Execution Mode
 
-  function executeAnalyzer(query) {
-    return new Promise((resolve, reject) => {
-      const projectRoot = process.cwd();
-      const packageRoot = path.join(__dirname, '..', '..', '..', '..', '..');
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
 
-      // Execute the analyzer function directly via Python script
-      const pythonCmd = [
-        'python3',
-        path.join(packageRoot, 'packages', 'core-py', 'super_prompt', 'workflow_runner.py'),
-        'analyzer',
-        query
-      ];
-
-      console.error(\`-------- analyzer: Executing inline analysis: \${query.substring(0, 50)}...\`);
-
-      const proc = spawn('python3', pythonCmd.slice(1), {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          PYTHONPATH: [
-            path.join(packageRoot, 'packages', 'core-py'),
-            process.env.PYTHONPATH || ''
-          ].filter(Boolean).join(':'),
-          PYTHONUNBUFFERED: '1'
-        },
-        cwd: projectRoot
-      });
-
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.error(\`-------- analyzer: Analysis completed successfully\`);
-          resolve(stdout.trim());
-        } else {
-          console.error(\`-------- analyzer: Failed with code \${code}\`);
-          console.error(\`-------- analyzer: stderr: \${stderr}\`);
-          reject(new Error(\`Analyzer execution failed: \${stderr || 'Unknown error'}\`));
-        }
-      });
-
-      proc.on('error', (error) => {
-        console.error(\`-------- analyzer: Execution error: \${error.message}\`);
-        reject(error);
-      });
-    });
-  }
-
-  async function runAnalyzerCommand(input) {
-    try {
-      console.error(\`-------- analyzer: Starting inline execution for: \${input.substring(0, 50)}...\`);
-
-      // Execute analyzer analysis directly
-      const result = await executeAnalyzer(input);
-
-      if (!result || result.trim() === '') {
-        return \`## 🔍 **Analyzer Analysis Result**
-
-**Query:** \${input}
-
-### ⚠️ **Analysis Status: Incomplete**
-
-Analyzer execution completed but returned no content. This may indicate:
-
-1. **Query too complex** - Try breaking it into smaller parts
-2. **Module import issues** - Check Python path configuration
-3. **Function execution error** - Verify analyzer function implementation
-
-### 💡 **Suggestions:**
-
-- Simplify your query and try again
-- Check Python environment and dependencies
-- Verify the analyzer module is properly installed
-
-**Raw Output:** (empty)\`;
-      }
-
-      return result;
-
-    } catch (error) {
-      console.error(\`-------- analyzer: Inline execution failed: \${error.message}\`);
-
-      return \`## 🔍 **Analyzer Analysis Error**
-
-**Query:** \${input}
-
-### ❌ **Execution Failed**
-
-The inline analyzer execution encountered an error:
-
-**Error:** \${error.message}
-
-### 🔧 **Troubleshooting Steps:**
-
-1. **Check Python Installation:**
-   \`\`\`bash
-   python3 --version
-   pip list | grep super-prompt
-   \`\`\`
-
-2. **Verify Module Path:**
-   \`\`\`bash
-   ls -la \${path.join(__dirname, '..', '..', '..', '..', '..', 'packages', 'core-py')}
-   \`\`\`
-
-3. **Test Basic Import:**
-   \`\`\`bash
-   python3 -c "from super_prompt.mcp_server import run_prompt_based_workflow; print('Import successful')"
-   \`\`\`
-
-4. **Check Environment:**
-   \`\`\`bash
-   echo \$PYTHONPATH
-   \`\`\`
-
-### 💡 **Alternative:**
-You can also try the MCP-based analyzer command if inline execution continues to fail.
-
-**Fallback Command:** \`/super-prompt/analyzer "\${input}"\` (will use MCP server)\`;
-    }
-  }
-
-  // Export the main function
-  module.exports = runAnalyzerCommand;
+---
 
 # 🔍 **Analyzer - Single-Focus Systematic Root Cause Analysis**
 

@@ -232,8 +232,48 @@ class PersonaPipeline:
                 if not config:
                     raise ValueError(f"Unknown persona: {persona_name}")
 
-                # For now, return a simple response
-                # TODO: Implement actual persona logic
+                # Import the persona prompt module directly
+                try:
+                    # Get the current mode and generate prompt
+                    from ..mode_store import get_mode
+                    current_mode = get_mode() or "gpt"
+
+                    # Import and call the prompt function directly
+                    if persona_name == "architect":
+                        from .architect_prompts import get_architect_prompt
+                        prompt = get_architect_prompt(current_mode, query)
+                    elif persona_name == "analyzer":
+                        from .analyzer_prompts import get_analyzer_prompt
+                        prompt = get_analyzer_prompt(current_mode, query)
+                    elif persona_name == "backend":
+                        from .backend_prompts import get_backend_prompt
+                        prompt = get_backend_prompt(current_mode, query)
+                    elif persona_name == "frontend":
+                        from .frontend_prompts import get_frontend_prompt
+                        prompt = get_frontend_prompt(current_mode, query)
+                    elif persona_name == "high":
+                        from .high_prompts import get_high_prompt
+                        prompt = get_high_prompt(current_mode, query)
+                    else:
+                        raise ValueError(f"No prompt function available for persona: {persona_name}")
+
+                    # Here we would normally call LLM, but for now return the prompt
+                    # TODO: Integrate with actual LLM provider
+                    result_text = f"[{persona_name.upper()}] Analysis Prompt Generated:\n\n{prompt}"
+
+                    # Create a result object
+                    result = type('Result', (), {'text': result_text})()
+
+                    self.span_manager.end_span(span_id, "ok")
+                    return result
+
+                except ImportError as ie:
+                    result_text = f"[{persona_name.upper()}] Import error: {ie}"
+                    result = type('Result', (), {'text': result_text})()
+                    self.span_manager.end_span(span_id, "error", {"error": str(ie)})
+                    return result
+
+                # Fallback to simple response if prompt module not found
                 result_text = f"Persona '{persona_name}' analysis completed for query: {query[:100]}{'...' if len(query) > 100 else ''}"
 
                 # Create a result object
@@ -250,6 +290,7 @@ class PersonaPipeline:
             # Return error result
             error_text = f"Persona analysis error: {str(e)}"
             return type('Result', (), {'text': error_text})()
+
 
 
 # Pipeline aliases

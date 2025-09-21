@@ -14,18 +14,18 @@ function ensureNpmCachePermissions() {
     // Create cache directory if it doesn't exist
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true, mode: 0o755 });
-      console.log(`✅ Created npm cache directory: ${cacheDir}`);
+      console.error(`✅ Created npm cache directory: ${cacheDir}`);
     }
 
     // Fix permissions on cache directory
     try {
       execSync(`chmod -R 755 "${cacheDir}"`, { stdio: 'ignore' });
-      console.log('✅ Fixed npm cache permissions');
+      console.error('✅ Fixed npm cache permissions');
     } catch (permError) {
-      console.log('⚠️  Cache permission fix skipped (non-critical)');
+      console.error('⚠️  Cache permission fix skipped (non-critical)');
     }
   } catch (error) {
-    console.log('⚠️  Cache setup skipped:', error.message);
+    console.error('⚠️  Cache setup skipped:', error.message);
   }
 }
 
@@ -66,7 +66,7 @@ ${colors.dim}                     v${pkg.version} | @cdw0424/super-prompt${color
 ${colors.dim}                          Made by ${colors.reset}${colors.magenta}Daniel Choi${colors.reset}
 `;
 
-console.log(logo);
+console.error(logo);
 
 // Progress animation
 let dots = 0;
@@ -74,20 +74,20 @@ const progressChars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '
 let progressIndex = 0;
 
 function showProgress(message) {
-    process.stdout.write(`${colors.cyan}${progressChars[progressIndex]} ${message}${colors.reset}\r`);
+    process.stderr.write(`${colors.cyan}${progressChars[progressIndex]} ${message}${colors.reset}\r`);
     progressIndex = (progressIndex + 1) % progressChars.length;
 }
 
 function completedStep(step, message) {
-    console.log(`${colors.green}✓${colors.reset} ${colors.bold}Step ${step}:${colors.reset} ${message}`);
+    console.error(`${colors.green}✓${colors.reset} ${colors.bold}Step ${step}:${colors.reset} ${message}`);
 }
 
 // Start installation
-console.log(`${colors.yellow}${colors.bold}🚀 Starting installation...${colors.reset}\n`);
+console.error(`${colors.yellow}${colors.bold}🚀 Starting installation...${colors.reset}\n`);
 
 // Check platform
 const platform = os.platform();
-console.log(`${colors.cyan}⚙️  Checking platform compatibility...${colors.reset}`);
+console.error(`${colors.cyan}⚙️  Checking platform compatibility...${colors.reset}`);
 
 if (platform !== 'darwin' && platform !== 'linux' && platform !== 'win32') {
     console.error(`${colors.red}❌ Unsupported platform: ${platform}${colors.reset}`);
@@ -163,7 +163,7 @@ function copyFile(src, dest, description) {
     try {
         fs.copyFileSync(src, dest);
         fs.chmodSync(dest, '755');
-        console.log(`   ${colors.dim}→ ${description}${colors.reset}`);
+        console.error(`   ${colors.dim}→ ${description}${colors.reset}`);
     } catch (error) {
         console.error(`${colors.red}❌ Failed to copy ${src}: ${error.message}${colors.reset}`);
         throw error;
@@ -189,7 +189,7 @@ function copyDirectory(src, dest, description) {
                 }
             }
         }
-        console.log(`   ${colors.dim}→ ${description}${colors.reset}`);
+        console.error(`   ${colors.dim}→ ${description}${colors.reset}`);
     } catch (error) {
         console.error(`${colors.red}❌ Failed to copy directory ${src}: ${error.message}${colors.reset}`);
         throw error;
@@ -201,7 +201,7 @@ function writeFile(filePath, content, description) {
         ensureDir(path.dirname(filePath));
         fs.writeFileSync(filePath, content, 'utf8');
         fs.chmodSync(filePath, '755');
-        console.log(`   ${colors.dim}→ ${description}${colors.reset}`);
+        console.error(`   ${colors.dim}→ ${description}${colors.reset}`);
     } catch (error) {
         console.error(`${colors.red}❌ Failed to write ${filePath}: ${error.message}${colors.reset}`);
         throw error;
@@ -215,7 +215,7 @@ async function sleep(ms) {
 async function migrateLegacyInstallation() {
     const globalInstall = isGlobalInstall();
     if (!globalInstall) {
-        console.log(`${colors.dim}   → Skipping legacy migration for local install${colors.reset}`);
+        console.error(`${colors.dim}   → Skipping legacy migration for local install${colors.reset}`);
         return;
     }
 
@@ -232,17 +232,17 @@ async function migrateLegacyInstallation() {
                 try {
                     const linkTarget = fs.readlinkSync(legacyPath);
                     if (linkTarget && linkTarget.includes('node_modules/@cdw0424/super-prompt')) {
-                        console.log(`${colors.yellow}   → Found legacy symlink: ${legacyPath}${colors.reset}`);
+                        console.error(`${colors.yellow}   → Found legacy symlink: ${legacyPath}${colors.reset}`);
                         legacyFound = true;
 
                         // Remove legacy symlink
                         try {
                             fs.unlinkSync(legacyPath);
-                            console.log(`${colors.green}   ✓ Removed legacy symlink: ${legacyPath}${colors.reset}`);
+                            console.error(`${colors.green}   ✓ Removed legacy symlink: ${legacyPath}${colors.reset}`);
                         } catch (removeError) {
                             // If we can't remove it directly, it might be owned by root
-                            console.log(`${colors.yellow}   ⚠ Legacy symlink detected but couldn't remove automatically${colors.reset}`);
-                            console.log(`${colors.dim}     Run: sudo rm ${legacyPath}${colors.reset}`);
+                            console.error(`${colors.yellow}   ⚠ Legacy symlink detected but couldn't remove automatically${colors.reset}`);
+                            console.error(`${colors.dim}     Run: sudo rm ${legacyPath}${colors.reset}`);
                         }
                     }
                 } catch (readError) {
@@ -252,13 +252,13 @@ async function migrateLegacyInstallation() {
         }
 
         if (legacyFound) {
-            console.log(`${colors.green}   ✓ Legacy symlink cleanup completed${colors.reset}`);
+            console.error(`${colors.green}   ✓ Legacy symlink cleanup completed${colors.reset}`);
         } else {
-            console.log(`${colors.dim}   → No legacy installation found${colors.reset}`);
+            console.error(`${colors.dim}   → No legacy installation found${colors.reset}`);
         }
 
     } catch (error) {
-        console.log(`${colors.yellow}   ⚠ Legacy migration skipped: ${error.message}${colors.reset}`);
+        console.error(`${colors.yellow}   ⚠ Legacy migration skipped: ${error.message}${colors.reset}`);
     }
 }
 
@@ -316,24 +316,24 @@ async function animatedInstall() {
             }
         }
         if (wantCodex) {
-            console.log(`${colors.cyan}🧠 Ensuring Codex CLI (high reasoning) is up-to-date...${colors.reset}`);
+            console.error(`${colors.cyan}🧠 Ensuring Codex CLI (high reasoning) is up-to-date...${colors.reset}`);
             try {
                 execSync('npm install -g @openai/codex@latest', { stdio: 'inherit' });
                 completedStep('1.5', 'Codex CLI updated to latest');
             } catch (e) {
-                console.warn(`${colors.yellow}⚠️  Could not update Codex CLI automatically. You can run:${colors.reset}`);
-                console.warn(`   ${colors.cyan}npm install -g @openai/codex@latest${colors.reset}`);
+                console.error(`${colors.yellow}⚠️  Could not update Codex CLI automatically. You can run:${colors.reset}`);
+                console.error(`   ${colors.cyan}npm install -g @openai/codex@latest${colors.reset}`);
             }
         } else {
-            console.log(`${colors.dim}Skipping Codex CLI install/upgrade (set SUPER_PROMPT_CODEX_INSTALL=1 to enable)${colors.reset}`);
+            console.error(`${colors.dim}Skipping Codex CLI install/upgrade (set SUPER_PROMPT_CODEX_INSTALL=1 to enable)${colors.reset}`);
         }
 
         // Step 1.8: Detect and migrate legacy installations
-        console.log(`${colors.cyan}🔄 Checking for legacy installations...${colors.reset}`);
+        console.error(`${colors.cyan}🔄 Checking for legacy installations...${colors.reset}`);
         await migrateLegacyInstallation();
 
         // Step 2: Ensure Python CLI lives under .super-prompt (unified location)
-        console.log(`${colors.cyan}🐍 Ensuring .super-prompt Python CLI...${colors.reset}`);
+        console.error(`${colors.cyan}🐍 Ensuring .super-prompt Python CLI...${colors.reset}`);
 
         // The directory of the package itself, keeping helpers under .super-prompt
         const packageDir = __dirname;
@@ -350,20 +350,20 @@ async function animatedInstall() {
         // Step 4: Remove auto-init logic, it's better for the user to run it explicitly.
         
         // Step 5: Ready for project initialization (run in your project)
-        console.log(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
-        console.log(`${colors.dim}   Run this inside your project to install rules & commands:${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
-        console.log(`   ${colors.cyan}# or if not globally installed:${colors.reset}`);
-        console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
+        console.error(`${colors.cyan}⚡ Ready to set up your project integration...${colors.reset}`);
+        console.error(`${colors.dim}   Run this inside your project to install rules & commands:${colors.reset}`);
+        console.error(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
+        console.error(`   ${colors.cyan}# or if not globally installed:${colors.reset}`);
+        console.error(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}`);
         await sleep(300);
         completedStep(4, 'Project integration ready')
 
         // Remove legacy flag-only shell hook installation
         
         // Installation complete
-        console.log(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);
+        console.error(`\n${colors.green}${colors.bold}🎉 Installation Complete!${colors.reset}\n`);
         
-        console.log(`${colors.magenta}${colors.bold}📖 Quick Start:${colors.reset}`);
+        console.error(`${colors.magenta}${colors.bold}📖 Quick Start:${colors.reset}`);
 
         // Check if super-prompt is accessible in current session
         let commandAvailable = false;
@@ -373,22 +373,22 @@ async function animatedInstall() {
         } catch (_) {}
 
         if (!commandAvailable) {
-            console.log(`${colors.yellow}⚠️  Command not available in current session${colors.reset}`);
-            console.log(`${colors.cyan}   → Try: which super-prompt${colors.reset}`);
-            console.log(`${colors.cyan}   → Or restart terminal for PATH updates${colors.reset}\n`);
+            console.error(`${colors.yellow}⚠️  Command not available in current session${colors.reset}`);
+            console.error(`${colors.cyan}   → Try: which super-prompt${colors.reset}`);
+            console.error(`${colors.cyan}   → Or restart terminal for PATH updates${colors.reset}\n`);
         }
 
-        console.log(`${colors.dim}   Initialize in your project:${colors.reset}`);
-        console.log(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
-        console.log(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}\n`);
+        console.error(`${colors.dim}   Initialize in your project:${colors.reset}`);
+        console.error(`   ${colors.cyan}super-prompt super:init${colors.reset}`);
+        console.error(`   ${colors.cyan}npx @cdw0424/super-prompt super:init${colors.reset}\n`);
 
-        console.log(`${colors.dim}   Use personas in your IDE after configuring the MCP Server.${colors.reset}`);
-        console.log(`   ${colors.cyan}/frontend  "design strategy"${colors.reset}`);
-        console.log(`   ${colors.cyan}/backend   "debug intermittent failures"${colors.reset}`);
-        console.log(`   ${colors.cyan}/architect "break down a feature"${colors.reset}`);
+        console.error(`${colors.dim}   Use personas in your IDE after configuring the MCP Server.${colors.reset}`);
+        console.error(`   ${colors.cyan}/frontend  "design strategy"${colors.reset}`);
+        console.error(`   ${colors.cyan}/backend   "debug intermittent failures"${colors.reset}`);
+        console.error(`   ${colors.cyan}/architect "break down a feature"${colors.reset}`);
         
-        console.log(`${colors.blue}🔗 Package: https://npmjs.com/package/@cdw0424/super-prompt${colors.reset}`);
-        console.log(`${colors.green}✨ Ready for next-level prompt engineering!${colors.reset}`);
+        console.error(`${colors.blue}🔗 Package: https://npmjs.com/package/@cdw0424/super-prompt${colors.reset}`);
+        console.error(`${colors.green}✨ Ready for next-level prompt engineering!${colors.reset}`);
         
     } catch (error) {
         console.error(`${colors.red}❌ Installation failed: ${error.message}${colors.reset}`);

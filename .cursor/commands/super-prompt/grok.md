@@ -5,6 +5,10 @@ server: super-prompt
 tool: sp_grok
 args:
   query: "${input}"
+## Execution Mode
+
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+
 ---
 
 # 🧠 **Grok - Creative AI Session Optimization Specialist**

@@ -65,11 +65,9 @@ def _run_codex_high_cli(query: str, context: str = "", retry_after_login: bool =
     if not retry_after_login:  # Only check/install on first attempt
         openai_path = shutil.which("openai")
         if not openai_path:
-            print("-------- codex: OpenAI CLI not found; installing...", file=sys.stderr, flush=True)
 
             # First, try to install OpenAI CLI via pip
             try:
-                print("-------- codex: Installing OpenAI CLI via pip...", file=sys.stderr, flush=True)
                 pip_proc = subprocess.run(
                     [sys.executable, "-m", "pip", "install", "openai"],
                     stdout=subprocess.PIPE,
@@ -78,7 +76,6 @@ def _run_codex_high_cli(query: str, context: str = "", retry_after_login: bool =
                     timeout=120
                 )
                 if pip_proc.returncode != 0:
-                    print(f"-------- codex: OpenAI CLI installation failed: {pip_proc.stderr}", file=sys.stderr, flush=True)
                     return """❌ **OpenAI CLI 설치 실패**
 
 OpenAI CLI를 설치할 수 없습니다.
@@ -103,14 +100,12 @@ pip --version
 
 설치 완료 후 다시 시도해주세요."""
 
-                print("-------- codex: OpenAI CLI installed successfully", file=sys.stderr, flush=True)
             except subprocess.TimeoutExpired:
                 return "❌ **설치 시간 초과**\n\nOpenAI CLI 설치가 너무 오래 걸립니다. 수동으로 설치해주세요."
             except Exception as e:
                 return f"❌ **설치 오류**: {str(e)}\n\n수동으로 설치해주세요."
 
         # Step 2: Install/Update Codex CLI
-        print("-------- codex: Installing/updating Codex CLI...", file=sys.stderr, flush=True)
         try:
             update_proc = subprocess.run(
                 ["sudo", "npm", "install", "-g", "@openai/codex@latest"],
@@ -120,7 +115,6 @@ pip --version
                 timeout=180
             )
             if update_proc.returncode != 0:
-                print(f"-------- codex: Codex CLI installation failed: {update_proc.stderr}", file=sys.stderr, flush=True)
                 # Check if npm is available
                 npm_path = shutil.which("npm")
                 if not npm_path:
@@ -145,14 +139,10 @@ brew install node
 
 설치 완료 후 다시 시도해주세요."""
             else:
-                print("-------- codex: Codex CLI updated successfully", file=sys.stderr, flush=True)
         except subprocess.TimeoutExpired:
-            print("-------- codex: Codex CLI installation timed out", file=sys.stderr, flush=True)
         except Exception as e:
-            print(f"-------- codex: Codex CLI installation error: {e}", file=sys.stderr, flush=True)
 
     # Step 3: Check login status and login if needed
-    print("-------- codex: Checking login status...", file=sys.stderr, flush=True)
     try:
         check = subprocess.run(
             ["openai", "api", "keys", "list"],
@@ -164,7 +154,6 @@ brew install node
 
         # Step 4: If not logged in, launch login
         if check.returncode != 0:
-            print("-------- codex: OpenAI login required; launching login flow...", file=sys.stderr, flush=True)
 
             try:
                 login_proc = subprocess.run(
@@ -203,7 +192,6 @@ export OPENAI_API_KEY="your-api-key-here"
 로그인 완료 후 다시 시도해주세요."""
 
                 # Retry after successful login
-                print("-------- codex: Login successful, retrying execution...", file=sys.stderr, flush=True)
                 return _run_codex_high_cli(query, context, retry_after_login=True)
 
             except subprocess.TimeoutExpired:
@@ -244,7 +232,6 @@ sudo npm install -g @openai/codex@latest
 설치 완료 후 다시 시도해주세요."""
 
     # Step 5: Execute Codex high plan
-    print("-------- codex: Executing high reasoning with CLI...", file=sys.stderr, flush=True)
     try:
         payload = json.dumps({"query": query, "context": context or ""})
         proc = subprocess.run(
@@ -343,7 +330,6 @@ def run_codex_high_with_fallback(query: str, context: str = "") -> Union[str, Di
     try:
         return _run_codex_high_cli(query, context)
     except Exception as cli_error:
-        print(f"-------- codex: CLI execution failed: {cli_error}", file=sys.stderr, flush=True)
         return {
             "error": f"Codex CLI execution failed: {str(cli_error)}",
             "hint": "Try running 'sudo npm install -g @openai/codex@latest' and 'openai login' manually"

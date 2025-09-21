@@ -59,11 +59,6 @@ class SpanManager:
             "status": "active",
         }
 
-        print(
-            f"-------- memory: span started {span_id} for {meta.get('commandId', 'unknown')}",
-            file=sys.stderr,
-            flush=True,
-        )
         return span_id
 
     def write_event(self, span_id: str, event: Dict[str, Any]) -> None:
@@ -71,7 +66,6 @@ class SpanManager:
         if span_id in self.spans:
             event_with_time = {"timestamp": time.time(), **event}
             self.spans[span_id]["events"].append(event_with_time)
-            print(f"-------- memory: event recorded in {span_id}", file=sys.stderr, flush=True)
 
     def end_span(
         self, span_id: str, status: str = "ok", extra: Optional[Dict[str, Any]] = None
@@ -85,11 +79,6 @@ class SpanManager:
             if extra:
                 span["extra"] = extra
 
-            print(
-                f"-------- memory: span ended {span_id} status={status} duration={span['duration']:.2f}s",
-                file=sys.stderr,
-                flush=True,
-            )
 
             # Save to database
             self._save_span_to_db(span)
@@ -117,15 +106,7 @@ class SpanManager:
                 ),
             )
             self.conn.commit()
-            print(
-                f"-------- memory: span {span['id']} saved to database", file=sys.stderr, flush=True
-            )
         except Exception as e:
-            print(
-                f"-------- memory: failed to save span {span['id']}: {e}",
-                file=sys.stderr,
-                flush=True,
-            )
 
 
 # Global span manager instance

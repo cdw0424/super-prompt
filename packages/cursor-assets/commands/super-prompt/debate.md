@@ -5,6 +5,10 @@ server: super-prompt
 tool: sp_debate
 args:
   query: "${input}"
+## Execution Mode
+
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+
 ---
 
 # 💬 **Debate - Internal Debate & Balanced Analysis Specialist**

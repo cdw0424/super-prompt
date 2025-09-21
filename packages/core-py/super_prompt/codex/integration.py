@@ -152,7 +152,6 @@ def call_codex_assistance_mcp(query: str, context: str, tool_name: str) -> str:
     env["CODEX_MCP_PAYLOAD"] = json.dumps(payload)
 
     cmd = ["node", str(bridge)]
-    print(f"-------- codex: MCP bridge invoking ({persona_key})", file=sys.stderr, flush=True)
     completed = subprocess.run(
         cmd,
         capture_output=False,  # MCP stdout safety: do not capture stdout
@@ -229,23 +228,11 @@ def call_codex_assistance(query: str, context: str = "", tool_name: str = "gener
     try:
         return call_codex_assistance_mcp(query, context, tool_name)
     except FileNotFoundError as missing:
-        print(
-            f"-------- codex: MCP bridge missing ({missing}); falling back to CLI",
-            file=sys.stderr,
-            flush=True,
-        )
+        pass
     except subprocess.TimeoutExpired as timeout_err:
-        print(
-            f"-------- codex: MCP bridge timeout ({tool_name}): {timeout_err}",
-            file=sys.stderr,
-            flush=True,
-        )
+        pass
     except Exception as error:
-        print(
-            f"-------- codex: MCP bridge failure ({tool_name}): {error}",
-            file=sys.stderr,
-            flush=True,
-        )
+        pass
 
     return call_codex_assistance_cli(query, context, tool_name)
 

@@ -1,76 +1,14 @@
 ---
 description: security command - Security analysis and threat modeling
-run: inline
-script: |
-  const { spawn } = require('child_process');
-  const path = require('path');
+run: mcp
+server: super-prompt
+tool: sp_security
+args:
+---
+  query: "${input}"
+## Execution Mode
 
-  function executeSecurity(query) {
-    return new Promise((resolve, reject) => {
-      const projectRoot = process.cwd();
-      const packageRoot = path.join(__dirname, '..', '..', '..', '..', '..');
-
-      // Execute the security function directly via Python script
-      const pythonCmd = [
-        'python3',
-        path.join(packageRoot, 'packages', 'core-py', 'super_prompt', 'workflow_runner.py'),
-        'security',
-        query
-      ];
-
-      console.error(\`-------- security: Executing inline analysis: \${query.substring(0, 50)}...\`);
-
-      const proc = spawn('python3', pythonCmd.slice(1), {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          PYTHONPATH: [
-            path.join(packageRoot, 'packages', 'core-py'),
-            process.env.PYTHONPATH || ''
-          ].filter(Boolean).join(':'),
-          PYTHONUNBUFFERED: '1'
-        },
-        cwd: projectRoot
-      });
-
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.error(\`-------- security: Analysis completed successfully\`);
-          resolve(stdout.trim());
-        } else {
-          console.error(\`-------- security: Failed with code \${code}\`);
-          console.error(\`-------- security: stderr: \${stderr}\`);
-          reject(new Error(\`Security execution failed: \${stderr || 'Unknown error'}\`));
-        }
-      });
-
-      proc.on('error', (error) => {
-        console.error(\`-------- security: Execution error: \${error.message}\`);
-        reject(error);
-      });
-    });
-  }
-
-  async function runSecurityCommand(input) {
-    try {
-      console.error(\`-------- security: Starting inline execution for: \${input.substring(0, 50)}...\`);
-
-      // Execute security analysis directly
-      const result = await executeSecurity(input);
-
-      if (!result || result.trim() === '') {
-        return \`## 🛡️ **Security Analysis Result**
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
 
 **Query:** \${input}
 

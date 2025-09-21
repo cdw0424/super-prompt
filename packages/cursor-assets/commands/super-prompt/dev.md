@@ -1,76 +1,14 @@
 ---
 description: dev command - Feature development with quality and delivery focus
-run: inline
-script: |
-  const { spawn } = require('child_process');
-  const path = require('path');
+run: mcp
+server: super-prompt
+tool: sp_dev
+args:
+---
+  query: "${input}"
+## Execution Mode
 
-  function executeDev(query) {
-    return new Promise((resolve, reject) => {
-      const projectRoot = process.cwd();
-      const packageRoot = path.join(__dirname, '..', '..', '..', '..', '..');
-
-      // Execute the dev function directly via Python script
-      const pythonCmd = [
-        'python3',
-        path.join(packageRoot, 'packages', 'core-py', 'super_prompt', 'workflow_runner.py'),
-        'dev',
-        query
-      ];
-
-      console.error(\`-------- dev: Executing inline analysis: \${query.substring(0, 50)}...\`);
-
-      const proc = spawn('python3', pythonCmd.slice(1), {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          PYTHONPATH: [
-            path.join(packageRoot, 'packages', 'core-py'),
-            process.env.PYTHONPATH || ''
-          ].filter(Boolean).join(':'),
-          PYTHONUNBUFFERED: '1'
-        },
-        cwd: projectRoot
-      });
-
-      let stdout = '';
-      let stderr = '';
-
-      proc.stdout.on('data', (data) => {
-        stdout += data.toString();
-      });
-
-      proc.stderr.on('data', (data) => {
-        stderr += data.toString();
-      });
-
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.error(\`-------- dev: Analysis completed successfully\`);
-          resolve(stdout.trim());
-        } else {
-          console.error(\`-------- dev: Failed with code \${code}\`);
-          console.error(\`-------- dev: stderr: \${stderr}\`);
-          reject(new Error(\`Dev execution failed: \${stderr || 'Unknown error'}\`));
-        }
-      });
-
-      proc.on('error', (error) => {
-        console.error(\`-------- dev: Execution error: \${error.message}\`);
-        reject(error);
-      });
-    });
-  }
-
-  async function runDevCommand(input) {
-    try {
-      console.error(\`-------- dev: Starting inline execution for: \${input.substring(0, 50)}...\`);
-
-      // Execute dev analysis directly
-      const result = await executeDev(input);
-
-      if (!result || result.trim() === '') {
-        return \`## 🚀 **Dev Analysis Result**
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
 
 **Query:** \${input}
 

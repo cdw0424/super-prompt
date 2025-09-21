@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "super-prompt": {
+      "type": "stdio",
+      "command": "./bin/sp-mcp",
+      "args": [],
+      "env": {
+        "SUPER_PROMPT_ALLOW_INIT": "true",
+        "SUPER_PROMPT_REQUIRE_MCP": "1",
+        "SUPER_PROMPT_PROJECT_ROOT": "${workspaceFolder}",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONUTF8": "1"
+      }
+    }
+  }
+}

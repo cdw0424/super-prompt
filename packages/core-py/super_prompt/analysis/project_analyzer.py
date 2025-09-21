@@ -37,10 +37,8 @@ def analyze_and_store_project_data(project_root: Path) -> None:
         metadata = collect_project_metadata(project_root)
         store.set_kv("project_metadata", metadata)
 
-        print("-------- project analysis: stored comprehensive data in memory", file=sys.stderr, flush=True)
 
     except Exception as e:
-        print(f"-------- project analysis: error during analysis: {e}", file=sys.stderr, flush=True)
         raise
 
 

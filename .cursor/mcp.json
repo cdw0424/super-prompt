@@ -1,18 +1,3 @@
 {
-  "mcpServers": {
-    "super-prompt": {
-      "command": "python3",
-      "args": [
-        "-m",
-        "super_prompt.mcp_stdio"
-      ],
-      "cwd": "/Users/choi-dong-won/Desktop/devs/super-prompt/packages/core-py",
-      "env": {
-        "SUPER_PROMPT_ALLOW_INIT": "true",
-        "SUPER_PROMPT_PROJECT_ROOT": "/Users/choi-dong-won/Desktop/devs/super-prompt",
-        "PYTHONPATH": "/Users/choi-dong-won/Desktop/devs/super-prompt/packages/core-py",
-        "PYTHON": "python3"
-      }
-    }
-  }
+  "mcpServers": {}
 }

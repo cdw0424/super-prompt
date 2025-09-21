@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Verify that all project Cursor commands call MCP correctly.
- * Checks frontmatter for: run: mcp, server: super-prompt, tool: sp.*
+ * Checks frontmatter for: run: mcp, server: super-prompt, tool: sp_<name> or sp.<name>
  */
 const fs = require('fs');
 const path = require('path');
@@ -15,25 +15,41 @@ function readFrontmatter(p) {
   return fm.split('\n').map(s => s.trim());
 }
 
+function* iterMarkdown(dir) {
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) {
+      yield* iterMarkdown(full);
+    } else if (name.endsWith('.md')) {
+      yield full;
+    }
+  }
+}
+
 function verify() {
   const root = process.cwd();
   const dir = path.join(root, '.cursor', 'commands');
-  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.md')) : [];
+  if (!fs.existsSync(dir)) {
+    console.error('-------- verify-commands: directory missing:', dir);
+    process.exit(2);
+  }
   let ok = true;
   const problems = [];
-  for (const name of files) {
-    const p = path.join(dir, name);
+  for (const p of iterMarkdown(dir)) {
     const lines = readFrontmatter(p);
-    if (!lines) { problems.push({file: name, reason: 'missing frontmatter'}); ok = false; continue; }
+    if (!lines) { problems.push({file: path.relative(root, p), reason: 'missing frontmatter'}); ok = false; continue; }
     const hasRun = lines.some(l => /^run:\s*mcp$/.test(l));
     const hasServer = lines.some(l => /^server:\s*super-prompt$/.test(l));
-    const hasTool = lines.some(l => /^tool:\s*sp\.[A-Za-z0-9_-]+$/.test(l));
-    if (!(hasRun && hasServer && hasTool)) {
+    const toolLine = lines.find(l => /^tool:\s*/.test(l));
+    const hasTool = !!toolLine;
+    const toolOk = hasTool && /^(tool:\s*)(sp[._][A-Za-z0-9_-]+)$/.test(toolLine);
+    if (!(hasRun && hasServer && toolOk)) {
       const miss = [];
       if (!hasRun) miss.push('run:mcp');
       if (!hasServer) miss.push('server:super-prompt');
-      if (!hasTool) miss.push('tool:sp.*');
-      problems.push({file: name, reason: 'missing keys', missing: miss});
+      if (!toolOk) miss.push('tool:sp_<name> or sp.<name>');
+      problems.push({file: path.relative(root, p), reason: 'missing keys', missing: miss});
       ok = false;
     }
   }
@@ -45,7 +61,7 @@ function verify() {
     }
     process.exit(1);
   } else {
-    console.log('-------- verify-commands: OK (all commands use MCP correctly)');
+    console.error('-------- verify-commands: OK (all commands use MCP correctly)');
   }
 }
 

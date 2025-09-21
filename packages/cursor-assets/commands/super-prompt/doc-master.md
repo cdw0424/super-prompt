@@ -5,9 +5,14 @@ server: super-prompt
 tool: sp_doc_master
 args:
   query: "${input}"
+  persona: "doc-master"
+## Execution Mode
+
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+
 ---
 
-# 📚 **Doc Master - Documentation Architecture & Writing Specialist**
+# **doc-master - Super Prompt MCP Tool**
 
 **Expert Focus**: Documentation architecture, technical writing, and content verification
 

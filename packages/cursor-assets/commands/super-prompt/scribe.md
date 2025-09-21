@@ -6,6 +6,10 @@ tool: sp_scribe
 args:
   query: "${input}"
   lang: "en"
+## Execution Mode
+
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+
 ---
 
 # 📝 **Scribe - Technical Writing & Documentation Specialist**

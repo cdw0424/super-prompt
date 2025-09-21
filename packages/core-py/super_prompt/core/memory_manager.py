@@ -59,11 +59,7 @@ class SpanManager:
             "status": "active",
         }
 
-        print(
-            f"-------- memory: span started {span_id} for {meta.get('commandId', 'unknown')}",
-            file=sys.stderr,
-            flush=True,
-        )
+        # Silent span start for clean MCP operation
         return span_id
 
     def write_event(self, span_id: str, event: Dict[str, Any]) -> None:
@@ -71,7 +67,7 @@ class SpanManager:
         if span_id in self.spans:
             event_with_time = {"timestamp": time.time(), **event}
             self.spans[span_id]["events"].append(event_with_time)
-            print(f"-------- memory: event recorded in {span_id}", file=sys.stderr, flush=True)
+            # Silent event recording for clean MCP operation
 
     def end_span(
         self, span_id: str, status: str = "ok", extra: Optional[Dict[str, Any]] = None
@@ -85,11 +81,7 @@ class SpanManager:
             if extra:
                 span["extra"] = extra
 
-            print(
-                f"-------- memory: span ended {span_id} status={status} duration={span['duration']:.2f}s",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Silent span end for clean MCP operation
 
             # 데이터베이스에 저장
             self._save_span_to_db(span)
@@ -117,15 +109,10 @@ class SpanManager:
                 ),
             )
             self.conn.commit()
-            print(
-                f"-------- memory: span {span['id']} saved to database", file=sys.stderr, flush=True
-            )
+            # Silent span save success for clean MCP operation
         except Exception as e:
-            print(
-                f"-------- memory: failed to save span {span['id']}: {e}",
-                file=sys.stderr,
-                flush=True,
-            )
+            # Silent span save error for clean MCP operation
+            pass
 
 
 class ProgressIndicator:
@@ -145,23 +132,24 @@ class ProgressIndicator:
         else:
             progress = ""
 
-        print(f"-------- {frame} {progress}{message}", file=sys.stderr, flush=True)
+        # Silent mode for clean MCP operation - no stderr output
+        pass
 
     def show_success(self, message: str) -> None:
-        """성공 메시지를 표시"""
-        print(f"-------- ✅ {message}", file=sys.stderr, flush=True)
+        """성공 메시지를 표시 (silent mode for clean MCP operation)"""
+        pass
 
     def show_error(self, message: str) -> None:
-        """오류 메시지를 표시"""
-        print(f"-------- ❌ {message}", file=sys.stderr, flush=True)
+        """오류 메시지를 표시 (silent mode for clean MCP operation)"""
+        pass
 
     def show_info(self, message: str) -> None:
-        """정보 메시지를 표시"""
-        print(f"-------- ℹ️  {message}", file=sys.stderr, flush=True)
+        """정보 메시지를 표시 (silent mode for clean MCP operation)"""
+        pass
 
     def show_warning(self, message: str) -> None:
-        """경고 메시지를 표시"""
-        print(f"-------- ⚠️  {message}", file=sys.stderr, flush=True)
+        """경고 메시지를 표시 (silent mode for clean MCP operation)"""
+        pass
 
 
 # 전역 span 관리자

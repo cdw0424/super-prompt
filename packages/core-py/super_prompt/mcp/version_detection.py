@@ -46,9 +46,7 @@ def detect_mcp_version() -> Tuple[Optional[str], Optional[str]]:
 
         return version, "unknown"
     except Exception as e:
-        # Only log if verbose mode is enabled (default: quiet)
-        if os.environ.get("SUPER_PROMPT_VERBOSE", "0").lower() in ("1", "true", "yes"):
-            print(f"-------- MCP: version detection failed: {e}", file=sys.stderr, flush=True)
+        # Silent version detection failure (no logging)
         return None, None
 
 
@@ -76,13 +74,6 @@ def import_mcp_components():
             module = __import__(module_path, fromlist=[class_name])
             FastMCP = getattr(module, class_name, None)
             if FastMCP:
-                # Only log if verbose mode is enabled (default: quiet)
-                if os.environ.get("SUPER_PROMPT_VERBOSE", "0").lower() in ("1", "true", "yes"):
-                    print(
-                        f"-------- MCP: using {module_path}.{class_name} (version: {mcp_version})",
-                        file=sys.stderr,
-                        flush=True,
-                    )
                 break
         except (ImportError, AttributeError):
             continue

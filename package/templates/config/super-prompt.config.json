@@ -1,0 +1,11 @@
+{
+  "createdAt": "${createdAt}",
+  "mode": "${mode}",
+  "version": "4.0.46",
+  "mcp": {
+    "enabled": true,
+    "endpoint": null,
+    "apiKey": null
+  },
+  "providers": {}
+}

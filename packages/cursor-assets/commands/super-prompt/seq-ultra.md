@@ -5,6 +5,13 @@ server: super-prompt
 tool: sp_seq_ultra
 args:
   query: "${input}"
+  persona: "seq-ultra"
+## Execution Mode
+
+➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+
 ---
+
+# **seq-ultra - Super Prompt MCP Tool**
 
 🧠 Sequential Ultra Ultra-deep sequential reasoning for complex problems

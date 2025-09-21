@@ -22,19 +22,15 @@ class ProgressIndicator:
         else:
             progress = ""
 
-        print(f"-------- {frame} {progress}{message}", file=sys.stderr, flush=True)
 
     def show_success(self, message: str) -> None:
         """Display success message"""
-        print(f"-------- ✅ {message}", file=sys.stderr, flush=True)
 
     def show_error(self, message: str) -> None:
         """Display error message"""
-        print(f"-------- ❌ {message}", file=sys.stderr, flush=True)
 
     def show_info(self, message: str) -> None:
         """Display info message"""
-        print(f"-------- ℹ️  {message}", file=sys.stderr, flush=True)
 
 
 # Global progress indicator instance

@@ -51,11 +51,9 @@ def get_current_version() -> str:
         # 1) Prioritize root passed by npm wrapper
         env_root = os.environ.get("SUPER_PROMPT_PACKAGE_ROOT")
         if env_root and Path(env_root).exists():
-            print(f"----- DEBUG: Using SUPER_PROMPT_PACKAGE_ROOT: {env_root}", file=sys.stderr, flush=True)
             npm_root = Path(env_root)
         else:
             # 2) Check for 'packages/cursor-assets' by traversing up from site-packages
-            print(f"----- DEBUG: Starting version detection from {Path(__file__)}", file=sys.stderr, flush=True)
             current = Path(__file__).resolve()
             npm_root = None
             while current.parent != current:  # Stop at filesystem root
@@ -67,16 +65,10 @@ def get_current_version() -> str:
                             with open(current / "package.json") as f:
                                 package_data = json.load(f)
                                 if package_data.get("name") == "@cdw0424/super-prompt":
-                                    print(
-                                        f"----- DEBUG: Resolved package root by ascent: {current}",
-                                        file=sys.stderr, flush=True
-                                    )
                                     npm_root = current
                                     break
                     except Exception as e:
-                        print(f"----- DEBUG: Error reading {current}/package.json: {e}", file=sys.stderr, flush=True)
                         pass
-                print(f"----- DEBUG: Checking for npm package at: {current}", file=sys.stderr, flush=True)
                 current = current.parent
 
         if npm_root and (npm_root / "package.json").exists():
@@ -84,15 +76,12 @@ def get_current_version() -> str:
             with open(package_json, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 version = data.get("version", "3.1.56")
-                print(f"----- DEBUG: Found version {version} in npm package", file=sys.stderr, flush=True)
                 return version
 
         # Fallback: try to read from environment or use default
         env_version = os.environ.get("SUPER_PROMPT_VERSION", "3.1.56")
-        print(f"----- DEBUG: Using environment/default version {env_version}", file=sys.stderr, flush=True)
         return env_version
     except Exception as e:
-        print(f"----- DEBUG: Exception in version detection: {e}", file=sys.stderr, flush=True)
         return "3.1.56"
 
 
@@ -424,17 +413,6 @@ def mcp_list_tools(json_output: bool = typer.Option(False, "--json", help="Outpu
     async def _list_tools():
         async with MCPClient() as client:
             tools = await client.list_tools()
-            if json_output:
-                if os.environ.get("MCP_SERVER_MODE"):
-                    print(json.dumps(tools, indent=2), file=sys.stderr, flush=True)
-                else:
-                    print(json.dumps(tools, indent=2))
-            else:
-                for tool in tools:
-                    if os.environ.get("MCP_SERVER_MODE"):
-                        print(f"• {tool['name']}: {tool.get('description', 'No description')}", file=sys.stderr, flush=True)
-                    else:
-                        print(f"• {tool['name']}: {tool.get('description', 'No description')}")
 
     asyncio.run(_list_tools())
 
@@ -479,21 +457,7 @@ def mcp_call_tool(
                 result = await client.call_tool(tool_name, arguments)
 
                 if json_output:
-                    if os.environ.get("MCP_SERVER_MODE"):
-                        print(json.dumps(result, indent=2), file=sys.stderr, flush=True)
-                    else:
-                        print(json.dumps(result, indent=2))
-                else:
-                    # Pretty print the result
-                    typer.echo("📄 Result:")
-                    if isinstance(result, list):
-                        for item in result:
-                            if hasattr(item, 'text'):
-                                print(f"   {item.text}", file=sys.stderr, flush=True)
-                            else:
-                                print(f"   {str(item)}", file=sys.stderr, flush=True)
-                    else:
-                        print(f"   {str(result)}", file=sys.stderr, flush=True)
+                    pass
             except Exception as e:
                 typer.echo(f"❌ Error calling tool '{tool_name}': {e}", err=True)
                 raise typer.Exit(1)
@@ -509,11 +473,6 @@ def mcp_list_prompts(json_output: bool = typer.Option(False, "--json", help="Out
     async def _list_prompts():
         async with MCPClient() as client:
             prompts = await client.list_prompts()
-            if json_output:
-                print(json.dumps(prompts, indent=2))
-            else:
-                for prompt in prompts:
-                    print(f"• {prompt['name']}: {prompt.get('description', 'No description')}")
 
     asyncio.run(_list_prompts())
 
@@ -540,22 +499,6 @@ def mcp_get_prompt(
         async with MCPClient() as client:
             try:
                 result = await client.get_prompt(prompt_name, arguments)
-                if json_output:
-                    print(json.dumps(result, indent=2))
-                else:
-                    # Pretty print the result
-                    if 'messages' in result:
-                        for message in result['messages']:
-                            role = message.get('role', 'unknown')
-                            content = message.get('content', '')
-                            if isinstance(content, str):
-                                print(f"[{role.upper()}]: {content}")
-                            elif isinstance(content, list):
-                                for item in content:
-                                    if isinstance(item, dict) and 'text' in item:
-                                        print(f"[{role.upper()}]: {item['text']}")
-                    else:
-                        print(str(result))
             except Exception as e:
                 typer.echo(f"Error getting prompt '{prompt_name}': {e}", err=True)
                 raise typer.Exit(1)
@@ -580,8 +523,7 @@ def mcp_doctor(
             async with asyncio.timeout(timeout):
                 async with MCPClient() as client:
                     if verbose:
-                        print("🔍 Connecting to MCP server...")
-                        print(f"   Command: {' '.join(client.server_command)}")
+                        pass
 
                     # Test tools listing
                     tools = await client.list_tools()
@@ -597,7 +539,7 @@ def mcp_doctor(
                     if tools:
                         test_tool_name = tools[0]['name']
                         if verbose:
-                            print(f"🧪 Testing tool: {test_tool_name}", file=sys.stderr, flush=True)
+                            pass
                         try:
                             test_tool_result = await client.call_tool(test_tool_name, {})
                         except Exception as e:
@@ -615,38 +557,11 @@ def mcp_doctor(
                         "server_command": client.server_command
                     }
 
-                    if json_output:
-                        print(json.dumps(result, indent=2))
-                    else:
-                        print("✅ MCP Server Connection: Healthy", file=sys.stderr, flush=True)
-                        print(f"⏱️  Response Time: {response_time:.2f}s", file=sys.stderr, flush=True)
-                        print(f"📋 Available Tools: {tools_count}", file=sys.stderr, flush=True)
-                        print(f"📝 Available Prompts: {prompts_count}", file=sys.stderr, flush=True)
-                        if test_tool_result and verbose:
-                            print(f"🧪 Test Tool ({test_tool_name}): {'✅ Success' if not str(test_tool_result).startswith('Error:') else '❌ Failed'}", file=sys.stderr, flush=True)
-                            if str(test_tool_result).startswith('Error:'):
-                                print(f"   Error: {test_tool_result}", file=sys.stderr, flush=True)
 
         except asyncio.TimeoutError:
             result = {"status": "timeout", "message": f"Connection timed out after {timeout}s"}
-            if json_output:
-                print(json.dumps(result, indent=2))
-            else:
-                print(f"❌ MCP Server Connection: Timeout ({timeout}s)", file=sys.stderr, flush=True)
-                print("💡 Try increasing timeout: --timeout 30", file=sys.stderr, flush=True)
-                print("💡 Check if MCP server is running: ps aux | grep mcp_server", file=sys.stderr, flush=True)
         except Exception as e:
             result = {"status": "error", "message": str(e)}
-            if json_output:
-                print(json.dumps(result, indent=2))
-            else:
-                print(f"❌ MCP Server Connection: Error - {e}", file=sys.stderr, flush=True)
-                if "ModuleNotFoundError" in str(e):
-                    print("💡 Missing dependencies. Try: pip install super-prompt-core", file=sys.stderr, flush=True)
-                elif "Connection refused" in str(e):
-                    print("💡 MCP server not running. Try: super-prompt mcp-serve", file=sys.stderr, flush=True)
-                elif "PYTHONPATH" in str(e):
-                    print("💡 PYTHONPATH issue. Try: export PYTHONPATH=$PWD/packages/core-py:$PYTHONPATH", file=sys.stderr, flush=True)
 
     asyncio.run(_doctor())
 
@@ -679,33 +594,17 @@ def mcp_run_tool(
                     result = await client.call_tool(tool_name, arguments)
                     end_time = time.time()
 
-                    print(f"🔧 Executing: {tool_name}", file=sys.stderr, flush=True)
-                    print(f"⏱️  Duration: {end_time - start_time:.2f}s", file=sys.stderr, flush=True)
-                    print("📄 Result:", file=sys.stderr, flush=True)
-                    if isinstance(result, list):
-                        for item in result:
-                            if hasattr(item, 'text'):
-                                print(f"   {item.text}", file=sys.stderr, flush=True)
-                            else:
-                                print(f"   {str(item)}", file=sys.stderr, flush=True)
-                    else:
-                        print(f"   {str(result)}", file=sys.stderr, flush=True)
-                    print(file=sys.stderr, flush=True)
 
                     if not watch:
                         break
 
-                    print(f"👀 Watching for changes (interval: {interval}s)...", file=sys.stderr, flush=True)
                     await asyncio.sleep(interval)
 
                 except KeyboardInterrupt:
-                    print("\n🛑 Stopped by user", file=sys.stderr, flush=True)
                     break
                 except Exception as e:
-                    print(f"❌ Error calling tool '{tool_name}': {e}", file=sys.stderr, flush=True)
                     if not watch:
                         raise typer.Exit(1)
-                    print(f"⏳ Retrying in {interval}s...", file=sys.stderr, flush=True)
                     await asyncio.sleep(interval)
 
     asyncio.run(_run_tool())
@@ -1930,12 +1829,8 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         user_input = " ".join(args) if args else ""
 
         if not user_input:
-            print("❌ Error: No user input provided for persona execution", file=sys.stderr, flush=True)
             return
 
-        print(f"-------- Enhanced Persona Execution: {persona_key} (direct call)", file=sys.stderr, flush=True)
-        print(f"-------- System prompt loaded ({len(system_prompt)} chars)", file=sys.stderr, flush=True)
-        print(f"-------- User input: {user_input[:100]}{'...' if len(user_input) > 100 else ''}", file=sys.stderr, flush=True)
 
         # Load persona configuration from project
         personas_dir = cursor_assets_root() / "manifests"
@@ -1952,27 +1847,12 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
                 if persona_key in manifest.get("personas", {}):
                     persona_config = manifest["personas"][persona_key]
                     persona_name = persona_config.get("name", persona_key)
-                    print(f"-------- Loaded persona: {persona_name}", file=sys.stderr, flush=True)
                 else:
-                    print(f"⚠️  Persona '{persona_key}' not found in manifest, proceeding anyway", file=sys.stderr, flush=True)
+                    pass
             except Exception as e:
-                print(f"⚠️  Could not load persona manifest: {e}", file=sys.stderr, flush=True)
+                pass
 
         # Display execution info
-        print("\n" + "=" * 60, file=sys.stderr, flush=True)
-        print("🤖 SYSTEM PROMPT:", file=sys.stderr, flush=True)
-        print("=" * 60, file=sys.stderr, flush=True)
-        print(system_prompt[:500] + "..." if len(system_prompt) > 500 else system_prompt, file=sys.stderr, flush=True)
-
-        print("\n" + "=" * 60, file=sys.stderr, flush=True)
-        print("👤 USER INPUT:", file=sys.stderr, flush=True)
-        print("=" * 60, file=sys.stderr, flush=True)
-        print(user_input, file=sys.stderr, flush=True)
-
-        print("\n" + "=" * 60, file=sys.stderr, flush=True)
-        print("✅ Direct persona execution completed!", file=sys.stderr, flush=True)
-        print("   (Ready for AI processing integration)", file=sys.stderr, flush=True)
-        print("=" * 60, file=sys.stderr, flush=True)
 
         # Return execution context for further processing
         return {
@@ -1984,7 +1864,6 @@ def handle_enhanced_persona_execution_direct(system_prompt: str, persona_key: st
         }
 
     except Exception as e:
-        print(f"❌ Direct persona execution failed: {e}", file=sys.stderr, flush=True)
         return None
 
 
@@ -1995,7 +1874,7 @@ def main():
         from .memory.store import MemoryStore
         MemoryStore.open()  # Ensure memory database exists
     except Exception as e:
-        print(f"-------- WARNING: memory system initialization failed: {e}", file=sys.stderr)
+        pass
 
     app()
 

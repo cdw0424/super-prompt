@@ -23,9 +23,7 @@ def main():
             _run_basic_stdio_server(mcp)
 
     except Exception as err:
-        print(f"Error starting MCP server: {err}", file=sys.stderr, flush=True)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
+        # Silent error handling for clean MCP operation
         sys.exit(1)
 
 def _run_basic_stdio_server(mcp_instance):
@@ -57,7 +55,8 @@ def _run_basic_stdio_server(mcp_instance):
     except KeyboardInterrupt:
         pass
     except Exception as e:
-        print(f"Server error: {e}", file=sys.stderr, flush=True)
+        # Silent server error handling
+        pass
 
 def _handle_message(mcp_instance, message):
     """Handle MCP protocol messages"""

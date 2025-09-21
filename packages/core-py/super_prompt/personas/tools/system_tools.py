@@ -55,22 +55,17 @@ def _install_cli_dependencies():
     """Install required CLI dependencies for Super Prompt"""
     import subprocess
 
-    print("-------- init: Checking CLI dependencies...", file=sys.stderr, flush=True)
 
     # 1. Check if OpenAI CLI is installed
     try:
         result = subprocess.run(['openai', '--version'],
                               capture_output=True, text=True, timeout=10)
-        print("-------- init: OpenAI CLI already installed", file=sys.stderr, flush=True)
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
-        print("-------- init: Installing OpenAI CLI...", file=sys.stderr, flush=True)
         try:
             # Install OpenAI CLI
             subprocess.run([sys.executable, '-m', 'pip', 'install', 'openai'],
                          check=True, capture_output=True, text=True, timeout=60)
-            print("-------- init: OpenAI CLI installed successfully", file=sys.stderr, flush=True)
         except subprocess.SubprocessError as e:
-            print(f"-------- WARN: Failed to install OpenAI CLI: {e}", file=sys.stderr, flush=True)
             return
 
     # 2. Check OpenAI login status
@@ -78,23 +73,16 @@ def _install_cli_dependencies():
         result = subprocess.run(['openai', 'api', 'keys', 'list'],
                               capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
-            print("-------- init: OpenAI CLI already logged in", file=sys.stderr, flush=True)
         else:
-            print("-------- init: OpenAI login required...", file=sys.stderr, flush=True)
             # Note: This will require user interaction
-            print("-------- init: Please complete OpenAI login in the terminal", file=sys.stderr, flush=True)
             subprocess.run(['openai', 'login'], timeout=120)
     except (subprocess.TimeoutExpired, subprocess.SubprocessError) as e:
-        print(f"-------- WARN: OpenAI login check failed: {e}", file=sys.stderr, flush=True)
 
     # 3. Install Codex CLI
-    print("-------- init: Installing Codex CLI...", file=sys.stderr, flush=True)
     try:
         subprocess.run(['sudo', 'npm', 'install', '-g', '@openai/codex@latest'],
                      check=True, capture_output=True, text=True, timeout=120)
-        print("-------- init: Codex CLI installed successfully", file=sys.stderr, flush=True)
     except subprocess.SubprocessError as e:
-        print(f"-------- WARN: Failed to install Codex CLI: {e}", file=sys.stderr, flush=True)
 
 
 def _init_impl(force: bool = False) -> str:
@@ -121,8 +109,6 @@ def _init_impl(force: bool = False) -> str:
 \x1b[2m                     v{current_version} | @cdw0424/super-prompt\x1b[0m
 \x1b[2m                          Made by \x1b[0m\x1b[35mDaniel Choi from Korea\x1b[0m
 """
-    print(logo, file=sys.stderr, flush=True)
-    print("", file=sys.stderr, flush=True)
 
     _validate_assets()
     pr = project_root()
@@ -152,10 +138,8 @@ def _init_impl(force: bool = False) -> str:
         from ...adapters.codex_adapter import CodexAdapter
         CodexAdapter().generate_assets(pr)
     except Exception as e:
-        print(f"-------- WARN: Could not generate Codex assets: {e}", file=sys.stderr, flush=True)
 
     # CLI auto-installation (OpenAI CLI + Codex CLI)
-    print("-------- init: Installing required CLI tools...", file=sys.stderr, flush=True)
     _install_cli_dependencies()
 
     # Execute SSOT compliance validation
@@ -163,9 +147,7 @@ def _init_impl(force: bool = False) -> str:
     try:
         ssot_compliant = validate_project_ssot(pr)
         if not ssot_compliant:
-            print("-------- SSOT: Project setting conflicts detected - manual cleanup required", file=sys.stderr, flush=True)
     except Exception as e:
-        print(f"-------- SSOT validation failed: {e}", file=sys.stderr, flush=True)
 
     # Ensure default mode and personas manifest
     try:
@@ -206,13 +188,11 @@ def init(force: bool = False):
             # Perform health check
             with memory_span("sp.init:health") as health_span:
                 span_manager.write_event(health_span, {"type": "health", "timestamp": time.time()})
-                print("-------- MCP memory: healthcheck OK", file=sys.stderr, flush=True)
 
             progress.show_success("Health check completed")
             progress.show_progress("📦 Initializing project")
             progress.show_info(f"Force mode: {force}")
 
-            print(f"-------- mcp: sp.init(args={{force:{force}}})", file=sys.stderr, flush=True)
             msg = _init_impl(force=force)
 
             progress.show_success("Initialization completed!")
@@ -365,9 +345,7 @@ def mode_set(mode: str):
 
     try:
         with memory_span("sp.mode_set") as span_id:
-            print(f"-------- mcp: sp.mode_set(args={{mode:'{mode}'}})", file=sys.stderr, flush=True)
             m = set_mode(mode)
-            print(f"-------- mode: set to {m}", file=sys.stderr, flush=True)
 
             # Import TextContent from MCP module
             from ...mcp.version_detection import import_mcp_components
@@ -389,7 +367,6 @@ def grok_mode_on(a=None, k=None, **kwargs):
     try:
         with memory_span("sp.grok_mode_on") as span_id:
             set_mode("grok")
-            print("-------- mode: set to grok", file=sys.stderr, flush=True)
 
             # Import TextContent from MCP module
             from ...mcp.version_detection import import_mcp_components
@@ -411,7 +388,6 @@ def gpt_mode_on(a=None, k=None, **kwargs):
     try:
         with memory_span("sp.gpt_mode_on") as span_id:
             set_mode("gpt")
-            print("-------- mode: set to gpt", file=sys.stderr, flush=True)
 
             # Import TextContent from MCP module
             from ...mcp.version_detection import import_mcp_components
@@ -433,7 +409,6 @@ def grok_mode_off(a=None, k=None, **kwargs):
     try:
         with memory_span("sp.grok_mode_off") as span_id:
             set_mode("default")
-            print("-------- mode: turned off grok", file=sys.stderr, flush=True)
 
             # Import TextContent from MCP module
             from ...mcp.version_detection import import_mcp_components
@@ -455,7 +430,6 @@ def gpt_mode_off(a=None, k=None, **kwargs):
     try:
         with memory_span("sp.gpt_mode_off") as span_id:
             set_mode("default")
-            print("-------- mode: turned off gpt", file=sys.stderr, flush=True)
 
             # Import TextContent from MCP module
             from ...mcp.version_detection import import_mcp_components
