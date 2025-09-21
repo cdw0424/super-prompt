@@ -2,7 +2,7 @@
 description: gpt-mode-on command
 run: mcp
 server: super-prompt
-tool: sp_gpt-mode-on
+tool: sp_gpt_mode_on
 args:
   query: "${input}"
   persona: "gpt-mode-on"

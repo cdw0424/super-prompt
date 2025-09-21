@@ -1287,6 +1287,12 @@ def init(
     - .codex/ (Codex CLI configuration)
     These directories are protected and should only be modified by official installation processes.
     """
+    # 디버깅 메시지 (함수 시작 부분)
+    import sys
+    import os
+    print("=== INIT FUNCTION STARTED ===", file=sys.stderr, flush=True)
+    print(f"DEBUG: init function called with project_root={project_root}, force={force}", file=sys.stderr, flush=True)
+
     try:
         # CRITICAL PROTECTION: Display protection warning
         typer.echo("\033[31m\033[1m🚨 CRITICAL PROTECTION NOTICE:\033[0m")
@@ -1470,29 +1476,341 @@ Brief description of the feature.
 """
             )
 
-        # MCP server auto-registration - Critical for complete functionality
-        mcp_registered = False
+        # Complete initialization - Critical for full functionality
         try:
-            # CRITICAL: 중복 MCP 설치 방지 - 전역 등록만 사용
-            # Register global MCP server; avoids duplication across projects
-            # Use absolute paths to prevent local vs global duplication
-            cfg_path = ensure_cursor_mcp_registered(target_dir, overwrite=force)
-            mcp_registered = True
-            typer.echo(f"✅ Cursor MCP server registered globally: {cfg_path}")
-            typer.echo("✅ MCP configuration: Using GLOBAL ~/.cursor/mcp.json (prevents duplication)")
-            typer.echo("✅ CRITICAL: No duplicate MCP installations detected")
+            # SilentProgress 완전 우회
+            import sys
+            import os
+            os.environ['SUPER_PROMPT_DEBUG'] = '1'  # 디버깅 모드 활성화
 
-            # 중복 확인: 프로젝트별 MCP 설정이 있는지 확인
+            # SilentProgress 완전 제거 (초기화 함수에서만)
+            try:
+                from .core.memory_manager import progress
+                if hasattr(progress, '_mcp_silent'):
+                    from .core.memory_manager import ProgressIndicator
+                    progress.show_progress = ProgressIndicator.show_progress.__get__(progress, ProgressIndicator)
+                    progress.show_success = ProgressIndicator.show_success.__get__(progress, ProgressIndicator)
+                    progress.show_error = ProgressIndicator.show_error.__get__(progress, ProgressIndicator)
+                    delattr(progress, '_mcp_silent')
+            except Exception:
+                pass
+
+            # 디버깅 메시지 출력 (강제 stderr)
+            print("=== SUPER PROMPT DEBUG MODE ACTIVATED ===", file=sys.stderr, flush=True)
+            print(f"DEBUG: CLI init function called at {os.getcwd()}", file=sys.stderr, flush=True)
+            print(f"DEBUG: target_dir = {target_dir}", file=sys.stderr, flush=True)
+            print(f"DEBUG: force = {force}", file=sys.stderr, flush=True)
+            sys.stderr.flush()
+
+            # 초기화 과정 전체에서 stderr 사용
+            def debug_echo(message):
+                print(f"DEBUG: {message}", file=sys.stderr, flush=True)
+
+            debug_echo("Starting project root configuration")
+
+            # 0. Python 패키지 설치 (pip install로 처리)
+            debug_echo("Step 0: Installing Python packages via pip")
+
+            # Python 패키지 파일들 설치 (pip install로 처리)
+            try:
+                import subprocess
+                import sys
+
+                # .super-prompt/lib/ 폴더 생성
+                super_prompt_dir = target_dir / ".super-prompt"
+                super_prompt_dir.mkdir(parents=True, exist_ok=True)
+                lib_dir = super_prompt_dir / "lib"
+                lib_dir.mkdir(parents=True, exist_ok=True)
+
+                # pip install로 Python 패키지 설치
+                package_name = "super-prompt-core"
+                python_path = sys.executable
+
+                debug_echo(f"Installing Python package: {package_name}")
+                debug_echo(f"Python executable: {python_path}")
+                debug_echo(f"Target lib directory: {lib_dir}")
+
+                # pip install 실행
+                result = subprocess.run(
+                    [python_path, "-m", "pip", "install", "--target", str(lib_dir), "--no-deps", package_name],
+                    capture_output=True,
+                    text=True,
+                    cwd=target_dir
+                )
+
+                if result.returncode == 0:
+                    debug_echo("✅ Python package installation successful")
+                else:
+                    debug_echo(f"⚠️  Python package installation failed: {result.stderr}")
+                    debug_echo("Continuing with installation...")
+
+            except Exception as e:
+                debug_echo(f"⚠️  Python package installation exception: {e}")
+                # 예외 발생 시 계속 진행
+
+            # 기존 복사 로직 제거 - pip install로 대체
+            debug_echo("Step 0: Python package installation completed")
+
+            # Python 패키지 설치 완료
+
+            # 1. 프로젝트 루트 설정 (사용자 입력 또는 환경 변수 또는 기본값)
+            # 우선순위: 환경 변수 > 사용자 입력 > 기본값
+            debug_echo("Step 1: Setting up project root")
+            project_root_input = os.environ.get("SUPER_PROMPT_PROJECT_ROOT", str(target_dir))
+
+            # 기본적으로 대화형 모드 활성화 (사용자가 명시적으로 비활성화하지 않은 경우)
+            interactive = os.environ.get("SUPER_PROMPT_INTERACTIVE", "1") == "1"
+
+            if interactive:
+                try:
+                    user_input = typer.prompt("Enter project root path (press Enter to use current directory)", default=str(target_dir))
+                    if user_input.strip():
+                        project_root_input = user_input
+                except Exception:
+                    pass  # 비대화형 환경에서는 기본값 사용
+
+            # 2. Python 패키지 설치 확인 및 설치 (조용한 모드)
+            try:
+                import importlib.util
+                if importlib.util.find_spec("super_prompt") is None:
+                    # Python 패키지 설치 시도 (조용히)
+                    try:
+                        import subprocess
+                        import sys
+                        subprocess.run([
+                            sys.executable, "-m", "pip", "install",
+                            "--user", "super-prompt-core==5.2.21"
+                        ], capture_output=True, text=True, timeout=60)
+                    except Exception:
+                        pass  # 조용히 실패 처리
+            except Exception:
+                pass  # 조용히 실패 처리
+
+            # 3. Super Prompt 내부 파일들 생성 (조용한 모드)
+            try:
+                # .super-prompt 폴더 생성
+                super_prompt_dir = target_dir / ".super-prompt"
+                super_prompt_dir.mkdir(parents=True, exist_ok=True)
+
+                # 디버깅: .super-prompt 폴더 생성 확인
+                sys.stderr.write(f"DEBUG: Created .super-prompt directory: {super_prompt_dir}\n")
+                sys.stderr.flush()
+
+                # lib 폴더 생성 (Python 패키지용)
+                lib_dir = super_prompt_dir / "lib"
+                lib_dir.mkdir(parents=True, exist_ok=True)
+
+                # config.json 생성
+                config_file = super_prompt_dir / "config.json"
+                if not config_file.exists():
+                    from datetime import datetime
+                    config_data = {
+                        "createdAt": datetime.now().isoformat(),
+                        "projectRoot": project_root_input,
+                        "mode": "gpt",
+                        "version": "5.2.22",
+                        "pythonPath": str(lib_dir)
+                    }
+                    with open(config_file, 'w') as f:
+                        json.dump(config_data, f, indent=2)
+
+                # mode.json 생성
+                mode_file = super_prompt_dir / "mode.json"
+                if not mode_file.exists():
+                    mode_data = {"mode": "gpt"}
+                    with open(mode_file, 'w') as f:
+                        json.dump(mode_data, f, indent=2)
+
+                # cache 폴더 생성
+                cache_dir = super_prompt_dir / "cache"
+                cache_dir.mkdir(parents=True, exist_ok=True)
+
+                # context_cache.json 생성
+                cache_file = cache_dir / "context_cache.json"
+                if not cache_file.exists():
+                    from datetime import datetime
+                    cache_data = {
+                        "createdAt": datetime.now().isoformat(),
+                        "contexts": []
+                    }
+                    with open(cache_file, 'w') as f:
+                        json.dump(cache_data, f, indent=2)
+
+                # Python 패키지 파일들 복사 (npm 패키지에서 직접 복사)
+                try:
+                    import shutil
+                    import sys
+                    import os
+
+                    # 직접 stderr로 디버깅 메시지 출력
+                    sys.stderr.write("DEBUG: Starting Python package copy\n")
+                    sys.stderr.flush()
+
+                    # 디버깅: 현재 실행 중인 파일 위치 확인
+                    current_file = Path(__file__)
+                    sys.stderr.write(f"DEBUG: current_file: {current_file}\n")
+                    sys.stderr.flush()
+
+                    # 가장 간단한 방법: 현재 스크립트의 위치에서 super_prompt 찾기
+                    script_dir = current_file.parent
+                    sys.stderr.write(f"DEBUG: script_dir: {script_dir}\n")
+                    sys.stderr.flush()
+
+                    # super_prompt 폴더 찾기
+                    npm_package_path = script_dir / "super_prompt"
+                    sys.stderr.write(f"DEBUG: Looking for super_prompt at: {npm_package_path}\n")
+                    sys.stderr.flush()
+
+                    if npm_package_path.exists():
+                        sys.stderr.write(f"DEBUG: Found super_prompt at: {npm_package_path}\n")
+                        sys.stderr.flush()
+
+                        # super_prompt 폴더 복사
+                        dest_super_prompt = lib_dir / "super_prompt"
+                        sys.stderr.write(f"DEBUG: Copying to: {dest_super_prompt}\n")
+                        sys.stderr.flush()
+
+                        if dest_super_prompt.exists():
+                            shutil.rmtree(dest_super_prompt)
+                        shutil.copytree(npm_package_path, dest_super_prompt)
+
+                        # .pth 파일 생성
+                        pth_file = lib_dir / "super_prompt.pth"
+                        pth_file.write_text("")
+
+                        # 복사된 파일들 확인
+                        py_files = list(dest_super_prompt.rglob("*.py"))
+                        sys.stderr.write(f"DEBUG: Successfully copied {len(py_files)} Python files\n")
+                        sys.stderr.flush()
+
+                        if py_files:
+                            sys.stderr.write(f"DEBUG: First few files: {py_files[:3]}\n")
+                            sys.stderr.flush()
+                    else:
+                        sys.stderr.write(f"DEBUG: super_prompt not found at {npm_package_path}\n")
+                        sys.stderr.flush()
+
+                        # 대안: 다른 위치에서 찾기
+                        for root_path in [script_dir.parent, script_dir.parent.parent, script_dir.parent.parent.parent]:
+                            alt_path = root_path / "super_prompt"
+                            if alt_path.exists():
+                                sys.stderr.write(f"DEBUG: Found super_prompt at alternative path: {alt_path}\n")
+                                sys.stderr.flush()
+
+                                dest_super_prompt = lib_dir / "super_prompt"
+                                if dest_super_prompt.exists():
+                                    shutil.rmtree(dest_super_prompt)
+                                shutil.copytree(alt_path, dest_super_prompt)
+
+                                pth_file = lib_dir / "super_prompt.pth"
+                                pth_file.write_text("")
+
+                                py_files = list(dest_super_prompt.rglob("*.py"))
+                                sys.stderr.write(f"DEBUG: Successfully copied {len(py_files)} Python files from alternative path\n")
+                                sys.stderr.flush()
+                                break
+
+                except Exception as e:
+                    # 디버깅을 위해 예외 정보 출력
+                    import traceback
+                    sys.stderr.write(f"DEBUG: Python package copy failed: {e}\n")
+                    sys.stderr.flush()
+                    sys.stderr.write(f"DEBUG: traceback: {traceback.format_exc()}\n")
+                    sys.stderr.flush()
+                    pass  # Python 패키지 복사 실패 시 조용히 처리
+
+            except Exception:
+                pass  # 조용히 실패 처리
+
+            # 4. 커서 명령어와 규칙 파일 생성 (안전한 방법)
+            try:
+                import shutil
+
+                # assets 경로 찾기
+                try:
+                    from .adapters.cursor_adapter import CursorAdapter
+                    cursor_adapter = CursorAdapter()
+                    assets_root = cursor_adapter.assets_root
+                except Exception:
+                    # CursorAdapter가 실패하면 직접 assets 경로 설정
+                    from .paths import package_root
+                    assets_root = package_root() / "packages" / "cursor-assets"
+
+                # Commands 복사
+                commands_dir = target_dir / ".cursor" / "commands" / "super-prompt"
+                commands_dir.mkdir(parents=True, exist_ok=True)
+
+                commands_src_dir = assets_root / "commands" / "super-prompt"
+                if commands_src_dir.exists():
+                    for md_file in commands_src_dir.glob("*.md"):
+                        dst_file = commands_dir / md_file.name
+                        if not dst_file.exists():
+                            shutil.copy2(md_file, dst_file)
+
+                # Rules 복사
+                rules_dir = target_dir / ".cursor" / "rules"
+                rules_dir.mkdir(parents=True, exist_ok=True)
+
+                rules_src_dir = assets_root / "rules"
+                if rules_src_dir.exists():
+                    for mdc_file in rules_src_dir.glob("*.mdc"):
+                        dst_file = rules_dir / mdc_file.name
+                        if not dst_file.exists():
+                            shutil.copy2(mdc_file, dst_file)
+
+            except Exception:
+                pass  # 조용히 실패 처리
+
+            # 5. MCP 설정 생성 (상대 경로 사용) - 가장 중요한 부분
+            # .super-prompt/lib 폴더의 절대경로 계산
+            super_prompt_lib_path = str(target_dir / ".super-prompt" / "lib")
+
             project_mcp = target_dir / ".cursor" / "mcp.json"
-            if project_mcp.exists():
-                typer.echo("⚠️  WARNING: Project-specific MCP config detected!")
-                typer.echo(f"⚠️  Found at: {project_mcp}")
-                typer.echo("⚠️  This may cause conflicts. Consider removing it.")
-                typer.echo("⚠️  Super Prompt will use GLOBAL ~/.cursor/mcp.json")
+            project_mcp_cfg = {
+                "mcpServers": {
+                    "super-prompt": {
+                        "type": "stdio",
+                        "command": f"{project_root_input}/bin/sp-mcp",  # 사용자가 입력한 프로젝트 루트 기준 절대경로
+                        "args": [],
+                        "env": {
+                            "SUPER_PROMPT_ALLOW_INIT": "true",
+                            "SUPER_PROMPT_REQUIRE_MCP": "1",
+                            "SUPER_PROMPT_PROJECT_ROOT": project_root_input,
+                            "PYTHONUNBUFFERED": "1",
+                            "PYTHONUTF8": "1",
+                            "PYTHONPATH": super_prompt_lib_path,  # .super-prompt/lib 폴더를 PYTHONPATH에 추가
+                        }
+                    }
+                }
+            }
 
-        except Exception as e:
-            typer.echo(f"⚠️  MCP registration failed: {e}")
-            mcp_registered = False
+            # 프로젝트별 MCP 설정 파일 생성
+            project_mcp.parent.mkdir(parents=True, exist_ok=True)
+            with open(project_mcp, 'w') as f:
+                json.dump(project_mcp_cfg, f, indent=2)
+
+            # 6. 추가 디렉토리들 생성
+            try:
+                # specs 폴더
+                specs_dir = target_dir / "specs"
+                specs_dir.mkdir(parents=True, exist_ok=True)
+
+                # memory 폴더
+                memory_dir = target_dir / "memory"
+                memory_dir.mkdir(parents=True, exist_ok=True)
+
+                # .codex 폴더
+                codex_dir = target_dir / ".codex"
+                codex_dir.mkdir(parents=True, exist_ok=True)
+
+            except Exception:
+                pass  # 조용히 실패 처리
+
+            # 초기화 완료 (최소 로그만 출력)
+            # MCP 서버가 올바르게 작동하도록 최소한의 로그만 출력
+
+        except Exception:
+            pass  # 조용히 실패 처리
 
         # Optional: Codex registration (always overwrite to prevent drift)
         codex_registered = False
@@ -1561,29 +1879,29 @@ Brief description of the feature.
         try:
             from .adapters.cursor_adapter import CursorAdapter
             cursor = CursorAdapter()
-            # Modified to use global directory (MCP settings managed globally)
-            # cursor.generate_commands(target_dir)  # Project-local generation disabled
-            # cursor.generate_rules(target_dir)     # Project-local generation disabled
+            # Generate Cursor assets locally in project directory
+            cursor.generate_commands(target_dir)  # Project-local generation enabled
+            cursor.generate_rules(target_dir)     # Project-local generation enabled
 
-            # Verify Cursor assets were generated globally
-            commands_dir = Path.home() / ".cursor" / "commands" / "super-prompt"
-            rules_dir = Path.home() / ".cursor" / "rules"
+            # Verify Cursor assets were generated in project directory
+            project_commands_dir = target_dir / ".cursor" / "commands" / "super-prompt"
+            project_rules_dir = target_dir / ".cursor" / "rules"
 
-            if commands_dir.exists():
-                command_files = list(commands_dir.glob("*.md"))
+            if project_commands_dir.exists():
+                command_files = list(project_commands_dir.glob("*.md"))
                 if command_files:
                     cursor_commands_generated = True
-                    typer.echo(f"✅ Cursor commands available globally: {len(command_files)} commands in ~/.cursor/commands/super-prompt/")
+                    typer.echo(f"✅ Cursor commands available locally: {len(command_files)} commands in .cursor/commands/super-prompt/")
                 else:
                     typer.echo("⚠️  Cursor commands directory exists but no command files found")
             else:
                 typer.echo("⚠️  Cursor commands directory not found")
 
-            if rules_dir.exists():
-                rule_files = list(rules_dir.glob("*.mdc"))
+            if project_rules_dir.exists():
+                rule_files = list(project_rules_dir.glob("*.mdc"))
                 if rule_files:
                     cursor_rules_generated = True
-                    typer.echo(f"✅ Cursor rules available globally: {len(rule_files)} rules in ~/.cursor/rules/")
+                    typer.echo(f"✅ Cursor rules available locally: {len(rule_files)} rules in .cursor/rules/")
                 else:
                     typer.echo("⚠️  Cursor rules directory exists but no rule files found")
             else:
@@ -1703,7 +2021,30 @@ def super_init_alias(
     - .codex/ (Codex CLI configuration)
     These directories are protected and should only be modified by official installation processes.
     """
-    return init(project_root=project_root, force=force)
+    # 디버깅 메시지 (강제 stderr)
+    import sys
+    import os
+    print("=== DEBUG: super_init_alias called ===", file=sys.stderr, flush=True)
+    print(f"DEBUG: super_init_alias called at {os.getcwd()}", file=sys.stderr, flush=True)
+    print(f"DEBUG: project_root = {project_root}", file=sys.stderr, flush=True)
+    print(f"DEBUG: force = {force}", file=sys.stderr, flush=True)
+    sys.stderr.flush()
+
+    target_dir = Path(project_root) if project_root else Path(".")
+    print(f"DEBUG: target_dir = {target_dir}", file=sys.stderr, flush=True)
+    sys.stderr.flush()
+
+    # init 함수 호출 전후 디버깅
+    print("=== ABOUT TO CALL INIT FUNCTION ===", file=sys.stderr, flush=True)
+    print(f"DEBUG: About to call init function with target_dir={target_dir}, force={force}", file=sys.stderr, flush=True)
+    sys.stderr.flush()
+
+    result = init(target_dir, force)
+
+    print("=== INIT FUNCTION COMPLETED ===", file=sys.stderr, flush=True)
+    print(f"DEBUG: init function returned: {result}", file=sys.stderr, flush=True)
+    sys.stderr.flush()
+    return result
 
 
 def handle_enhanced_persona_execution(system_prompt: str, persona_key: str, args: list):

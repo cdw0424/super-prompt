@@ -5,114 +5,37 @@ server: super-prompt
 tool: sp_docs_refector
 args:
   query: "${input}"
-## Execution Mode
-
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
-
+  persona: "docs-refector"
 ---
 
-# 🧹 **Docs Refector - Documentation Audit & Refactoring Specialist**
+## Execution Mode
 
-**Expert Focus**: Repository-wide documentation audit, de-duplication, consolidation, and improvement
+# Docs-Refector — Guided Execution
 
-## 🎯 **Documentation Refactoring Workflow**
+## Instructions
+- Provide a short, specific input describing the goal and constraints
+- Prefer concrete artifacts (file paths, diffs, APIs) for higher quality output
+- Use MCP Only: /super-prompt/docs-refector "<your input>"
 
-### **Single Step Analysis:**
+## Execution Checklist
+- [ ] Define goal and scope
+  - What outcome is expected? Any constraints or deadlines?
+  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
 
-1. **🧹 Documentation Analysis** - Current Tool (docs-refector)
-   - Audit entire repository documentation structure and quality
-   - Identify duplicate, outdated, and inconsistent documentation
-   - Provide comprehensive documentation refactoring recommendations
+- [ ] Run the tool for primary analysis
+  - Use MCP Only: /super-prompt/docs-refector "<your input>"
+  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
 
-## 🏗️ **Implementation Strategy**
+- [ ] Apply recommendations and produce artifacts
+  - Implement changes, write tests/docs as needed
+  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
 
-### **Current Structure vs Optimized Structure:**
+- [ ] Convert follow-ups into tasks
+  - Use MCP Only: /super-prompt/tasks "Break down follow-ups into tasks"
+  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
 
-| **Current Structure** | **Optimized Structure** |
-|----------------------|-------------------------|
-| Scattered documentation | Single `sp_docs_refector` MCP call |
-| Duplicate content | Clean MCP protocol compliance |
-| Manual documentation | Automated documentation assessment |
+## Outputs
+- Prioritized findings with rationale
+- Concrete fixes/refactors with examples
+- Follow-up TODOs (tests, docs, monitoring)
 
-### **Documentation TODO System:**
-
-## 📋 **Documentation TODO List**
-
-### Phase 1: Documentation Assessment
-- [x] **Documentation Overview**
-  - Query: `${input}`
-- [x] **Current Documentation Analysis**
-  - Audit existing documentation structure and coverage
-
-### Phase 2: Content Analysis
-- [ ] **Duplicate Detection**
-  - Identify duplicate and redundant documentation
-- [ ] **Quality Assessment**
-  - Evaluate documentation accuracy, completeness, and clarity
-
-### Phase 3: Refactoring Planning
-- [ ] **Consolidation Strategy**
-  - Plan documentation consolidation and reorganization
-- [ ] **Standardization Framework**
-  - Establish documentation standards and templates
-
-### Phase 4: Implementation Guidance
-- [ ] **Migration Planning**
-  - Plan documentation migration and refactoring execution
-- [ ] **Maintenance Strategy**
-  - Establish ongoing documentation maintenance processes
-
-## 🚀 **Execution Method**
-
-### **Single MCP Execution Mode:**
-1. User inputs `/super-prompt/docs-refector "documentation query"`
-2. `sp_docs_refector` tool executes alone
-3. One persona performs complete documentation analysis
-4. Single comprehensive documentation assessment output
-
-### **Mode-Specific Optimization:**
-- **Grok Mode**: Creative documentation solutions and innovative approaches
-- **GPT Mode**: Structured documentation frameworks and proven methodologies
-
-### **Usage Example:**
-```
-1. /super-prompt/docs-refector "Audit repository documentation quality"
-    ↓
-2. sp_docs_refector executes alone (safe single call)
-    ↓
-3. One persona performs complete documentation analysis
-    ↓
-4. Comprehensive documentation assessment output
-```
-
-## 💡 **Documentation Advantages**
-
-### **1. Single Execution Safety**
-- Execute only one MCP tool per documentation analysis
-- Complete prevention of infinite recursion and circular calls
-
-### **2. Comprehensive Audit**
-- Repository-wide documentation structure analysis
-- Duplicate content detection and consolidation planning
-- Documentation quality assessment and improvement recommendations
-
-### **3. Documentation Best Practices**
-- Industry-standard documentation frameworks and methodologies
-- Content organization and information architecture
-- Documentation maintenance and governance practices
-
-### **4. Implementation Guidance**
-- Concrete documentation refactoring implementation plans
-- Content migration and consolidation strategies
-- Documentation maintenance and update procedures
-
-## 🔥 **Conclusion**
-
-Docs Refector provides **comprehensive documentation audit and refactoring recommendations**!
-
-- ✅ **Single safe execution** of documentation analysis
-- ✅ **Complete documentation audit** in one call
-- ✅ **Industry best practices** for documentation management
-- ✅ **Implementation guidance** for documentation refactoring
-
-Now **professional documentation management** is available through single MCP execution! 🧹✨

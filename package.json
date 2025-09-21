@@ -1,18 +1,18 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "5.1.6",
-  "description": "Super Prompt v5.1.6 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
+  "version": "5.2.32",
+  "description": "Super Prompt v5.2.32 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
   },
   "scripts": {
     "clean:py": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
-    "clean": "rm -rf dist || true && rm -rf packages/core-py/dist || true && npm run clean:py",
+    "clean": "rm -rf dist || true && rm -rf python-packages/super-prompt-core/dist || true && npm run clean:py",
     "build": "echo 'Build complete - JavaScript project'",
     "prepack": "npm run clean && node scripts/prepare-python-dist.js && npm run build",
     "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",
-    "postinstall": "node install.js",
+    "postinstall": "node install.js && npm run install:python",
     "test": "node --test",
     "dev": "./bin/super-prompt",
     "dev:init": "./bin/super-prompt super:init",
@@ -25,6 +25,7 @@
     "sp:mcp:python": "python -m super_prompt.mcp_client",
     "sp:mcp:list-tools": "python -m super_prompt.mcp_client list-tools",
     "sp:mcp:call": "python -m super_prompt.mcp_client call",
+    "install:python": "python3 -m pip install --break-system-packages ./python-packages/super-prompt-core",
     "ssot:verify": "node scripts/ssot/verify-ssot.js",
     "sp:verify:all": "npm run ssot:verify && npm run build && echo '✅ All verifications passed'"
   },
@@ -57,15 +58,13 @@
     "win32"
   ],
   "files": [
-    "bin",
-    "src/",
-    "dist/",
+    "bin/",
+    "python-packages/super-prompt-core/",
     "templates/",
-    "packages/core-py/",
-    "packages/codex-assets/",
+    "src/",
     "install.js",
     "README.md",
-    "CHANGELOG.md"
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18.17"

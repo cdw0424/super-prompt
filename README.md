@@ -1,31 +1,55 @@
-# Super Prompt v5.1.6
+# Super Prompt v5.2.22
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
+## Installation
+
+```bash
+# For regular users - install globally
+npm install -g @cdw0424/super-prompt@latest
+
+# For developers working on this project - use local version
+# DO NOT run npm install in the project root - use ./bin/super-prompt directly
+```
+
+> **⚠️ Version Management Note**: This project has both development and published versions. When developing, always use `./bin/super-prompt` from the project root. The `node_modules/.bin/super-prompt` is the published npm package version.
+
+> **🛠️ For Developers**: If you're working on Super Prompt itself, NEVER run `npm install` in the project root. This creates version conflicts between `./bin/super-prompt` (development) and `node_modules/.bin/super-prompt` (published). Always use `./bin/super-prompt` directly for development work.
+
 Super Prompt enables Cursor to apply language-specific optimized personas and guidelines, maximizing development performance. It provides a pure Python MCP server with specialized personas, model routing rules, and command-line tooling in a single npm package, allowing you to install, initialize, and register the MCP server in one step.
 
 ## Quick Start
 
-### Installation
+### Step-by-Step Setup Guide
 
-```bash
-# Install the latest version in your project
-npm install @cdw0424/super-prompt@latest
-```
+> **Note:** If you haven't installed Super Prompt yet, see the [Installation](#installation) section above.
 
-### Project Setup
+#### 1. Initialize Project Assets
 
 ```bash
 # Initialize Super Prompt assets in your workspace
-./node_modules/.bin/super-prompt super:init --force
+super-prompt super:init --force
 ```
 
-### Cursor Configuration
+> **For developers**: If you're working on the Super Prompt project itself, use `./bin/super-prompt super:init --force` instead.
 
-1. Open **Cursor → Settings → MCP**
-2. Add the following configuration:
+This command:
+- ✅ Creates `.cursor/` directory with command assets
+- ✅ Sets up `.super-prompt/` configuration directory
+- ✅ Copies all persona command files (24 total)
+- ✅ Initializes MCP server configuration
+- ✅ Prepares project for persona usage
+
+> **Important:** After initialization, you must **fully quit and relaunch Cursor** to load the new MCP configuration.
+> - On macOS: `Cursor → Quit Cursor` (Cmd+Q) - window close is not enough
+> - On Windows/Linux: Fully exit Cursor and restart
+
+#### 2. Configure Cursor MCP Integration
+
+1. **Open MCP Settings**: `Cursor → Settings → MCP`
+2. **Add Server Configuration**:
 
 ```json
 {
@@ -46,17 +70,60 @@ npm install @cdw0424/super-prompt@latest
 }
 ```
 
-3. Restart Cursor and start using personas!
+3. **Verify Configuration**: Restart Cursor and check that Super Prompt commands appear in the command palette
 
-### First Usage
+#### 3. Choose Your AI Mode
+
+Super Prompt supports both **GPT** and **Grok** modes. Choose one:
+
+**For Grok Mode (Recommended for creative tasks):**
+```bash
+/super-prompt/grok-mode-on
+```
+
+**For GPT Mode (Recommended for structured tasks):**
+```bash
+/super-prompt/gpt-mode-on
+```
+
+> **Note:** You can switch between modes anytime using `/super-prompt/grok-mode-on` or `/super-prompt/gpt-mode-on`
+
+#### 4. Start Using Personas
+
+You're now ready to use all 24 Super Prompt personas! Try these examples:
 
 ```bash
-# Get architecture help
-/super-prompt/architect "Design a user authentication system"
+# Architecture design with Mermaid diagrams
+/super-prompt/architect "Design a microservices architecture for an e-commerce platform"
 
-/super-prompt/backend "Implement REST API endpoints"
-/super-prompt/frontend "Build React login component"
+# Backend API development
+/super-prompt/backend "Create REST API endpoints for user management"
+
+# Frontend component design
+/super-prompt/frontend "Design a responsive dashboard UI with dark mode"
+
+# Code review and optimization
+/super-prompt/dev "Review and optimize this React component for performance"
+
+# Database schema design
+/super-prompt/db-expert "Design a PostgreSQL schema for a social media app"
 ```
+
+### Troubleshooting
+
+**MCP Commands Not Appearing:**
+- Ensure Cursor is fully restarted after initialization
+- Check that the MCP configuration is saved in Cursor settings
+- Verify the `.bin/sp-mcp` file exists in `node_modules/.bin/`
+
+**Python Errors:**
+- Super Prompt includes its own Python runtime
+- No additional Python installation required
+- All dependencies are bundled with the package
+
+**Permission Issues:**
+- On macOS/Linux, ensure executable permissions: `chmod +x ./bin/sp-mcp`
+- On Windows, run terminal as administrator if needed
 
 ## Model Mode Configuration
 
@@ -141,18 +208,15 @@ Super Prompt automatically detects your project's context and applies the most a
 | **API Design** | GPT-5 Low Fast | Max |
 | **Refactoring** | Grok Code Fast | Max |
 
-## What’s new in 5.1.6
+## What's new in 5.1.7
 
-- **Streamlined documentation** – Simplified README structure with clearer navigation and focused content.
-- **Enhanced documentation links** – Added direct links to technical documentation in docs/ directory.
-- **Version synchronization fix** – All version displays now correctly show v5.1.6 across CLI, runtime banners, and documentation.
-- **Enhanced MCP server architecture** – Improved modularity with stateless stdio entry points and better component separation.
-- **Persona pipeline modernization** – Replaced legacy pipeline helpers with modern prompt-based workflows for all personas.
-- **SDD architecture integration** – Added comprehensive Spec Kit lifecycle guidance with new architecture knowledge base.
-- **Full Spec Kit persona coverage** – Restored MCP coverage for all Spec Kit personas using shared workflow executor.
-- **Troubleshooting persona enhancement** – Updated prompts, overlays, and command metadata for better debugging capabilities.
-- **Asset validation improvements** – Enhanced project bootstrap processes and configuration validation.
-- **Documentation standardization** – Complete README and CHANGELOG refresh in English with current guidance.
+- **Command Standardization** – All Super Prompt commands now feature standardized bodies with clear directives, actionable checklists, and mandatory double-check steps using sp_high (confession review mode).
+- **MCP Tool Mapping Clarity** – Execution lines now explicitly show the mapped MCP tool (e.g., "sp_analyzer MCP") for transparent debugging and usage.
+- **Installation Consistency** – Ensured super:init applies .cursor/ folder contents identically across fresh installations, with comprehensive asset syncing.
+- **MCP Server Conflict Resolution** – Added logic to prevent global/local MCP server conflicts, ensuring only one runtime instance executes per project.
+- **Command Frontmatter Automation** – New scripts for bulk updating command metadata, persona args, and frontmatter delimiters across all assets.
+- **Documentation Architecture** – Enhanced command documentation with guided execution checklists and MCP tool integration guidance.
+- **SDD Workflow Integration** – Strengthened Spec-Driven Development integration with plan delegation for specialized commands (wave, ultracompressed).
 
 ## How It Works
 

@@ -8,7 +8,7 @@ args:
   persona: "doc-master"
 ## Execution Mode
 
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+➡️ Execution: sp_doc_master MCP (server: super-prompt; tool as defined above).
 
 ---
 

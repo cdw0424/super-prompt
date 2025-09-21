@@ -8,7 +8,7 @@ args:
   persona: "seq-ultra"
 ## Execution Mode
 
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+➡️ Execution: sp_seq_ultra MCP (server: super-prompt; tool as defined above).
 
 ---
 

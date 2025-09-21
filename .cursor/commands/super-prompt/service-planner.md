@@ -8,7 +8,7 @@ args:
   persona: "service-planner"
 ## Execution Mode
 
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+➡️ Execution: sp_service_planner MCP (server: super-prompt; tool as defined above).
 
 ---
 

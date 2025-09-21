@@ -2,7 +2,7 @@
 description: wave command
 run: mcp
 server: super-prompt
-tool: sp_wave
+tool: sp_high
 args:
   query: "${input}"
   persona: "wave"

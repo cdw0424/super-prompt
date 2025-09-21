@@ -94,11 +94,6 @@ def _install_cli_dependencies():
 
 def _verify_mcp_tool_alignment(project_path: Path) -> None:
     """Ensure MCP server exposes every command-defined tool."""
-    try:
-        from ...mcp_client import MCPClient
-    except Exception as import_error:
-        raise RuntimeError(f"Unable to import MCP client: {import_error}") from import_error
-
     expected_tools = set()
     commands_dir = project_path / ".cursor" / "commands" / "super-prompt"
     if commands_dir.exists():
@@ -111,19 +106,17 @@ def _verify_mcp_tool_alignment(project_path: Path) -> None:
     else:
         raise RuntimeError(f"Expected command directory not found: {commands_dir}")
 
-    async def _check():
-        async with MCPClient() as client:
-            tools = await client.list_tools()
-            available = {t.get("name") for t in tools if isinstance(t, dict)}
-            missing = sorted(tool for tool in expected_tools if tool not in available)
-            if missing:
-                raise RuntimeError(
-                    "MCP tool registration incomplete. Missing: " + ", ".join(missing)
-                )
-            if not available:
-                raise RuntimeError("MCP reported zero tools after initialization.")
+    try:
+        from ...mcp_server_new import _TOOL_REGISTRY
+    except Exception as import_error:
+        raise RuntimeError(f"Unable to inspect MCP registry: {import_error}") from import_error
 
-    asyncio.run(_check())
+    available = set(_TOOL_REGISTRY.keys())
+    missing = sorted(tool for tool in expected_tools if tool not in available)
+    if missing:
+        raise RuntimeError("MCP tool registration incomplete. Missing: " + ", ".join(missing))
+    if not available:
+        raise RuntimeError("No MCP tools registered in server registry.")
 
 
 def _init_impl(force: bool = False) -> str:

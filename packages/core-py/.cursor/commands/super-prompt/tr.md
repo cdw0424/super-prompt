@@ -2,7 +2,7 @@
 description: tr command
 run: mcp
 server: super-prompt
-tool: sp_tr
+tool: sp_troubleshooting
 args:
   query: "${input}"
   persona: "tr"

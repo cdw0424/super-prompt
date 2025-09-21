@@ -2,7 +2,7 @@
 description: service-planner command
 run: mcp
 server: super-prompt
-tool: sp_service-planner
+tool: sp_service_planner
 args:
   query: "${input}"
   persona: "service-planner"

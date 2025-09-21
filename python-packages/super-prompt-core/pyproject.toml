@@ -1,0 +1,167 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "super-prompt-core"
+version = "5.2.32"
+description = "Core library for Super Prompt v5.2.32 - Pure Python MCP Dual IDE Prompt Engineering Toolkit"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Daniel Choi", email = "cdw0424@gmail.com"},
+]
+maintainers = [
+    {name = "Daniel Choi", email = "cdw0424@gmail.com"},
+]
+keywords = ["prompt-engineering", "ai", "development-workflow", "sd", "amr"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "pathspec>=0.11.0",     # .gitignore pattern matching
+    "pyyaml>=6.0",          # YAML configuration files
+    "typer>=0.9.0",         # CLI framework
+    "mcp>=0.4.0",           # FastMCP runtime
+    "fastmcp>=0.4.0",       # FastMCP runtime (최신 이름)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+]
+performance = [
+    "ripgrep",              # Fast text search (external)
+    "cachecontrol>=0.13.0", # HTTP caching
+    "tiktoken>=0.5.0",      # Token counting
+]
+mcp = [
+    "mcp>=0.4.0",          # MCP server framework
+    "uvicorn>=0.24.0",     # ASGI server for TCP mode
+]
+
+[project.urls]
+Homepage = "https://github.com/cdw0424/super-prompt"
+Documentation = "https://super-prompt.readthedocs.io/"
+Repository = "https://github.com/cdw0424/super-prompt"
+Issues = "https://github.com/cdw0424/super-prompt/issues"
+Changelog = "https://github.com/cdw0424/super-prompt/blob/main/CHANGELOG.md"
+
+[project.scripts]
+super-prompt = "super_prompt.cli:app"
+super-prompt-mcp = "super_prompt.mcp_client:app"
+sp-mcp = "super_prompt.mcp_server:main"
+
+[tool.hatch.build]
+exclude = [
+    "dist",
+    ".pytest_cache",
+    "tests",
+    "*.egg-info",
+]
+
+[tool.hatch.build.targets.wheel]
+include = ["/super_prompt"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "isort",
+    "mypy",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=super_prompt {args:tests}"
+lint = [
+    "black {args:.}",
+    "isort {args:.}",
+    "mypy {args:super_prompt}",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pathspec.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = [
+    "tests",
+]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["super_prompt"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

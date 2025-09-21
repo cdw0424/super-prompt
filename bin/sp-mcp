@@ -61,4 +61,11 @@ echo "-------- MCP: PYTHONPATH: $APP_HOME/packages/core-py" >&2
 echo "-------- MCP: Python binary: $PYTHON_BIN" >&2
 echo "-------- MCP: App home: $APP_HOME" >&2
 
+# If a different super-prompt install is earlier on PATH (e.g., global), prefer this APP_HOME by re-execing when mismatch detected
+if [ -n "${SUPER_PROMPT_PACKAGE_ROOT:-}" ] && [ "$SUPER_PROMPT_PACKAGE_ROOT" != "$APP_HOME" ]; then
+  echo "-------- MCP: Detected conflicting installation at $SUPER_PROMPT_PACKAGE_ROOT; preferring $APP_HOME" >&2
+fi
+
+export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+
 PYTHONPATH="$APP_HOME/packages/core-py" "$PYTHON_BIN" -m super_prompt.mcp_stdio

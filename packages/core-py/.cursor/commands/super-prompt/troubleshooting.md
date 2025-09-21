@@ -2,7 +2,7 @@
 description: translate command
 run: mcp
 server: super-prompt
-tool: sp_translate
+tool: sp_troubleshooting
 args:
   query: "${input}"
   persona: "translate"

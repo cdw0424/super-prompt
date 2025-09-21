@@ -182,8 +182,18 @@ route_codex_flags() {
     shift # consume the flag
     # Treat remaining args as a single query string
     local query="$*"
+    # CLI 모드 환경변수 설정
+    export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
+    export SUPER_PROMPT_ALLOW_DIRECT="true"  # 직접 CLI 실행 허용
+    export SUPER_PROMPT_CLI_MODE="1"  # CLI 모드 표시
+
+    # 사용자 프로젝트의 .super-prompt/lib/ 경로 우선 사용
+    SUPER_PROMPT_USER_PATH="$PROJECT_ROOT/.super-prompt/lib"
+    export PYTHONPATH="$SUPER_PROMPT_USER_PATH:${PYTHONPATH:-}"
+
     exec "$PYTHON_BIN" -c "
 import sys
+sys.path.insert(0, '$PROJECT_ROOT/.super-prompt/lib')
 sys.path.insert(0, '$APP_HOME/packages/core-py')
 from super_prompt.mcp_client import MCPClient
 import asyncio
@@ -243,16 +253,44 @@ resolve_direct_tool() {
 exec_mcp_tool() {
   local tool="$1"
   shift
+  export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
+  export SUPER_PROMPT_ALLOW_DIRECT="true"  # 직접 CLI 실행 허용
+  export SUPER_PROMPT_CLI_MODE="1"  # CLI 모드 표시
   : "${SUPER_PROMPT_ALLOW_DIRECT:=true}"
   export SUPER_PROMPT_ALLOW_DIRECT
   export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
   export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
-  export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+
+  # 사용자 프로젝트의 .super-prompt/lib/ 경로 우선 사용
+  SUPER_PROMPT_USER_PATH="$PROJECT_ROOT/.super-prompt/lib"
+  export PYTHONPATH="$SUPER_PROMPT_USER_PATH:${PYTHONPATH:-}"
+
+  # Try to find super_prompt package in system paths (fallback)
+  SUPER_PROMPT_PATH=""
+  for python_path in $(python3 -c "import sys; print(':'.join(sys.path))" 2>/dev/null); do
+    if [ -d "$python_path/super_prompt" ]; then
+      SUPER_PROMPT_PATH="$python_path"
+      break
+    fi
+  done
+
+  if [ -n "$SUPER_PROMPT_PATH" ]; then
+    export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
+    echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
+  else
+    export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
+    echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+  fi
+
+  echo "-------- DEBUG: exec_mcp_tool called with tool=$tool" >&2
+  echo "-------- DEBUG: APP_HOME = $APP_HOME" >&2
+  echo "-------- DEBUG: PYTHONPATH = ${PYTHONPATH:-}" >&2
   if [ $# -gt 0 ]; then
     local query="$*"
     exec "$PYTHON_BIN" -c "
 import sys
 print('-------- DEBUG: sys.path before:', sys.path[:3])
+sys.path.insert(0, '$PROJECT_ROOT/.super-prompt/lib')
 sys.path.insert(0, '$APP_HOME/packages/core-py')
 print('-------- DEBUG: sys.path after:', sys.path[:3])
 from super_prompt.mcp_client import MCPClient
@@ -270,6 +308,7 @@ asyncio.run(call_tool())
     exec "$PYTHON_BIN" -c "
 import sys
 print('-------- DEBUG: sys.path before:', sys.path[:3])
+sys.path.insert(0, '$PROJECT_ROOT/.super-prompt/lib')
 sys.path.insert(0, '$APP_HOME/packages/core-py')
 print('-------- DEBUG: sys.path after:', sys.path[:3])
 from super_prompt.mcp_client import MCPClient
@@ -290,8 +329,33 @@ case "$CMD" in
     shift
     # MCP server exposed in stdio mode for client connection
     export MCP_SERVER_MODE="1"  # Mark as MCP server mode
-    # Ensure Python can import super_prompt from package sources without wheel install
-    export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+
+    # 사용자 프로젝트의 .super-prompt/lib/ 경로 우선 사용
+    SUPER_PROMPT_USER_PATH="$PROJECT_ROOT/.super-prompt/lib"
+    export PYTHONPATH="$SUPER_PROMPT_USER_PATH:${PYTHONPATH:-}"
+
+    # Try to find super_prompt package in system paths (fallback)
+    SUPER_PROMPT_PATH=""
+    for python_path in $(python3 -c "import sys; print(':'.join(sys.path))" 2>/dev/null); do
+      if [ -d "$python_path/super_prompt" ]; then
+        SUPER_PROMPT_PATH="$python_path"
+        break
+      fi
+    done
+
+    if [ -n "$SUPER_PROMPT_PATH" ]; then
+      export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
+      echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
+    else
+      export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
+      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+    fi
+
+    echo "-------- DEBUG: mcp-serve mode detected" >&2
+    echo "-------- DEBUG: APP_HOME = $APP_HOME" >&2
+    echo "-------- DEBUG: PROJECT_ROOT = $PROJECT_ROOT" >&2
+    echo "-------- DEBUG: SUPER_PROMPT_USER_PATH = $SUPER_PROMPT_USER_PATH" >&2
+    echo "-------- DEBUG: PYTHONPATH = ${PYTHONPATH:-}" >&2
     exec "$PYTHON_BIN" -m super_prompt.mcp_stdio "$@"
     ;;
   super:init)
@@ -299,25 +363,102 @@ case "$CMD" in
     # CLI에서 직접 init 실행 (전역 ~/.cursor/mcp.json 업데이트)
     export SUPER_PROMPT_ALLOW_INIT="true"
     export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
+    export SUPER_PROMPT_ALLOW_DIRECT="true"  # 직접 CLI 실행 허용
+    export SUPER_PROMPT_CLI_MODE="1"  # CLI 모드 표시
     export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
     export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
-    export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+
+    # Try to find super_prompt package in system paths
+    SUPER_PROMPT_PATH=""
+    for python_path in $(python3 -c "import sys; print(':'.join(sys.path))" 2>/dev/null); do
+      if [ -d "$python_path/super_prompt" ]; then
+        SUPER_PROMPT_PATH="$python_path"
+        break
+      fi
+    done
+
+    if [ -n "$SUPER_PROMPT_PATH" ]; then
+      export PYTHONPATH="$SUPER_PROMPT_PATH:${PYTHONPATH:-}"
+      echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
+    else
+      export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+    fi
+
+    export SUPER_PROMPT_DEBUG="1"  # 디버깅 모드 활성화
+    export SUPER_PROMPT_CLI_MODE="1"  # CLI 모드 표시
+
+    echo "-------- DEBUG: super:init command detected" >&2
+    echo "-------- DEBUG: APP_HOME = $APP_HOME" >&2
+    echo "-------- DEBUG: PROJECT_ROOT = $PROJECT_ROOT" >&2
+    echo "-------- DEBUG: PYTHONPATH = ${PYTHONPATH:-}" >&2
+    echo "-------- DEBUG: PYTHON_BIN = $PYTHON_BIN" >&2
+
+    echo "-------- DEBUG: About to execute Python" >&2
+    echo "-------- DEBUG: Command: $PYTHON_BIN -c \"import sys; sys.path.insert(0, '$APP_HOME/packages/core-py'); from super_prompt.cli import init; import typer; typer.run(init)\" $*" >&2
+
     exec "$PYTHON_BIN" -c "
 import sys
+import os
+print('=== DEBUG: Starting super:init ===', file=sys.stderr, flush=True)
+print(f'DEBUG: APP_HOME = {os.environ.get(\"APP_HOME\")}', file=sys.stderr, flush=True)
+print(f'DEBUG: PYTHONPATH = {os.environ.get(\"PYTHONPATH\")}', file=sys.stderr, flush=True)
+print(f'DEBUG: CLI_MODE = {os.environ.get(\"SUPER_PROMPT_CLI_MODE\")}', file=sys.stderr, flush=True)
+print(f'DEBUG: sys.path before = {sys.path[:3]}', file=sys.stderr, flush=True)
 sys.path.insert(0, '$APP_HOME/packages/core-py')
-from super_prompt.cli import init
-import typer
-typer.run(init)
+print(f'DEBUG: sys.path after = {sys.path[:3]}', file=sys.stderr, flush=True)
+print('DEBUG: About to import super_prompt.cli', file=sys.stderr, flush=True)
+try:
+    # CLI 모드에서는 MCP 서버 파일을 import하지 않음
+    print('DEBUG: CLI mode - skipping mcp_server_new import', file=sys.stderr, flush=True)
+
+    from super_prompt.cli import init
+    print('DEBUG: Successfully imported init function', file=sys.stderr, flush=True)
+    import typer
+    print('DEBUG: About to run typer.run(init)', file=sys.stderr, flush=True)
+    typer.run(init)
+except Exception as e:
+    print(f'DEBUG: Exception occurred: {e}', file=sys.stderr, flush=True)
+    import traceback
+    print(f'DEBUG: Traceback: {traceback.format_exc()}', file=sys.stderr, flush=True)
 " "$@"
     ;;
   super:refresh)
     shift
     export SUPER_PROMPT_ALLOW_REFRESH="true"
+    export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
+    export SUPER_PROMPT_ALLOW_DIRECT="true"  # 직접 CLI 실행 허용
+    export SUPER_PROMPT_CLI_MODE="1"  # CLI 모드 표시
     export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
     export SUPER_PROMPT_PROJECT_ROOT="${SUPER_PROMPT_PROJECT_ROOT:-$PROJECT_ROOT}"
-    export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+
+    # 사용자 프로젝트의 .super-prompt/lib/ 경로 우선 사용
+    SUPER_PROMPT_USER_PATH="$PROJECT_ROOT/.super-prompt/lib"
+    export PYTHONPATH="$SUPER_PROMPT_USER_PATH:${PYTHONPATH:-}"
+
+    # Try to find super_prompt package in system paths (fallback)
+    SUPER_PROMPT_PATH=""
+    for python_path in $(python3 -c "import sys; print(':'.join(sys.path))" 2>/dev/null); do
+      if [ -d "$python_path/super_prompt" ]; then
+        SUPER_PROMPT_PATH="$python_path"
+        break
+      fi
+    done
+
+    if [ -n "$SUPER_PROMPT_PATH" ]; then
+      export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
+      echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
+    else
+      export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
+      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+    fi
+
+    echo "-------- DEBUG: super:refresh command detected" >&2
+    echo "-------- DEBUG: APP_HOME = $APP_HOME" >&2
+    echo "-------- DEBUG: PYTHONPATH = ${PYTHONPATH:-}" >&2
     exec "$PYTHON_BIN" -c "
 import sys
+sys.path.insert(0, '$PROJECT_ROOT/.super-prompt/lib')
 sys.path.insert(0, '$APP_HOME/packages/core-py')
 from super_prompt.mcp_client import MCPClient
 import asyncio
@@ -338,9 +479,38 @@ asyncio.run(refresh())
     exec node "$APP_HOME/src/doctor.js"
     ;;
   --version|-v|version)
+    export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
+    export SUPER_PROMPT_ALLOW_DIRECT="true"  # 직접 CLI 실행 허용
+    export SUPER_PROMPT_CLI_MODE="1"  # CLI 모드 표시
+
+    # 사용자 프로젝트의 .super-prompt/lib/ 경로 우선 사용
+    SUPER_PROMPT_USER_PATH="$PROJECT_ROOT/.super-prompt/lib"
+    export PYTHONPATH="$SUPER_PROMPT_USER_PATH:${PYTHONPATH:-}"
+
+    # Try to find super_prompt package in system paths (fallback)
+    SUPER_PROMPT_PATH=""
+    for python_path in $(python3 -c "import sys; print(':'.join(sys.path))" 2>/dev/null); do
+      if [ -d "$python_path/super_prompt" ]; then
+        SUPER_PROMPT_PATH="$python_path"
+        break
+      fi
+    done
+
+    if [ -n "$SUPER_PROMPT_PATH" ]; then
+      export PYTHONPATH="$SUPER_PROMPT_PATH:$PYTHONPATH"
+      echo "-------- DEBUG: Found super_prompt at $SUPER_PROMPT_PATH" >&2
+    else
+      export PYTHONPATH="$APP_HOME/packages/core-py:$PYTHONPATH"
+      echo "-------- DEBUG: Using package path $APP_HOME/packages/core-py" >&2
+    fi
+
+    echo "-------- DEBUG: version command detected" >&2
+    echo "-------- DEBUG: APP_HOME = $APP_HOME" >&2
+    echo "-------- DEBUG: PYTHONPATH = ${PYTHONPATH:-}" >&2
     exec "$PYTHON_BIN" -c "
 import sys
 print('-------- DEBUG: sys.path before:', sys.path[:3])
+sys.path.insert(0, '$PROJECT_ROOT/.super-prompt/lib')
 sys.path.insert(0, '$APP_HOME/packages/core-py')
 print('-------- DEBUG: sys.path after:', sys.path[:3])
 from super_prompt.mcp_client import MCPClient

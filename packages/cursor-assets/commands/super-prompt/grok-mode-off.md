@@ -2,13 +2,13 @@
 description: grok-mode-off command
 run: mcp
 server: super-prompt
-tool: sp_grok_mode_off_mcp
+tool: sp_grok_mode_off
 args:
   query: "${input}"
   persona: "grok-mode-off"
 ## Execution Mode
 
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+➡️ Execution: sp_grok_mode_off MCP (server: super-prompt; tool as defined above).
 
 ---
 

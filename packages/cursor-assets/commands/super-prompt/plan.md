@@ -8,7 +8,7 @@ args:
   persona: "plan"
 ## Execution Mode
 
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+➡️ Execution: sp_plan MCP (server: super-prompt; tool as defined above).
 
 ---
 

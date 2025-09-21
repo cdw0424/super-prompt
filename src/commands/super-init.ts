@@ -111,41 +111,113 @@ export async function run(_ctx?: any) {
     // 3) 프로젝트 루트에 Cursor/Codex 템플릿 배치(존재하면 건너뜀)
     const cwd = process.cwd();
     const cursorDir = path.join(cwd, '.cursor');
+    console.error(`-------- DEBUG: cwd=${cwd}, cursorDir=${cursorDir}`);
     ensureDir(cursorDir);
-    const cursorTplDir = path.join(tplRoot, 'cursor');
-    for (const name of ['mcp.json']) {
-      const src = path.join(cursorTplDir, name);
-      const dst = path.join(cursorDir, name);
-      if (fs.existsSync(src)) copyIfMissing(src, dst);
-    }
-    // Fallback: author a default .cursor/mcp.json if template missing
+    console.error(`-------- DEBUG: cursorDir exists=${fs.existsSync(cursorDir)}`);
+
+    // 3-0) MCP 설정: 항상 올바른 로컬 경로로 설정
     const mcpCfg = path.join(cursorDir, 'mcp.json');
-    if (!fs.existsSync(mcpCfg)) {
-      // 절대 경로를 사용해서 안정적인 실행 보장
-      const projectRoot = process.cwd();
-      const mcpScriptPath = path.join(projectRoot, 'bin', 'sp-mcp');
-      const cfg = {
-        mcpServers: {
-          'super-prompt': {
-            type: 'stdio',
-            command: mcpScriptPath.startsWith('.') ? mcpScriptPath : `./bin/sp-mcp`,
-            args: [],
-            env: {
-              SUPER_PROMPT_ALLOW_INIT: 'true',
-              SUPER_PROMPT_REQUIRE_MCP: '1',
-              SUPER_PROMPT_PROJECT_ROOT: projectRoot,
-              PYTHONUNBUFFERED: '1',
-              PYTHONUTF8: '1',
-            }
+    const projectRoot = process.cwd();
+    const mcpScriptPath = './bin/sp-mcp'; // 항상 상대 경로 사용
+    const cfg = {
+      mcpServers: {
+        'super-prompt': {
+          type: 'stdio',
+          command: mcpScriptPath,
+          args: [],
+          env: {
+            SUPER_PROMPT_ALLOW_INIT: 'true',
+            SUPER_PROMPT_REQUIRE_MCP: '1',
+            SUPER_PROMPT_PROJECT_ROOT: projectRoot,
+            PYTHONUNBUFFERED: '1',
+            PYTHONUTF8: '1',
           }
         }
-      } as any;
-      fs.writeFileSync(mcpCfg, JSON.stringify(cfg, null, 2));
-      console.error(`-------- wrote: ${path.relative(process.cwd(), mcpCfg)}`);
-      console.error(`-------- MCP: configured to run from ${mcpScriptPath}`);
+      }
+    } as any;
+    fs.writeFileSync(mcpCfg, JSON.stringify(cfg, null, 2));
+    console.error(`-------- wrote: ${path.relative(process.cwd(), mcpCfg)}`);
+    console.error(`-------- MCP: configured to run from ${mcpScriptPath} (relative path)`);
+
+    // 3-1) Copy command files from packages/cursor-assets/commands/super-prompt/
+    try {
+      // Try multiple possible paths for cursor-assets (development vs published package)
+      let commandsTplDir = null;
+      const possiblePaths = [
+        // Development path
+        path.join(tplRoot, '..', 'packages', 'cursor-assets', 'commands', 'super-prompt'),
+        // Published package path (nested in core-py)
+        path.join(tplRoot, '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'commands', 'super-prompt'),
+        // Alternative published path
+        path.join(__dirname, '..', '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'commands', 'super-prompt')
+      ];
+
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          commandsTplDir = testPath;
+          break;
+        }
+      }
+
+      if (commandsTplDir) {
+        const commandsDstDir = path.join(cursorDir, 'commands', 'super-prompt');
+        ensureDir(commandsDstDir);
+
+        for (const name of fs.readdirSync(commandsTplDir).filter(f => f.endsWith('.md'))) {
+          const src = path.join(commandsTplDir, name);
+          const dst = path.join(commandsDstDir, name);
+          if (!fs.existsSync(dst)) {
+            copyIfMissing(src, dst);
+            console.error(`-------- copied command: ${path.relative(process.cwd(), dst)}`);
+          }
+        }
+      } else {
+        console.error('-------- warning: command templates not found in any expected location');
+      }
+    } catch (e) {
+      console.error('-------- warning: command copy failed:', e.message);
     }
 
-    // 3-1) legacy command folders cleanup and flatten
+    // 3-2) Copy rule files from packages/cursor-assets/rules/
+    try {
+      // Try multiple possible paths for cursor-assets rules
+      let rulesTplDir = null;
+      const possibleRulePaths = [
+        // Development path
+        path.join(tplRoot, '..', 'packages', 'cursor-assets', 'rules'),
+        // Published package path (nested in core-py)
+        path.join(tplRoot, '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'rules'),
+        // Alternative published path
+        path.join(__dirname, '..', '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'rules')
+      ];
+
+      for (const testPath of possibleRulePaths) {
+        if (fs.existsSync(testPath)) {
+          rulesTplDir = testPath;
+          break;
+        }
+      }
+
+      if (rulesTplDir) {
+        const rulesDstDir = path.join(cursorDir, 'rules');
+        ensureDir(rulesDstDir);
+
+        for (const name of fs.readdirSync(rulesTplDir).filter(f => f.endsWith('.mdc'))) {
+          const src = path.join(rulesTplDir, name);
+          const dst = path.join(rulesDstDir, name);
+          if (!fs.existsSync(dst)) {
+            copyIfMissing(src, dst);
+            console.error(`-------- copied rule: ${path.relative(process.cwd(), dst)}`);
+          }
+        }
+      } else {
+        console.error('-------- warning: rule templates not found in any expected location');
+      }
+    } catch (e) {
+      console.error('-------- warning: rule copy failed:', e.message);
+    }
+
+    // 3-3) legacy command folders cleanup and flatten
     try {
       const commandsDir = path.join(cursorDir, 'commands');
       const nested = path.join(commandsDir, 'super-prompt');

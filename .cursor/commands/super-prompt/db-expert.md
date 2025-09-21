@@ -8,7 +8,7 @@ args:
   persona: "db-expert"
 ## Execution Mode
 
-➡️ Execution: This command executes via MCP (server: super-prompt; tool as defined above).
+➡️ Execution: sp_db_expert MCP (server: super-prompt; tool as defined above).
 
 ---
 

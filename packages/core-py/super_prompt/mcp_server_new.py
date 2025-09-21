@@ -14,11 +14,70 @@ from typing import Optional
 # MCP SDK initialization
 from .mcp.version_detection import import_mcp_components, create_fallback_mcp
 
-# Suppress MCP library warnings
+# Suppress MCP library warnings and all logs
 import logging
-logging.getLogger('mcp').setLevel(logging.ERROR)
-logging.getLogger('mcp.server').setLevel(logging.ERROR)
-logging.getLogger('mcp.server.fastmcp').setLevel(logging.ERROR)
+import sys
+
+# Disable all logging for MCP server
+logging.getLogger('mcp').setLevel(logging.CRITICAL)
+logging.getLogger('mcp.server').setLevel(logging.CRITICAL)
+logging.getLogger('mcp.server.fastmcp').setLevel(logging.CRITICAL)
+
+# Suppress all warnings
+logging.getLogger().setLevel(logging.CRITICAL)
+
+# SilentProgress 완전 비활성화 (모든 환경에서)
+import sys
+import os
+
+# 환경 확인 - CLI 모드인지 확인
+is_cli_mode = os.environ.get("SUPER_PROMPT_CLI_MODE") == "1"
+debug_mode = os.environ.get("SUPER_PROMPT_DEBUG") == "1"
+
+# CLI 모드에서는 SilentProgress를 완전히 제거
+if is_cli_mode:
+    # CLI 모드: SilentProgress가 로드되지 않도록 처리
+    try:
+        from .core.memory_manager import progress
+        # SilentProgress가 이미 적용되어 있다면 제거
+        if hasattr(progress, '_mcp_silent'):
+            from .core.memory_manager import ProgressIndicator
+            # 원래 메서드로 복원
+            progress.show_progress = ProgressIndicator.show_progress.__get__(progress, ProgressIndicator)
+            progress.show_success = ProgressIndicator.show_success.__get__(progress, ProgressIndicator)
+            progress.show_error = ProgressIndicator.show_error.__get__(progress, ProgressIndicator)
+            delattr(progress, '_mcp_silent')
+
+        # 디버깅 모드 확인
+        if debug_mode:
+            # 디버깅 모드: 모든 로그를 stderr로 출력
+            def debug_show_progress(message, **kwargs):
+                print(f"DEBUG: {message}", file=sys.stderr, flush=True)
+            def debug_show_success(message):
+                print(f"SUCCESS: {message}", file=sys.stderr, flush=True)
+            def debug_show_error(message):
+                print(f"ERROR: {message}", file=sys.stderr, flush=True)
+
+            progress.show_progress = debug_show_progress
+            progress.show_success = debug_show_success
+            progress.show_error = debug_show_error
+
+    except Exception as e:
+        # CLI 모드에서 import 실패 시 조용히 처리
+        pass
+else:
+    # MCP 서버 모드: SilentProgress 적용 (기존 로직)
+    # MCP 서버에서만 SilentProgress를 사용하도록 별도 처리
+    pass
+
+# SilentProgress 클래스 완전 제거 - 모든 로그 허용
+# 모든 환경에서 SilentProgress를 사용하지 않음
+
+# SilentProgress 클래스를 완전히 제거
+# 모든 환경에서 SilentProgress를 사용하지 않음
+
+# SilentProgress 클래스 제거
+# 모든 환경에서 SilentProgress를 사용하지 않음
 
 # Initialize MCP components
 try:
@@ -449,12 +508,21 @@ _TOOL_REGISTRY["sp_gpt_mode_off"] = sp_gpt_mode_off_mcp
 # Persona-based analysis tools with Context Management Protocol
 @_register_tool_once("sp_high")
 def sp_high(query: str, persona: str = "high"):
-    """High persona: sp_high analysis"""
+    """High persona: sp_high analysis (defaults to prompt workflow unless USE_PIPELINE=true)."""
     try:
+        use_pipeline = os.getenv("USE_PIPELINE", "false").lower() == "true"
+        if not use_pipeline:
+            # Prompt-only fast path (no cross-persona behavior)
+            try:
+                from .prompts.workflow_executor import run_prompt_based_workflow
+                return run_prompt_based_workflow("high", query)
+            except Exception as exc:
+                # Fallback to pipeline if prompt path fails unexpectedly
+                use_pipeline = True
+
         with memory_span(f"persona_high_{hash(query) % 10000}") as span_id:
             progress.show_progress(f"Running high analysis for: {query[:50]}...")
 
-            # Collect context first
             collector = ContextCollector()
             context_result = collector.collect_context(query, max_tokens=8000)
 
@@ -465,7 +533,6 @@ def sp_high(query: str, persona: str = "high"):
                 "context_files": len(context_result.get("files", []))
             })
 
-            # Run persona analysis
             from .personas.pipeline_manager import PersonaPipeline
             pipeline = PersonaPipeline()
             result = pipeline.run_persona("high", query)
@@ -521,6 +588,8 @@ def sp_grok(query: str, persona: str = "grok"):
         progress.show_error(f"Grok analysis failed: {str(e)}")
         return f"Grok analysis error: {str(e)}"
 
+_TOOL_REGISTRY["sp_grok"] = sp_grok
+
 @mcp.tool()
 def sp_gpt(query: str, persona: str = "gpt"):
     """Gpt persona: sp_gpt analysis"""
@@ -558,319 +627,31 @@ def sp_gpt(query: str, persona: str = "gpt"):
         progress.show_error(f"Gpt analysis failed: {str(e)}")
         return f"Gpt analysis error: {str(e)}"
 
-@_register_tool_once("sp_analyzer")
-def sp_analyzer(query: str, persona: str = "analyzer"):
-    """Analyzer persona: sp_analyzer analysis"""
-    try:
-        with memory_span(f"persona_analyzer_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running analyzer analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "analyzer",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("analyzer", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "analyzer",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Analyzer analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Analyzer analysis failed: {str(e)}")
-        return f"Analyzer analysis error: {str(e)}"
-
-@_register_tool_once("sp_architect")
-def sp_architect(query: str, persona: str = "architect"):
-    """Architect persona: sp_architect analysis"""
-    try:
-        with memory_span(f"persona_architect_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running architect analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "architect",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("architect", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "architect",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Architect analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Architect analysis failed: {str(e)}")
-        return f"Architect analysis error: {str(e)}"
-
-@mcp.tool()
-def sp_performance(query: str, persona: str = "performance"):
-    """Performance persona: sp_performance analysis"""
-    try:
-        with memory_span(f"persona_performance_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running performance analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "performance",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("performance", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "performance",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Performance analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Performance analysis failed: {str(e)}")
-        return f"Performance analysis error: {str(e)}"
-
-@mcp.tool()
-def sp_security(query: str, persona: str = "security"):
-    """Security persona: sp_security analysis"""
-    try:
-        with memory_span(f"persona_security_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running security analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "security",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("security", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "security",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Security analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Security analysis failed: {str(e)}")
-        return f"Security analysis error: {str(e)}"
-
-@_register_tool_once("sp_frontend")
-def sp_frontend(query: str, persona: str = "frontend"):
-    """Frontend persona: sp_frontend analysis"""
-    try:
-        with memory_span(f"persona_frontend_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running frontend analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "frontend",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("frontend", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "frontend",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Frontend analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Frontend analysis failed: {str(e)}")
-        return f"Frontend analysis error: {str(e)}"
-
-@_register_tool_once("sp_backend")
-def sp_backend(query: str, persona: str = "backend"):
-    """Backend persona: sp_backend analysis"""
-    try:
-        with memory_span(f"persona_backend_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running backend analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "backend",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("backend", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "backend",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Backend analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Backend analysis failed: {str(e)}")
-        return f"Backend analysis error: {str(e)}"
-
-@mcp.tool()
-def sp_qa(query: str, persona: str = "qa"):
-    """Qa persona: sp_qa analysis"""
-    try:
-        with memory_span(f"persona_qa_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running qa analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "qa",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("qa", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "qa",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Qa analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Qa analysis failed: {str(e)}")
-        return f"Qa analysis error: {str(e)}"
-
-@mcp.tool()
-def sp_devops(query: str, persona: str = "devops"):
-    """Devops persona: sp_devops analysis"""
-    try:
-        with memory_span(f"persona_devops_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running devops analysis for: {query[:50]}...")
-
-            # Collect context first
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_started",
-                "persona": "devops",
-                "query": query,
-                "context_files": len(context_result.get("files", []))
-            })
-
-            # Run persona analysis
-            from .personas.pipeline_manager import PersonaPipeline
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("devops", query)
-
-            span_manager.write_event(span_id, {
-                "type": "persona_analysis_completed",
-                "persona": "devops",
-                "success": True
-            })
-
-            response = result.text if hasattr(result, 'text') else str(result)
-            progress.show_success("Devops analysis completed")
-            return response
-
-    except Exception as e:
-        progress.show_error(f"Devops analysis failed: {str(e)}")
-        return f"Devops analysis error: {str(e)}"
-
+_TOOL_REGISTRY["sp_gpt"] = sp_gpt
 
 # Additional persona tools registered via helper
+sp_analyzer = _register_persona_tool("sp_analyzer", "analyzer")
+sp_architect = _register_persona_tool("sp_architect", "architect")
+sp_frontend = _register_persona_tool("sp_frontend", "frontend")
+sp_backend = _register_persona_tool("sp_backend", "backend")
 sp_dev = _register_persona_tool("sp_dev", "dev")
+sp_devops = _register_persona_tool("sp_devops", "devops")
+sp_performance = _register_persona_tool("sp_performance", "performance")
+sp_qa = _register_persona_tool("sp_qa", "qa")
+sp_security = _register_persona_tool("sp_security", "security")
 sp_refactorer = _register_persona_tool("sp_refactorer", "refactorer")
 sp_optimize = _register_persona_tool("sp_optimize", "optimize")
-sp_doc_master = _register_persona_tool("sp_doc_master", "doc-master")
-sp_docs_refector = _register_persona_tool("sp_docs_refector", "docs-refector")
-sp_db_expert = _register_persona_tool("sp_db_expert", "db-expert")
+sp_doc_master = _register_persona_tool("sp_doc_master", "doc_master")
+sp_docs_refector = _register_persona_tool("sp_docs_refector", "docs_refector")
+sp_db_expert = _register_persona_tool("sp_db_expert", "db_expert")
 sp_review = _register_persona_tool("sp_review", "review")
 sp_mentor = _register_persona_tool("sp_mentor", "mentor")
 sp_scribe = _register_persona_tool("sp_scribe", "scribe")
 sp_debate = _register_persona_tool("sp_debate", "debate")
-sp_service_planner = _register_persona_tool("sp_service_planner", "service-planner")
+sp_service_planner = _register_persona_tool("sp_service_planner", "service_planner")
 sp_ultracompressed = _register_persona_tool("sp_ultracompressed", "ultracompressed")
 sp_seq = _register_persona_tool("sp_seq", "seq")
-sp_seq_ultra = _register_persona_tool("sp_seq_ultra", "seq-ultra")
-sp_tr = _register_persona_tool("sp_tr", "tr")
+sp_seq_ultra = _register_persona_tool("sp_seq_ultra", "seq_ultra")
 sp_implement = _register_persona_tool("sp_implement", "implement")
 
 # SDD (Spec-Driven Development) Workflow Tools
@@ -935,6 +716,9 @@ def sp_troubleshooting(query: str, persona: str = "troubleshooting"):
         return run_prompt_based_workflow("troubleshooting", query)
     except Exception as e:
         return f"Troubleshooting error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_troubleshooting"] = sp_troubleshooting
 
 
 # Export the mcp instance and tool registry for use by mcp_stdio.py

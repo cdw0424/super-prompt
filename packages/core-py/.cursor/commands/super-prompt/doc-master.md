@@ -2,7 +2,7 @@
 description: doc-master command
 run: mcp
 server: super-prompt
-tool: sp_doc-master
+tool: sp_doc_master
 args:
   query: "${input}"
   persona: "doc-master"

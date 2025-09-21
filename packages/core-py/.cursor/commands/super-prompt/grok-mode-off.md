@@ -2,7 +2,7 @@
 description: grok-mode-off command
 run: mcp
 server: super-prompt
-tool: sp_grok-mode-off
+tool: sp_grok_mode_off
 args:
   query: "${input}"
   persona: "grok-mode-off"

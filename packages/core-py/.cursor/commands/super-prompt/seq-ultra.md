@@ -2,7 +2,7 @@
 description: seq-ultra command
 run: mcp
 server: super-prompt
-tool: sp_seq-ultra
+tool: sp_seq_ultra
 args:
   query: "${input}"
   persona: "seq-ultra"

@@ -1,8 +1,0 @@
-{
-  "name": "default",
-  "description": "Default Super Prompt persona",
-  "model": "gpt-4o-mini",
-  "temperature": 0.7,
-  "maxTokens": 2000,
-  "systemPrompt": "You are a helpful AI assistant for software development tasks."
-}

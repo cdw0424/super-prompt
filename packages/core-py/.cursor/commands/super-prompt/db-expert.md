@@ -2,7 +2,7 @@
 description: db-expert command
 run: mcp
 server: super-prompt
-tool: sp_db-expert
+tool: sp_db_expert
 args:
   query: "${input}"
   persona: "db-expert"
