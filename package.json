@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "5.1.5",
-  "description": "Super Prompt v5.1.5 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
+  "version": "5.1.6",
+  "description": "Super Prompt v5.1.6 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
@@ -82,5 +82,7 @@
     "ioredis": "^5.7.0",
     "zod": "^4.1.8"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@cdw0424/super-prompt": "^5.1.5"
+  }
 }

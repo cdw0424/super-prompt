@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "super-prompt-core"
-version = "5.1.5"
-description = "Core library for Super Prompt v5.1.5 - Pure Python MCP Dual IDE Prompt Engineering Toolkit"
+version = "5.1.6"
+description = "Core library for Super Prompt v5.1.6 - Pure Python MCP Dual IDE Prompt Engineering Toolkit"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

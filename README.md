@@ -1,4 +1,4 @@
-# Super Prompt v5.1.5
+# Super Prompt v5.1.6
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -141,10 +141,11 @@ Super Prompt automatically detects your project's context and applies the most a
 | **API Design** | GPT-5 Low Fast | Max |
 | **Refactoring** | Grok Code Fast | Max |
 
-## What’s new in 5.1.5
+## What’s new in 5.1.6
 
-- **Simplified Quick Start** – Streamlined installation with project-local setup as the primary method.
-- **Version synchronization fix** – All version displays now correctly show v5.1.5 across CLI, runtime banners, and documentation.
+- **Streamlined documentation** – Simplified README structure with clearer navigation and focused content.
+- **Enhanced documentation links** – Added direct links to technical documentation in docs/ directory.
+- **Version synchronization fix** – All version displays now correctly show v5.1.6 across CLI, runtime banners, and documentation.
 - **Enhanced MCP server architecture** – Improved modularity with stateless stdio entry points and better component separation.
 - **Persona pipeline modernization** – Replaced legacy pipeline helpers with modern prompt-based workflows for all personas.
 - **SDD architecture integration** – Added comprehensive Spec Kit lifecycle guidance with new architecture knowledge base.
@@ -153,190 +154,58 @@ Super Prompt automatically detects your project's context and applies the most a
 - **Asset validation improvements** – Enhanced project bootstrap processes and configuration validation.
 - **Documentation standardization** – Complete README and CHANGELOG refresh in English with current guidance.
 
-## Overview
+## How It Works
 
-Super Prompt provides two core entry points designed to maximize development performance in Cursor:
+Super Prompt provides two core entry points for Cursor integration:
 
-- `super-prompt` – project initialization, MCP diagnostics, and persona utilities
-- `sp-mcp` – stdio MCP server for Cursor usage
+- **`super-prompt`** – Command-line tool for project initialization and diagnostics
+- **`sp-mcp`** – MCP server that powers AI persona capabilities in Cursor
 
-Internally, it follows these principles:
+### Key Principles
 
-- **Single Source of Truth** – personas manifest → `.cursor/rules` → Cursor workspace configuration
-- **Language-Specific Optimization Routing** – automatically applies optimal personas and guidelines for each programming language
-- **Performance-Centric Logging** – all logs start with `--------` and sensitive information is masked (`sk-***`)
+- **Language-Specific Intelligence** – Automatically detects your project's tech stack and applies optimized AI personas
+- **Single Source of Truth** – Centralized persona configurations and rules
+- **Performance-First Design** – Minimal latency with context-aware optimizations
 
-## Project Philosophy
+## Development Workflows
 
-### **Performance-First Development**
-
-Super Prompt is built on the belief that **development productivity is maximized when AI assistance is tailored to specific programming languages and development contexts**. We reject the one-size-fits-all approach and instead provide specialized personas that understand the nuances of different programming paradigms.
-
-### **Language-Specific Intelligence**
-
-Each programming language has its own idioms, best practices, and common patterns. Super Prompt automatically detects your project's language context and applies the most appropriate AI persona:
-
-- **Python**: Focuses on readability, testing, and framework-specific patterns
-- **JavaScript/TypeScript**: Emphasizes async patterns, modern ES features, and web development best practices
-- **Java**: Prioritizes object-oriented design, performance optimization, and enterprise patterns
-- **Go**: Centers on simplicity, concurrency patterns, and cloud-native development
-- **Rust**: Focuses on memory safety, performance optimization, and systems programming
-
-### **Contextual Intelligence**
-
-Beyond language-specific optimization, Super Prompt understands your development context:
-
-- **Framework Detection**: Automatically recognizes React, Vue, Django, FastAPI, Spring Boot, and other frameworks
-- **Project Structure Analysis**: Analyzes your codebase to provide contextually relevant suggestions
-- **Development Phase Awareness**: Adapts guidance based on whether you're prototyping, refactoring, or optimizing
-
-### **Seamless Integration**
-
-We believe AI assistance should **enhance, not replace, developer workflow**. Super Prompt integrates deeply with Cursor while maintaining:
-
-- **Zero Configuration**: Works out of the box with sensible defaults
-- **Transparent Operation**: Clear logging and predictable behavior
-- **Fallback Resilience**: Graceful degradation when dependencies are unavailable
-- **Performance Optimization**: Minimal latency impact on development workflow
-
-### **Continuous Evolution**
-
-Super Prompt evolves with the development ecosystem. We regularly update personas to reflect:
-
-- **Emerging Language Features**: Support for new language versions and features
-- **Framework Updates**: Compatibility with latest framework versions
-- **Best Practice Changes**: Updated guidance as industry standards evolve
-- **Performance Improvements**: Optimized execution and reduced latency
-
-## Core Development Workflows
-
-Super Prompt provides structured workflows that ensure high-quality development outcomes. Our core methodologies include **Spec-Driven Development (SDD)**, **Confession Mode**, and **Double-Check** validation.
+Super Prompt provides structured AI-assisted development workflows:
 
 ### **Spec-Driven Development (SDD)**
-
-SDD ensures every feature starts with clear specifications and follows a structured development process:
-
-> Tip: you can surface the Spec Kit playbook on demand with
-> `./bin/super-prompt mcp call sp.sdd_architecture --args-json '{"persona": "architect"}'`
-> to get persona-aligned guardrails before you run the slash commands.
-
-#### **SDD Workflow Phases:**
-
-1. **📋 SPEC Phase** (Requirements & Planning)
-   ```bash
-   # Create comprehensive specifications
-   /super-prompt/specify "Design a user authentication system with OAuth2"
-   ```
-
-2. **🎯 PLAN Phase** (Architecture & Roadmap)
-   ```bash
-   # Develop technical implementation plan
-   /super-prompt/plan "Create implementation roadmap for OAuth2 auth system"
-   ```
-
-3. **⚡ TASKS Phase** (Execution Planning)
-   ```bash
-   # Break down into actionable development tasks
-   /super-prompt/tasks "Break down OAuth2 implementation into specific tasks"
-   ```
-
-#### **SDD Benefits:**
-- **Structured Approach**: Eliminates guesswork and ensures comprehensive planning
-- **Quality Assurance**: Built-in validation at each phase
-- **Scalable Development**: Works for both small features and large projects
-- **Documentation First**: Specifications serve as living documentation
-
-### **Confession Mode**
-
-A unique debugging methodology where you "confess" all known issues and context to get comprehensive solutions:
-
-#### **When to Use Confession Mode:**
-- Complex debugging scenarios
-- Multi-component system issues
-- Performance bottlenecks
-- Integration problems
-- Legacy code refactoring
-
-#### **Confession Mode Workflow:**
 ```bash
-# Comprehensive issue analysis with full context
-/super-prompt/troubleshooting "My React app has performance issues, memory leaks, and slow rendering - full confession needed"
-
-/super-prompt/security "Security audit needed for authentication system with known vulnerabilities"
+/super-prompt/specify "Design user authentication with OAuth2"
+/super-prompt/plan "Implementation roadmap"
+/super-prompt/tasks "Break down into tasks"
 ```
 
-#### **Confession Mode Benefits:**
-- **Full Context Analysis**: No issue is too complex or multi-faceted
-- **Comprehensive Solutions**: Addresses root causes, not just symptoms
-- **Prevention Focus**: Identifies potential future issues
-- **Knowledge Transfer**: Documents solutions for team learning
-
-### **Double-Check Validation**
-
-Every critical decision and implementation goes through rigorous validation:
-
-#### **Double-Check Workflow:**
+### **Problem Solving**
 ```bash
-# Initial implementation
-/super-prompt/architect "Design scalable microservices architecture"
-
-# Validation and verification
-/super-prompt/review "Review the proposed microservices design for scalability"
-
-# Quality assurance
-/super-prompt/qa "Perform quality assurance on the architecture design"
+/super-prompt/troubleshooting "Debug complex issues"
+/super-prompt/performance "Performance analysis"
+/super-prompt/security "Security audit"
 ```
 
-#### **Double-Check Benefits:**
-- **Quality Assurance**: Multiple validation layers prevent issues
-- **Consistency**: Ensures alignment with best practices and standards
-- **Risk Mitigation**: Early identification of potential problems
-- **Continuous Improvement**: Feedback loops drive better outcomes
-
-### **Integrated Workflow Example**
-
-For a new feature development:
+### **Quality Assurance**
 
 ```bash
-# 1. SDD Phase - Specification
-/super-prompt/specify "Build a real-time chat feature with WebSocket"
-
-# 2. SDD Phase - Planning
-/super-prompt/plan "Technical roadmap for WebSocket chat implementation"
-
-# 3. SDD Phase - Task Breakdown
-/super-prompt/tasks "Detailed tasks for chat feature development"
-
-# 4. Implementation with Double-Check
-/super-prompt/backend "Implement WebSocket server for real-time chat"
-/super-prompt/frontend "Build React chat component"
-/super-prompt/review "Review complete chat implementation"
-
-# 5. Confession Mode for Issues
-/super-prompt/troubleshooting "Chat feature has connection issues and performance problems"
-
-# 6. Final Quality Assurance
-/super-prompt/qa "End-to-end testing and quality validation"
+/super-prompt/review "Code review and validation"
+/super-prompt/qa "Quality assurance checks"
+/super-prompt/architect "Architecture design and validation"
 ```
 
-### **Workflow Selection Guide**
+## Documentation
 
-| **Scenario** | **Recommended Workflow** | **Primary Tool** |
-|-------------|-------------------------|------------------|
-| New feature planning | SDD (SPEC → PLAN → TASKS) | `/super-prompt/specify` |
-| Complex debugging | Confession Mode | `/super-prompt/troubleshooting` |
-| Architecture decisions | Double-Check | `/super-prompt/architect` + `/super-prompt/review` |
-| Code quality issues | Double-Check | `/super-prompt/qa` + `/super-prompt/review` |
-| Security concerns | Confession Mode | `/super-prompt/security` |
-| Performance problems | Confession Mode | `/super-prompt/performance` |
+For detailed technical documentation, see the [`docs/`](./docs/) directory:
 
-These workflows ensure **consistent quality**, **comprehensive problem-solving**, and **scalable development practices** across all your projects.
+- **[Architecture Overview](./docs/architecture-v5.md)** - System design and technical specifications
+- **[Cursor Integration Guide](./docs/cursor-mcp-setting-guide.md)** - MCP server setup instructions
+- **[Development Workflows](./docs/codex-amr.md)** - Advanced usage patterns
 
 ## Troubleshooting
 
 | Symptom | Resolution |
 | --- | --- |
-| **Version shows older release (e.g., v1.0.4) after installation** | `npm view @cdw0424/super-prompt version` now returns 5.1.5, so the registry is serving the new build. When you see the banner report v1.0.4 after installation, the CLI is being launched from an older copy that's still on your machine—most often a globally installed 1.0.4 or a project lockfile pinned to that number.<br><br>**Do this once to flush the stale install:**<br><br>`npm uninstall -g @cdw0424/super-prompt   # removes the old global copy`<br>`npm cache clean --force                  # optional, clears cached tarballs`<br><br>**Then reinstall the new release (pick the style you want per project):**<br><br>`# global upgrade (if you rely on the super-prompt binary in PATH)`<br>`npm install -g @cdw0424/super-prompt@latest`<br><br>`# project-local (preferred for workspace isolation)`<br>`npm install @cdw0424/super-prompt@latest`<br>`npx @cdw0424/super-prompt@latest super:init   # or ./node_modules/.bin/super-prompt super:init`<br><br>**If the project already had a package-lock.json or npm-shrinkwrap.json, make sure it doesn't pin the old version; delete the lockfile or bump the semver entry to ^5.1.5 before reinstalling.**<br><br>**After reinstalling, rerun super:init (or ./bin/super-prompt super:init) and the banner will show v5.1.5 \| @cdw0424/super-prompt, confirming the newer code is in use.**<br><br>*Note: npm will always deliver the latest tarball, but Node's install flow can't guess your intent about existing copies. If a machine already has an older global install, the shell will keep launching that binary until it's removed or upgraded. Likewise, a project's package-lock.json can legitimately pin an older release. Automatically ripping those out during install would break reproducibility, so the CLI leaves that decision to you.*<br><br>*If you want to force the newest version every time, add a one-line script to your bootstrap (for example, in your project's postinstall):*<br><br>`"scripts": {`<br>&nbsp;&nbsp;`"postinstall": "npx --yes npm@latest install @cdw0424/super-prompt@latest"`<br>`}`<br><br>*Or, for global installs on shared machines:*<br><br>`npm install -g @cdw0424/super-prompt@latest`<br>`super-prompt super:init --force`<br><br>*That way each environment explicitly refreshes to 5.1.5 (or whatever's current) before initialization, without the tool destroying user-managed installations behind the scenes.* |
+| **Version shows older release (e.g., v1.0.4) after installation** | `npm view @cdw0424/super-prompt version` now returns 5.1.6, so the registry is serving the new build. When you see the banner report v1.0.4 after installation, the CLI is being launched from an older copy that's still on your machine—most often a globally installed 1.0.4 or a project lockfile pinned to that number.<br><br>**Do this once to flush the stale install:**<br><br>`npm uninstall -g @cdw0424/super-prompt   # removes the old global copy`<br>`npm cache clean --force                  # optional, clears cached tarballs`<br><br>**Then reinstall the new release (pick the style you want per project):**<br><br>`# global upgrade (if you rely on the super-prompt binary in PATH)`<br>`npm install -g @cdw0424/super-prompt@latest`<br><br>`# project-local (preferred for workspace isolation)`<br>`npm install @cdw0424/super-prompt@latest`<br>`npx @cdw0424/super-prompt@latest super:init   # or ./node_modules/.bin/super-prompt super:init`<br><br>**If the project already had a package-lock.json or npm-shrinkwrap.json, make sure it doesn't pin the old version; delete the lockfile or bump the semver entry to ^5.1.6 before reinstalling.**<br><br>**After reinstalling, rerun super:init (or ./bin/super-prompt super:init) and the banner will show v5.1.6 \| @cdw0424/super-prompt, confirming the newer code is in use.**<br><br>*Note: npm will always deliver the latest tarball, but Node's install flow can't guess your intent about existing copies. If a machine already has an older global install, the shell will keep launching that binary until it's removed or upgraded. Likewise, a project's package-lock.json can legitimately pin an older release. Automatically ripping those out during install would break reproducibility, so the CLI leaves that decision to you.*<br><br>*If you want to force the newest version every time, add a one-line script to your bootstrap (for example, in your project's postinstall):*<br><br>`"scripts": {`<br>&nbsp;&nbsp;`"postinstall": "npx --yes npm@latest install @cdw0424/super-prompt@latest"`<br>`}`<br><br>*Or, for global installs on shared machines:*<br><br>`npm install -g @cdw0424/super-prompt@latest`<br>`super-prompt super:init --force`<br><br>*That way each environment explicitly refreshes to 5.1.6 (or whatever's current) before initialization, without the tool destroying user-managed installations behind the scenes.* |
 | Cursor reports "no tools available" | Check `~/.cursor/mcp.log` for `-------- MCP:` entries. If FastMCP is missing, install the runtime manually: `pip install mcp`. The fallback server will operate automatically once the CLI reconnects. |
 | `sp_high` missing or duplicated | The 5.0.5 release registers a single `sp_high` backed by the persona pipeline. Restart `sp-mcp` to reload the registry. |
 | Stdout parse errors | Ensure you never print to stdout in custom scripts. Super Prompt reserves stdout for JSON-RPC; use `--------`-prefixed logs on stderr. |
@@ -345,6 +214,6 @@ These workflows ensure **consistent quality**, **comprehensive problem-solving**
 
 1. `npm install` – refreshes `package-lock.json`.
 2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local testing).
-3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.5` with synchronized Python assets.
+3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.6` with synchronized Python assets.
 
 Super Prompt is MIT licensed. Contributions and issues are welcome at [https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).

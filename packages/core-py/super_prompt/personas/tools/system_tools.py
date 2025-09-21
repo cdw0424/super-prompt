@@ -2,6 +2,7 @@
 System management tools (init, refresh, version, etc.)
 """
 
+import asyncio
 import os
 import sys
 import time
@@ -91,6 +92,40 @@ def _install_cli_dependencies():
         pass  # Handle installation error gracefully
 
 
+def _verify_mcp_tool_alignment(project_path: Path) -> None:
+    """Ensure MCP server exposes every command-defined tool."""
+    try:
+        from ...mcp_client import MCPClient
+    except Exception as import_error:
+        raise RuntimeError(f"Unable to import MCP client: {import_error}") from import_error
+
+    expected_tools = set()
+    commands_dir = project_path / ".cursor" / "commands" / "super-prompt"
+    if commands_dir.exists():
+        for command_file in commands_dir.glob("*.md"):
+            for line in command_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("tool:"):
+                    expected_tools.add(line.split(":", 1)[1].strip())
+                    break
+    else:
+        raise RuntimeError(f"Expected command directory not found: {commands_dir}")
+
+    async def _check():
+        async with MCPClient() as client:
+            tools = await client.list_tools()
+            available = {t.get("name") for t in tools if isinstance(t, dict)}
+            missing = sorted(tool for tool in expected_tools if tool not in available)
+            if missing:
+                raise RuntimeError(
+                    "MCP tool registration incomplete. Missing: " + ", ".join(missing)
+                )
+            if not available:
+                raise RuntimeError("MCP reported zero tools after initialization.")
+
+    asyncio.run(_check())
+
+
 def _init_impl(force: bool = False) -> str:
     """Core initialization implementation"""
     # Display Super Prompt ASCII Art
@@ -168,6 +203,14 @@ def _init_impl(force: bool = False) -> str:
         PersonaLoader().load_manifest()
     except Exception:
         pass
+
+    # Verify all MCP tools are exposed for copied commands
+    try:
+        _verify_mcp_tool_alignment(pr)
+        progress.show_success("MCP tool alignment verified")
+    except Exception as verify_error:
+        progress.show_error(f"MCP tool verification failed: {verify_error}")
+        raise
 
     return f"Initialized at {pr}"
 
