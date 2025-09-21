@@ -1,4 +1,4 @@
-# Super Prompt v5.1.0
+# Super Prompt v5.1.1
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -141,8 +141,9 @@ Super Prompt automatically detects your project's context and applies the most a
 | **API Design** | GPT-5 Low Fast | Max |
 | **Refactoring** | Grok Code Fast | Max |
 
-## What’s new in 5.1.0
+## What’s new in 5.1.1
 
+- **Version synchronization fix** – All version displays now correctly show v5.1.1 across CLI, runtime banners, and documentation.
 - **Enhanced MCP server architecture** – Improved modularity with stateless stdio entry points and better component separation.
 - **Persona pipeline modernization** – Replaced legacy pipeline helpers with modern prompt-based workflows for all personas.
 - **SDD architecture integration** – Added comprehensive Spec Kit lifecycle guidance with new architecture knowledge base.
@@ -342,6 +343,6 @@ These workflows ensure **consistent quality**, **comprehensive problem-solving**
 
 1. `npm install` – refreshes `package-lock.json`.
 2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local testing).
-3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.0` with synchronized Python assets.
+3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.1` with synchronized Python assets.
 
 Super Prompt is MIT licensed. Contributions and issues are welcome at [https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).
