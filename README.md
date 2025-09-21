@@ -1,4 +1,4 @@
-# Super Prompt v5.1.1
+# Super Prompt v5.1.2
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,9 +11,14 @@ Super Prompt enables Cursor to apply language-specific optimized personas and gu
 ### Installation
 
 ```bash
-# Install globally (recommended for system-wide usage)
+# Install the latest version globally (recommended for system-wide usage)
 npm install -g @cdw0424/super-prompt@latest
+
+# Or install a specific version if needed
+# npm install -g @cdw0424/super-prompt@5.1.2
 ```
+
+> **💡 Always install the latest version** (`@latest`) to get the newest features, bug fixes, and improvements!
 
 ### Project Setup
 
@@ -141,9 +146,10 @@ Super Prompt automatically detects your project's context and applies the most a
 | **API Design** | GPT-5 Low Fast | Max |
 | **Refactoring** | Grok Code Fast | Max |
 
-## What’s new in 5.1.1
+## What’s new in 5.1.2
 
-- **Version synchronization fix** – All version displays now correctly show v5.1.1 across CLI, runtime banners, and documentation.
+- **Enhanced installation guidance** – Clear instructions to always install the latest version for optimal experience.
+- **Version synchronization fix** – All version displays now correctly show v5.1.2 across CLI, runtime banners, and documentation.
 - **Enhanced MCP server architecture** – Improved modularity with stateless stdio entry points and better component separation.
 - **Persona pipeline modernization** – Replaced legacy pipeline helpers with modern prompt-based workflows for all personas.
 - **SDD architecture integration** – Added comprehensive Spec Kit lifecycle guidance with new architecture knowledge base.
@@ -343,6 +349,6 @@ These workflows ensure **consistent quality**, **comprehensive problem-solving**
 
 1. `npm install` – refreshes `package-lock.json`.
 2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local testing).
-3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.1` with synchronized Python assets.
+3. `npm publish` – publishes `@cdw0424/super-prompt@5.1.2` with synchronized Python assets.
 
 Super Prompt is MIT licensed. Contributions and issues are welcome at [https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).
