@@ -9,10 +9,13 @@ import shutil
 from pathlib import Path
 
 try:
-    from importlib.metadata import version as _pkg_version
-    _PACKAGE_VERSION = _pkg_version("super-prompt")
+    from ... import __version__ as _PACKAGE_VERSION  # Prefer bundled core version
 except Exception:
-    _PACKAGE_VERSION = "dev"
+    try:
+        from importlib.metadata import version as _pkg_version
+        _PACKAGE_VERSION = _pkg_version("super-prompt-core")
+    except Exception:
+        _PACKAGE_VERSION = "dev"
 
 from ...utils.span_manager import span_manager, memory_span
 from ...utils.progress import progress
