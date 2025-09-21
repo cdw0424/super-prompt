@@ -1,4 +1,4 @@
-"""Super Prompt Core Library v5.0.5."""
+"""Super Prompt Core Library v5.1.0."""
 
-__version__ = "5.0.5"
+__version__ = "5.1.0"
 __all__ = ["engine", "context", "sdd", "personas", "adapters", "validation"]

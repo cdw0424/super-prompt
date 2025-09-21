@@ -1,4 +1,4 @@
-# Super Prompt v4.0.0: The MCP Revolution
+# Super Prompt v5.1.0: The MCP Revolution
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dm/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
