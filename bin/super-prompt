@@ -369,6 +369,16 @@ case "$CMD" in
     ;;
   super:init)
     shift
+
+    # Run TypeScript super:init first for file operations (copies templates, etc.)
+    echo "-------- Running TypeScript super:init for template operations" >&2
+    if [ -f "$APP_HOME/dist/commands/super-init.js" ]; then
+      node "$APP_HOME/dist/commands/super-init.js" "$@" 2>&1 || true
+    else
+      # Run the TypeScript file directly with node (requires transpilation)
+      echo "-------- TypeScript super:init not compiled, skipping TypeScript operations" >&2
+    fi
+
     # CLI에서 직접 init 실행 (전역 ~/.cursor/mcp.json 업데이트)
     export SUPER_PROMPT_ALLOW_INIT="true"
     export SUPER_PROMPT_REQUIRE_MCP="0"  # CLI 직접 실행 허용
@@ -405,7 +415,7 @@ case "$CMD" in
 
     echo "-------- DEBUG: About to execute Python" >&2
     # Set environment variables for Python execution
-    export SUPER_PROMPT_PACKAGE_ROOT="/Users/choi-dong-won/.local/lib/node_modules/@cdw0424/super-prompt"
+    export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
 
     echo "-------- DEBUG: Command: SUPER_PROMPT_PACKAGE_ROOT='$SUPER_PROMPT_PACKAGE_ROOT' $PYTHON_BIN -c \"import sys; sys.path.insert(0, '$APP_HOME/python-packages/super-prompt-core'); from super_prompt.cli import init; import typer; typer.run(init)\" $*" >&2
 

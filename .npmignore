@@ -52,6 +52,9 @@ __pycache__/
 
 # Development documentation
 docs/
+# Keep all .md files in packages directory (especially cursor-assets commands)
+!packages/**/*.md
+# Exclude other .md files except README and CHANGELOG
 *.md
 !README.md
 !CHANGELOG.md

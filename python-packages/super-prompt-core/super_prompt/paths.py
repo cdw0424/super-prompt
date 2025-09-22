@@ -59,11 +59,7 @@ def project_data_dir() -> Path:
 
 def assets_root() -> Path:
     """Get the assets root directory"""
-    # For published packages, assets are in packages/core-py/packages
-    core_py_path = package_root() / "packages" / "core-py" / "packages"
-    if core_py_path.exists():
-        return core_py_path
-    # For development, assets are in packages
+    # For published packages, assets are directly in packages directory
     return package_root() / "packages"
 
 

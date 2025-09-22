@@ -1,6 +1,12 @@
 # Changelog
 
-## v5.2.57 — 2025-09-22
+## v5.2.60 — 2025-09-22
+
+- **Fixed Assets Path Resolution**: Corrected `assets_root()` in `paths.py` to properly find template files in published npm packages
+- **Fixed Command Template Loading**: Removed incorrect `packages/core-py/packages` path that was preventing template files from being found
+- **Ensured Full Command Content**: All persona commands now copy complete template content instead of generating minimal stubs
+
+## v5.2.59 — 2025-09-22
 
 - **Fixed Personas Manifest Loading**: Added proper None handling for `yaml.safe_load()` results
 - **Enhanced Error Handling**: Fixed `TypeError` when personas manifest is None or empty
@@ -18,6 +24,8 @@
 - **Perfect stdout/stderr Separation**: Complete MCP protocol compliance with zero stdout pollution
 - **Fixed Package Root Resolution**: Corrected SUPER_PROMPT_PACKAGE_ROOT environment variable handling in init process
 - **Simplified Initialization**: Reduced user inputs from 3 to 1 - now only prompts for project root path, automatically derives MCP server and Python package paths
+- **Fixed Command Template Generation**: Fixed CursorAdapter to use correct template paths (`commands/super-prompt/` instead of `templates/`)
+- **Fixed NPM Package Files**: Added `packages/` directory to npm package files so that `cursor-assets` are included in published packages
 
 ## v5.2.49 — 2025-09-22
 

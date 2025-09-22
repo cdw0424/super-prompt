@@ -30,3 +30,12 @@ context_memory.db
 node_modules/
 dist/
 builds/
+# Gitignore additions for cleanliness
+.DS_Store
+*.tgz
+package-lock.json
+# Virtual environments - never use
+venv/
+.venv/
+**/venv/
+**/.venv/

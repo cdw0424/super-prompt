@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "super-prompt": {
+      "command": "/Users/choi-dong-won/Desktop/devs/super-prompt/bin/sp-mcp",
+      "args": [],
+      "env": {
+        "PYTHONPATH": "/Users/choi-dong-won/Desktop/devs/super-prompt/.super-prompt/lib:/Users/choi-dong-won/Desktop/devs/super-prompt/.super-prompt/lib",
+        "SUPER_PROMPT_PACKAGE_ROOT": "/Users/choi-dong-won/Desktop/devs/super-prompt"
+      }
+    }
+  }
+}

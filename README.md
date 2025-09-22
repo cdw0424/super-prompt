@@ -1,6 +1,4 @@
-# Super Prompt v5.2.49
-
-**Latest Update**: MCP stdout/stderr Cleanup & Enhanced Stability
+# Super Prompt
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dt/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
@@ -83,7 +81,7 @@ needed.
 ## 5) What we believe (short)
 
 - **MCP-first**: clear tool boundaries, reproducible automations
-- **Zero‑config UX**: it should “just work” on first run
+- **Zero‑config UX**: it should "just work" on first run
 - **Productivity personas**: focused prompts with measurable outputs
 
 ## 6) What you get
@@ -99,199 +97,99 @@ assistance:
 - `/sp_architect` - System architecture design and planning
 - `/sp_frontend` - Frontend development and UI/UX guidance
 - `/sp_backend` - Backend development and API design
-- `/sp_doc_master` - Documentation generation and technical writing
-- `/sp_refactorer` - Code refactoring and improvement suggestions
+- `/sp_refactorer` - Code refactoring and cleanup
+- `/sp_doc_master` - Documentation generation and organization
 
-**Basic Tools (4)**
+**Specialized Tools**
 
-- `/sp.version` - Get current version
-- `/sp_health` - Check server health
-- `/sp_list_commands` - List all available commands
-- `/sp_list_personas` - List available personas
+- `/sp_security` - Security analysis and threat modeling
+- `/sp_performance` - Performance optimization and profiling
+- `/sp_qa` - Quality assurance and testing strategies
+- `/sp_devops` - DevOps and infrastructure guidance
+- `/sp_mentor` - Educational guidance and code reviews
+- `/sp_scribe` - Professional writing and content creation
 
-**Context Management (2)**
+**Database & Optimization**
 
-- `/sp_context_collect` - Collect relevant context for queries
-- `/sp_context_clear_cache` - Clear context cache
+- `/sp_db_expert` - Database design and query optimization
+- `/sp_optimize` - Code optimization suggestions
 
-**SDD Workflow Tools (4)**
+**Creative & Strategic**
 
-- `/sp_specify` - Requirements specification (SDD Phase 1)
-- `/sp_plan` - Implementation planning (SDD Phase 2)
-- `/sp_tasks` - Task breakdown (SDD Phase 3)
-- `/sp.sdd_architecture` - SDD architecture playbook
+- `/sp_grok` - Creative problem solving with Grok AI
+- `/sp_debate` - Structured technical debates
+- `/sp_service_planner` - Service architecture planning
+- `/sp_wave` - Advanced service planning
 
-**Mode Management (6)**
+**Development Workflow (SDD)**
 
-- `/sp_mode_get` - Get current LLM mode
-- `/sp_mode_set` - Set LLM mode
-- `/sp_gpt_mode_on` - Switch to GPT mode
-- `/sp_grok_mode_on` - Switch to Grok mode
-- `/sp_gpt_mode_off` - Turn off GPT mode
-- `/sp_grok_mode_off` - Turn off Grok mode
+- `/sp_specify` - Create detailed technical specifications
+- `/sp_plan` - Generate implementation plans from specs
+- `/sp_tasks` - Break down plans into actionable tasks
+- `/sp_implement` - Implementation guidance
 
-**Additional Tools (7+)**
+**Advanced Analysis**
 
-- `/sp_init` - Initialize project
-- `/sp_refresh` - Refresh project assets
-- `/sp_memory_stats` - Memory management statistics
-- `/sp_high` - High-level analysis
-- `/sp_gpt` - GPT persona analysis
-- `/sp_grok` - Grok persona analysis
-- `/sp_troubleshooting` - Systematic problem diagnosis
+- `/sp_seq` - Sequential thinking and analysis
+- `/sp_seq_ultra` - Deep sequential analysis
+- `/sp_high` - High-level thinking and abstraction
 
-### Features
+**Utilities**
 
-- 29+ ready-to-use MCP tools accessible via slash commands
-- Stable GPT/Grok mode switching
-- Project memory and spec-driven scaffolding hooks
-- Zero-config setup with automatic MCP server registration
+- `/sp_translate` - Code translation between languages
+- `/sp_tr` - Quick translation tool
+- `/sp_ultracompressed` - Ultra-compressed responses
+- `/sp_gpt_mode_on` / `/sp_gpt_mode_off` - GPT mode control
+- `/sp_grok_mode_on` / `/sp_grok_mode_off` - Grok mode control
+- `/sp_mode_get` - Check current mode
 
-## What's new in 5.2.47
+## 7) MCP Server Configuration
 
-### **Latest Features (v5.2.47)**
+After running `super:init`, the MCP server is automatically configured at
+`.cursor/mcp.json`. Each tool is independently callable through Cursor's slash
+commands.
 
-- **Robust Python Installation** – Implemented multiple fallback methods for
-  Python dependency installation
-- **Enhanced Auto-Installation** – More reliable Python package installation
-  during npm install
-- **Better User Experience** – Improved installation process for new users with
-  comprehensive error handling
+## 8) Advanced Usage
 
-### **Previous Updates (v5.2.46)**
+### Direct Command Line Usage
 
-### **Previous Updates (v5.2.45)**
-
-### **Previous Updates (v5.2.44)**
-
-### **Previous Updates (v5.2.43)**
-
-### **Previous Updates (v5.2.42)**
-
-### **Previous Updates (v5.2.41)**
-
-### **Previous Updates (v5.2.38)**
-
-- **Auto-switch Wrapper** – If a Homebrew/old wrapper is first in PATH, the CLI
-  auto re-execs to npm global binary (`~/.local/bin/super-prompt`)
-- **Zero-Configuration Init** – No PATH or env setup required; `super:init`
-  works out of the box
-- **Improved CLI Detection** – Robust detection to ensure proper CLI operation
-  across environments
-- **Fixed Version Display Issue** – Version now shows correctly instead of
-  "unknown"
-- **Removed Venv References** – All virtual environment references removed
-- **Cleaned Up Dependencies Message** – Now simply: "Using system Python"
-- **Enhanced CLI Prompt Readability** – Added visual separators and clear
-  formatting for user input prompts
-- **Improved Interactive Initialization** – User inputs now have clear visual
-  boundaries with decorative separators
-- **Better Input Prompts** – Added emojis and clear formatting for project root,
-  MCP server, and Python package paths
-- **Enhanced CLI Mode** – All CLI commands now work without requiring
-  SUPER_PROMPT_ALLOW_DIRECT=true
-- **Improved CLI User Experience** – CLI mode automatically disables MCP-only
-  enforcement for better usability
-- **Simplified CLI Usage** – No need to set environment variables for basic CLI
-  operations
-- **Fixed MCP Server Python Path Issue** – MCP server now correctly uses
-  .super-prompt/lib/ Python packages
-- **User-Centric Python Path Resolution** – All commands prioritize user's
-  project .super-prompt/lib/ over system packages
-- **Enhanced Package Discovery** – Improved PYTHONPATH resolution for both MCP
-  server and CLI tools
-- **Fixed "no tools" Error** – MCP server can now properly find and load all
-  Super Prompt tools after initialization
-- **Enhanced CLI User Experience** – Improved readability by hiding debug logs
-  in CLI mode
-- **Cleaner Initialization Output** – User input prompts are now clearly visible
-  without debug message interference
-- **Better Visual Separation** – Debug logs are hidden in CLI mode for better
-  user experience
-- **Fixed MCP Server Interference** – Removed MCP module imports from mode
-  change functions to prevent server state disruption
-- **Improved Mode Switching** – Mode changes (grok/gpt) no longer affect MCP
-  tool availability
-- **Enhanced Stability** – MCP server remains stable during mode transitions
-- **Interactive Initialization** – Added dialog-based input for project root,
-  MCP server path, and Python package path
-- **Enhanced MCP Path Configuration** – Users can now specify custom paths for
-  MCP server and Python packages during initialization
-- **Improved User Experience** – Initialization process now asks for user input
-  when needed instead of using defaults
-- **Flexible Path Management** – Support for custom installation paths while
-  maintaining backward compatibility
-
-## How it works (very short)
-
-- CLI `super-prompt` initializes your project and verifies MCP
-- MCP server `sp-mcp` runs under the hood to serve tools to Cursor
-
-## Development Workflows
-
-Super Prompt provides structured AI-assisted development workflows:
-
-### **Spec-Driven Development (SDD)**
+For debugging or direct tool usage:
 
 ```bash
-/super-prompt/specify "Design user authentication with OAuth2"
-/super-prompt/plan "Implementation roadmap"
-/super-prompt/tasks "Break down into tasks"
+# Run any tool directly
+super-prompt analyzer "analyze this code pattern"
+super-prompt architect "design a microservice"
+super-prompt doc-master "create API documentation"
 ```
 
-### **Problem Solving**
+### Project-Specific Configuration
 
-```bash
-/super-prompt/troubleshooting "Debug complex issues"
-/super-prompt/performance "Performance analysis"
-/super-prompt/security "Security audit"
-/super-prompt/analyzer "Root cause analysis"
-```
+Super Prompt stores configuration in `.super-prompt/` directory:
 
-### **Quality Assurance**
+- `config.json` - Main configuration
+- `mode.json` - Current mode (GPT/Grok)
 
-```bash
-/super-prompt/review "Code review and validation"
-/super-prompt/qa "Quality assurance checks"
-/super-prompt/architect "Architecture design and validation"
-/super-prompt/refactorer "Code quality improvements"
-```
+## 9) Troubleshooting
 
-### **Development Workflows**
+| Issue | Solution |
+| --- | --- |
+| **Tools not showing in Cursor** | Restart Cursor completely (quit and relaunch) |
+| **"Command failed" error** | Run `super-prompt super:init --force` to reinitialize |
+| **Python errors during install** | Ensure Python 3.8+ is installed: `python3 --version` |
+| **Permission errors** | Use `sudo npm install -g @cdw0424/super-prompt@latest` |
+| **Version shows older release after installation** | Run `npm uninstall -g @cdw0424/super-prompt` to remove old versions, then reinstall with `npm install -g @cdw0424/super-prompt@latest` |
 
-```bash
-/super-prompt/dev "Feature development"
-/super-prompt/mentor "Learning and guidance"
-/super-prompt/doc-master "Documentation architecture"
-/super-prompt/devops "CI/CD and deployment"
-```
+## 10) Documentation
 
-## Documentation
-
-For detailed technical documentation, see the [`docs/`](./docs/) directory:
-
+- **[CHANGELOG](./CHANGELOG.md)** - Version history and updates
 - **[Architecture Overview](./docs/architecture-v5.md)** - System design and
-  technical specifications
-- **[Cursor Integration Guide](./docs/cursor-mcp-setting-guide.md)** - MCP
-  server setup instructions
-- **[Development Workflows](./docs/codex-amr.md)** - Advanced usage patterns
+  implementation details
 
-## Troubleshooting
+## License
 
-| Symptom                                                           | Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Version shows older release (e.g., v1.0.4) after installation** | `npm view @cdw0424/super-prompt version` now returns 5.2.41, so the registry is serving the new build. When you see the banner report v1.0.4 after installation, the CLI is being launched from an older copy that's still on your machine—most often a globally installed 1.0.4 or a project lockfile pinned to that number.<br><br> **Do this once to flush the stale install:**<br><br> `npm uninstall -g @cdw0424/super-prompt   # removes the old global copy`<br> `npm cache clean --force                  # optional, clears cached tarballs`<br><br> **Then reinstall the new release (pick the style you want per project):**<br><br> `# global upgrade (if you rely on the super-prompt binary in PATH)`<br> `npm install -g @cdw0424/super-prompt@latest`<br><br> `# project-local (preferred for workspace isolation)`<br> `npm install @cdw0424/super-prompt@latest`<br> `npx @cdw0424/super-prompt@latest super:init   # or ./node_modules/.bin/super-prompt super:init`<br><br> **If the project already had a package-lock.json or npm-shrinkwrap.json, make sure it doesn't pin the old version; delete the lockfile or bump the semver entry to ^5.2.41 before reinstalling.**<br><br> **After reinstalling, rerun super:init (or ./bin/super-prompt super:init) and the banner will show v5.2.41 \| @cdw0424/super-prompt, confirming the newer code is in use.**<br><br> _Note: npm will always deliver the latest tarball, but Node's install flow can't guess your intent about existing copies. If a machine already has an older global install, the shell will keep launching that binary until it's removed or upgraded. Likewise, a project's package-lock.json can legitimately pin an older release. Automatically ripping those out during install would break reproducibility, so the CLI leaves that decision to you._<br><br> _If you want to force the newest version every time, add a one-line script to your bootstrap (for example, in your project's postinstall):_<br><br> `"scripts": {`<br>&nbsp;&nbsp;`"postinstall": "npx --yes npm@latest install @cdw0424/super-prompt@latest"`<br> `}`<br><br> _Or, for global installs on shared machines:_<br><br> `npm install -g @cdw0424/super-prompt@latest`<br> `super-prompt super:init --force`<br><br> _That way each environment explicitly refreshes to 5.2.41 (or whatever's current) before initialization, without the tool destroying user-managed installations behind the scenes._ |
-| Cursor reports "no tools available"                               | Check `~/.cursor/mcp.log` for `-------- MCP:` entries. If FastMCP is missing, install the runtime manually: `pip install mcp`. The fallback server will operate automatically once the CLI reconnects.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `sp_high` missing or duplicated                                   | The 5.0.5 release registers a single `sp_high` backed by the persona pipeline. Restart `sp-mcp` to reload the registry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Stdout parse errors                                               | Ensure you never print to stdout in custom scripts. Super Prompt reserves stdout for JSON-RPC; use `--------`-prefixed logs on stderr.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+MIT © Daniel Choi
 
-## Release workflow
+## Contributing
 
-1. `npm install` – refreshes `package-lock.json`.
-2. `npm run prepack` – builds the Python wheel into `dist/` (optional for local
-   testing).
-3. `npm publish` – publishes `@cdw0424/super-prompt@5.2.41` with synchronized
-   Python assets.
-
-Super Prompt is MIT licensed. Contributions and issues are welcome at
-[https://github.com/cdw0424/super-prompt](https://github.com/cdw0424/super-prompt).
+Issues and PRs welcome at
+[GitHub](https://github.com/cdw0424/super-prompt/issues).

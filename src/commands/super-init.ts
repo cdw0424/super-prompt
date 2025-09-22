@@ -139,46 +139,85 @@ export async function run(_ctx?: any) {
     console.error(`-------- wrote: ${path.relative(process.cwd(), mcpCfg)}`);
     console.error(`-------- MCP: configured to run from ${mcpScriptPath} (relative path)`);
 
-    // 3-1) Copy command files from packages/cursor-assets/commands/super-prompt/
+    // 3-1) Clean up old command files first if --force flag is used
+    const commandsDstDir = path.join(cursorDir, 'commands', 'super-prompt');
+    if (process.argv.includes('--force') && fs.existsSync(commandsDstDir)) {
+      console.error('-------- cleaning: removing old command files in .cursor/commands/super-prompt/');
+      fs.rmSync(commandsDstDir, { recursive: true, force: true });
+    }
+
+    // 3-2) Copy command files from packages/cursor-assets/commands/super-prompt/
     try {
       // Try multiple possible paths for cursor-assets (development vs published package)
       let commandsTplDir = null;
       const possiblePaths = [
         // Development path
         path.join(tplRoot, '..', 'packages', 'cursor-assets', 'commands', 'super-prompt'),
+        // Direct path from current directory
+        path.join(__dirname, '..', '..', 'packages', 'cursor-assets', 'commands', 'super-prompt'),
         // Published package path (nested in core-py)
         path.join(tplRoot, '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'commands', 'super-prompt'),
         // Alternative published path
-        path.join(__dirname, '..', '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'commands', 'super-prompt')
+        path.join(__dirname, '..', '..', 'packages', 'core-py', 'packages', 'cursor-assets', 'commands', 'super-prompt'),
+        // Python packages path
+        path.join(__dirname, '..', '..', 'python-packages', 'super-prompt-core', 'packages', 'cursor-assets', 'commands', 'super-prompt')
       ];
 
       for (const testPath of possiblePaths) {
+        console.error(`-------- checking for commands at: ${testPath}`);
         if (fs.existsSync(testPath)) {
           commandsTplDir = testPath;
+          console.error(`-------- found commands at: ${testPath}`);
           break;
         }
       }
 
       if (commandsTplDir) {
-        const commandsDstDir = path.join(cursorDir, 'commands', 'super-prompt');
         ensureDir(commandsDstDir);
 
-        for (const name of fs.readdirSync(commandsTplDir).filter(f => f.endsWith('.md'))) {
+        const files = fs.readdirSync(commandsTplDir).filter(f => f.endsWith('.md'));
+        console.error(`-------- found ${files.length} command templates to copy`);
+
+        for (const name of files) {
           const src = path.join(commandsTplDir, name);
           const dst = path.join(commandsDstDir, name);
-          if (!fs.existsSync(dst)) {
-            copyIfMissing(src, dst);
+          // With --force, always overwrite
+          if (process.argv.includes('--force')) {
+            fs.copyFileSync(src, dst);
+            console.error(`-------- copied command (forced): ${path.relative(process.cwd(), dst)}`);
+          } else if (!fs.existsSync(dst)) {
+            fs.copyFileSync(src, dst);
             console.error(`-------- copied command: ${path.relative(process.cwd(), dst)}`);
           }
         }
       } else {
-        console.error('-------- warning: command templates not found in any expected location');
+        console.error('-------- ❌ CRITICAL ERROR: Command templates not found in any expected location');
+        console.error('-------- ❌ Commands will NOT be generated. Please reinstall Super Prompt.');
+        console.error('-------- ❌ Expected locations checked:');
+        for (const p of possiblePaths) {
+          console.error(`--------   - ${p}`);
+        }
+        // Do not continue - templates are required
       }
     } catch (e) {
       console.error('-------- warning: command copy failed:', e.message);
     }
 
-    // 3-2) Copy rule files from packages/cursor-assets/rules/
+    // 3-3) Clean up old rule files first if --force flag is used
+    const rulesDstDir = path.join(cursorDir, 'rules');
+    if (process.argv.includes('--force') && fs.existsSync(rulesDstDir)) {
+      console.error('-------- cleaning: removing old rule files in .cursor/rules/');
+      // Only remove super-prompt specific rule files
+      const files = fs.readdirSync(rulesDstDir);
+      for (const file of files) {
+        if (file.endsWith('.mdc')) {
+          fs.unlinkSync(path.join(rulesDstDir, file));
+          console.error(`--------   removed: ${file}`);
+        }
+      }
+    }
+
+    // 3-4) Copy rule files from packages/cursor-assets/rules/
     try {
       // Try multiple possible paths for cursor-assets rules
       let rulesTplDir = null;
@@ -199,13 +238,16 @@ export async function run(_ctx?: any) {
       }
 
       if (rulesTplDir) {
-        const rulesDstDir = path.join(cursorDir, 'rules');
         ensureDir(rulesDstDir);
 
         for (const name of fs.readdirSync(rulesTplDir).filter(f => f.endsWith('.mdc'))) {
           const src = path.join(rulesTplDir, name);
           const dst = path.join(rulesDstDir, name);
-          if (!fs.existsSync(dst)) {
+          // With --force, always overwrite
+          if (process.argv.includes('--force')) {
+            fs.copyFileSync(src, dst);
+            console.error(`-------- copied rule (forced): ${path.relative(process.cwd(), dst)}`);
+          } else if (!fs.existsSync(dst)) {
             copyIfMissing(src, dst);
             console.error(`-------- copied rule: ${path.relative(process.cwd(), dst)}`);
           }

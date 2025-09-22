@@ -172,6 +172,8 @@ class CursorAdapter:
         possible_command_paths = [
             # Development path
             self.assets_root / "commands" / "super-prompt",
+            # Project-relative path from package root
+            Path(__file__).parent.parent.parent.parent.parent / "packages" / "cursor-assets" / "commands" / "super-prompt",
             # Published package path (nested in core-py)
             self.assets_root.parent
             / "core-py"
@@ -202,25 +204,30 @@ class CursorAdapter:
         if commands_src_dir and commands_src_dir.exists():
             import shutil
 
+            print(f"🔍 DEBUG: Found commands source directory: {commands_src_dir}", file=sys.stderr)
             # Copy all .md files from commands source directory
+            copied_count = 0
+            force_mode = '--force' in sys.argv
             for md_file in commands_src_dir.glob("*.md"):
                 dst_file = commands_dir / md_file.name
-                if not dst_file.exists():
+                # With --force, always overwrite; otherwise only copy if missing
+                if force_mode or not dst_file.exists():
                     shutil.copy2(md_file, dst_file)
-                    # File copied successfully (no print to avoid stdout pollution)
+                    copied_count += 1
+                    mode_str = " (forced)" if force_mode and dst_file.exists() else ""
+                    print(f"🔍 DEBUG: Copied {md_file.name}{mode_str}", file=sys.stderr)
+            print(f"🔍 DEBUG: Copied {copied_count} command files", file=sys.stderr)
         else:
-            # If commands source directory not found (e.g., globally installed package),
-            # generate commands from known persona list
+            # If commands source directory not found, DO NOT generate minimal fallback commands
             print(
-                f"⚠️  Commands source directory not found, generating from known personas",
+                f"❌ ERROR: Commands source directory not found. Command files will NOT be generated.",
                 file=sys.stderr,
             )
-
-            for persona_key in known_personas:
-                if not (commands_dir / f"{persona_key}.md").exists():
-                    self._generate_persona_command(
-                        commands_dir, persona_key, {"description": f"{persona_key} persona"}
-                    )
+            print(
+                f"❌ Please ensure Super Prompt is properly installed with all template files.",
+                file=sys.stderr,
+            )
+            return  # Exit early - do not generate any fallback commands
 
         # Note: We no longer auto-generate commands from arbitrary processors.
         # Personas and commands are pre-defined via manifest/templates only.
@@ -241,32 +248,18 @@ class CursorAdapter:
                 file=sys.stderr,
             )
 
-        # Generate command files for each persona in manifest (if not already exists)
-        if personas and isinstance(personas, dict):  # Only proceed if personas were loaded
-            for persona_key, persona_config in personas.items():
-                if not (commands_dir / f"{persona_key}.md").exists():
-                    self._generate_persona_command(commands_dir, persona_key, persona_config)
-                # Also generate aliases if defined
-                aliases = (
-                    persona_config.get("aliases", []) if isinstance(persona_config, dict) else []
-                )
-                aliases = aliases or []
-                tool_name = self._resolve_tool_name(persona_key)
-                for alias in aliases:
-                    alias_file = commands_dir / f"{alias}.md"
-        else:
-            # If no manifest found, generate commands from known personas
+        # NEVER generate command files programmatically - only copy from templates
+        # This prevents the creation of minimal/broken command files
+        if personas and isinstance(personas, dict):
             print(
-                f"🔍 DEBUG: Generating commands from {len(known_personas)} known personas",
+                f"📋 Manifest found with {len(personas)} personas, but commands must come from templates only",
                 file=sys.stderr,
             )
-            for persona_key in known_personas:
-                if not (commands_dir / f"{persona_key}.md").exists():
-                    print(f"🔍 DEBUG: Generating command for {persona_key}", file=sys.stderr)
-                    self._generate_persona_command(
-                        commands_dir, persona_key, {"description": f"{persona_key} persona"}
-                    )
-            print(f"🔍 DEBUG: Finished generating commands from known personas", file=sys.stderr)
+        else:
+            print(
+                f"📋 No manifest found. Commands must be copied from template files only.",
+                file=sys.stderr,
+            )
 
         # Generate SDD commands
         print(f"🔍 DEBUG: Calling _generate_sdd_commands", file=sys.stderr)
@@ -280,43 +273,17 @@ class CursorAdapter:
     def _generate_persona_command(
         self, commands_dir: Path, persona: str, persona_config: Dict[str, Any]
     ) -> None:
-        """Generate a persona command file from manifest data or template"""
-        command_file = commands_dir / f"{persona}.md"
-
-        # Prefer template if present; otherwise generate Python runner
-        template_file = self.assets_root / "templates" / f"{persona}.md"
-        if template_file.exists():
-            import shutil
-
-            shutil.copy2(str(template_file), str(command_file))
-            return
-
-        # Fallback: Generate from manifest data using native MCP invocation
-        name = persona_config.get("name", persona.title())
-        icon = persona_config.get("icon", "🤖")
-        description = persona_config.get("description", f"{name} persona")
-        tool_name = self._resolve_tool_name(persona)
-
-        front_lines = [
-            "---",
-            f"description: {persona} command",
-            "run: mcp",
-            "server: super-prompt",
-            f"tool: {tool_name}",
-        ]
-        if persona not in self.no_query_personas:
-            front_lines.extend(
-                [
-                    "args:",
-                    '  query: "${input}"',
-                ]
-            )
-        front_lines.append("---")
-
-        content = "\n".join(front_lines)
-        content += f"\n\n{icon} {name}\n{description}\n"
-
-        command_file.write_text(content)
+        """DEPRECATED: This method should never be called. Only copy templates, never generate."""
+        # This method is kept for compatibility but should never actually generate files
+        print(
+            f"⛔ BLOCKED: Attempted to generate minimal command for '{persona}'. This is not allowed.",
+            file=sys.stderr,
+        )
+        print(
+            f"⛔ Commands must only be copied from template files in packages/cursor-assets/commands/super-prompt/",
+            file=sys.stderr,
+        )
+        return  # Do nothing - never generate minimal commands
 
     def _ensure_super_prompt_server_binding(self, command_file: Path) -> None:
         """Ensure command front matter binds MCP execution to Super Prompt server."""
@@ -414,20 +381,16 @@ class CursorAdapter:
                 shutil.copy2(str(template_file), str(command_file))
                 continue
 
-            # Fallback: Generate basic content with python runner
-            content = f"""---
-description: {cmd_name} command
-run: mcp
-server: super-prompt
-tool: sp.{cmd_name}
-args:
-  query: "${{input}}"
----
-
-📋 {cmd_name.title()}
-{description}."""
-
-            command_file.write_text(content)
+            # NO FALLBACK - Never generate minimal commands
+            print(
+                f"⛔ BLOCKED: Template not found for SDD command '{cmd_name}'. Skipping.",
+                file=sys.stderr,
+            )
+            print(
+                f"⛔ Commands must only be created from template files.",
+                file=sys.stderr,
+            )
+            continue  # Skip this command - do not generate
 
     def generate_rules(self, project_root: Path) -> None:
         """Generate Cursor rules files from templates"""
@@ -461,11 +424,15 @@ args:
             import shutil
 
             # Copy all .mdc files from rules source directory
+            # Copy all .mdc files from rules source directory
+            force_mode = '--force' in sys.argv
             for mdc_file in rules_src_dir.glob("*.mdc"):
                 dst_file = rules_dir / mdc_file.name
-                if not dst_file.exists():
+                # With --force, always overwrite; otherwise only copy if missing
+                if force_mode or not dst_file.exists():
                     shutil.copy2(mdc_file, rules_dir / mdc_file.name)
-                    # File copied successfully (no print to avoid stdout pollution)
+                    mode_str = " (forced)" if force_mode and dst_file.exists() else ""
+                    print(f"📋 Copied rule: {mdc_file.name}{mode_str}", file=sys.stderr)
         else:
             # Fallback to generating if rules source doesn't exist
             self._generate_sdd_rules(rules_dir)
