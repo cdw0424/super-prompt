@@ -73,7 +73,9 @@ async def _run_fallback_stdio(tool_registry: Dict[str, Any]) -> None:
             _write_response(response)
 
 
-async def _handle_message(tool_registry: Dict[str, Any], message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+async def _handle_message(
+    tool_registry: Dict[str, Any], message: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
     """Dispatch incoming MCP messages for the fallback server."""
 
     method = message.get("method")
@@ -136,7 +138,9 @@ def _list_tools(tool_registry: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
     return tools
 
 
-async def _call_tool(tool_registry: Dict[str, Any], message: Dict[str, Any], msg_id: Any) -> Dict[str, Any]:
+async def _call_tool(
+    tool_registry: Dict[str, Any], message: Dict[str, Any], msg_id: Any
+) -> Dict[str, Any]:
     """Execute a registry tool and serialize the response."""
 
     params = message.get("params") or {}
@@ -177,7 +181,10 @@ def _build_input_schema(func: Any) -> Optional[Dict[str, Any]]:
     required: list[str] = []
 
     for name, param in signature.parameters.items():
-        if name == "self" or param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+        if name == "self" or param.kind in (
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        ):
             continue
 
         schema: Dict[str, Any] = {"type": _python_type_to_json_type(param.annotation)}
@@ -187,7 +194,11 @@ def _build_input_schema(func: Any) -> Optional[Dict[str, Any]]:
             required.append(name)
         properties[name] = schema
 
-    schema: Dict[str, Any] = {"type": "object", "properties": properties, "additionalProperties": False}
+    schema: Dict[str, Any] = {
+        "type": "object",
+        "properties": properties,
+        "additionalProperties": False,
+    }
     if required:
         schema["required"] = required
     if not properties:
@@ -218,11 +229,16 @@ def _normalize_content(result: Any) -> list[Dict[str, Any]]:
         if all(isinstance(item, dict) and "type" in item for item in result):
             return result  # Already in MCP content format
         if all(hasattr(item, "type") and hasattr(item, "text") for item in result):
-            return [{"type": getattr(item, "type", "text"), "text": getattr(item, "text", str(item))} for item in result]
+            return [
+                {"type": getattr(item, "type", "text"), "text": getattr(item, "text", str(item))}
+                for item in result
+            ]
         return [{"type": "text", "text": "\n".join(str(item) for item in result)}]
 
     if hasattr(result, "type") and hasattr(result, "text"):
-        return [{"type": getattr(result, "type", "text"), "text": getattr(result, "text", str(result))}]
+        return [
+            {"type": getattr(result, "type", "text"), "text": getattr(result, "text", str(result))}
+        ]
 
     if isinstance(result, dict) and "content" in result:
         content = result["content"]
@@ -245,7 +261,8 @@ def _error_response(msg_id: Any, code: int, message: str) -> Dict[str, Any]:
 def _write_response(payload: Dict[str, Any]) -> None:
     """Serialize and flush a JSON-RPC response."""
 
-    print(json.dumps(payload, ensure_ascii=False), flush=True)
+    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
 
 
 def _log_info(message: str) -> None:

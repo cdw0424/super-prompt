@@ -6,11 +6,13 @@ import sys
 from pathlib import Path
 
 
-def _render_codex_config_block(project_root: Path,
-                               server_name: str,
-                               npm_spec: str,
-                               python_exec: str,
-                               local_sp_mcp: Path | None = None) -> str:
+def _render_codex_config_block(
+    project_root: Path,
+    server_name: str,
+    npm_spec: str,
+    python_exec: str,
+    local_sp_mcp: Path | None = None,
+) -> str:
     """Render canonical Codex MCP config block for super:init."""
     project_path = str(project_root).replace("\\", "\\\\").replace('"', '\\"')
     python_exec = python_exec or "python3"
@@ -19,14 +21,18 @@ def _render_codex_config_block(project_root: Path,
         f'SUPER_PROMPT_PROJECT_ROOT = "{project_path}"',
     ]
     if local_sp_mcp is None:
-        env_entries.extend([
-            f'SUPER_PROMPT_NPM_SPEC = "{npm_spec}"',
-            f'PYTHON = "{python_exec}"',
-        ])
-    env_entries.extend([
-        'PYTHONUNBUFFERED = "1"',
-        'PYTHONUTF8 = "1"',
-    ])
+        env_entries.extend(
+            [
+                f'SUPER_PROMPT_NPM_SPEC = "{npm_spec}"',
+                f'PYTHON = "{python_exec}"',
+            ]
+        )
+    env_entries.extend(
+        [
+            'PYTHONUNBUFFERED = "1"',
+            'PYTHONUTF8 = "1"',
+        ]
+    )
     env_inline = ", ".join(env_entries)
 
     if local_sp_mcp is not None:
@@ -34,11 +40,7 @@ def _render_codex_config_block(project_root: Path,
     else:
         command_line = 'command = "npx"\n' + f'args = ["-y", "{npm_spec}", "sp-mcp"]\n'
 
-    return (
-        f"[mcp_servers.{server_name}]\n"
-        f"{command_line}"
-        f"env = {{ {env_inline} }}\n"
-    )
+    return f"[mcp_servers.{server_name}]\n" f"{command_line}" f"env = {{ {env_inline} }}\n"
 
 
 def _ensure_codex_web_search_enabled(body: str) -> str:
@@ -79,10 +81,13 @@ def _ensure_codex_web_search_enabled(body: str) -> str:
         body += "\n"
     return body
 
-def ensure_cursor_mcp_registered(project_root: Path,
-                                 npm_spec: str | None = None,
-                                 server_name: str = "super-prompt",
-                                 overwrite: bool = False) -> Path:
+
+def ensure_cursor_mcp_registered(
+    project_root: Path,
+    npm_spec: str | None = None,
+    server_name: str = "super-prompt",
+    overwrite: bool = False,
+) -> Path:
     """
     Global MCP registration: write to ~/.cursor/mcp.json.
     Manages MCP server configuration globally to avoid project-specific duplication.
@@ -99,41 +104,25 @@ def ensure_cursor_mcp_registered(project_root: Path,
         pass  # 중복 방지: 프로젝트별 MCP 설정은 무시하고 전역 설정만 사용
 
     # CRITICAL: 중복 방지 - 로컬과 글로벌 MCP가 동시에 존재하는지 확인
-    local_sp_mcp = (Path(project_root) / "bin" / "sp-mcp")
-    use_absolute = (os.environ.get("SUPER_PROMPT_CURSOR_ABSOLUTE", "1") != "0")
+    local_sp_mcp = Path(project_root) / "bin" / "sp-mcp"
+    use_absolute = os.environ.get("SUPER_PROMPT_CURSOR_ABSOLUTE", "1") != "0"
 
-    # 중복 방지: 로컬 MCP가 존재하면 전역 설정을 우선 사용하도록 강제
-    if local_sp_mcp.exists():
-        # 로컬 MCP는 개발용으로만 사용, 전역 MCP는 항상 우선
-        pass  # 중복 방지: 로컬 MCP는 무시하고 전역 설정만 사용
-        entry = {
-            "type": "stdio",
-            "command": str(local_sp_mcp) if use_absolute else "./bin/sp-mcp",
-            "args": [],
-            "env": {
-                "SUPER_PROMPT_ALLOW_INIT": "true",
-                "SUPER_PROMPT_REQUIRE_MCP": "1",
-                "SUPER_PROMPT_PROJECT_ROOT": str(project_root),
-                "PYTHONUNBUFFERED": "1",
-                "PYTHONUTF8": "1",
-            },
-        }
-    else:
-        # Fallback to python -m for environments without the launcher
-        entry = {
-            "type": "stdio",
-            "command": os.environ.get("PYTHON", "python3"),
-            "args": ["-m", "super_prompt.mcp_server"],
-            "env": {
-                "SUPER_PROMPT_ALLOW_INIT": "true",
-                "SUPER_PROMPT_REQUIRE_MCP": "1",
-                "SUPER_PROMPT_PROJECT_ROOT": str(project_root),
-                "PYTHON": os.environ.get("PYTHON", "python3"),
-                "PYTHONUNBUFFERED": "1",
-                "PYTHONUTF8": "1",
-                "SUPER_PROMPT_DEBUG": "1",
-            },
-        }
+    # Always use Python module approach for global MCP registration
+    # This ensures consistent behavior across different project setups
+    entry = {
+        "type": "stdio",
+        "command": os.environ.get("PYTHON", "python3"),
+        "args": ["-m", "super_prompt.mcp_stdio"],
+        "env": {
+            "SUPER_PROMPT_ALLOW_INIT": "true",
+            "SUPER_PROMPT_REQUIRE_MCP": "1",
+            "SUPER_PROMPT_PROJECT_ROOT": str(project_root.resolve()),
+            "PYTHONPATH": str((project_root / "python-packages" / "super-prompt-core").resolve()),
+            "PYTHON": os.environ.get("PYTHON", "python3"),
+            "PYTHONUNBUFFERED": "1",
+            "PYTHONUTF8": "1",
+        },
+    }
 
     data = {}
     if cfg_path.exists():
@@ -144,40 +133,41 @@ def ensure_cursor_mcp_registered(project_root: Path,
             data = {}
 
     mcp = data.get("mcpServers") or {}
-    # 이미 있으면 업데이트(명령/args/env만 갱신), 없으면 추가
-    if server_name in mcp and isinstance(mcp[server_name], dict):
-        merged = dict(mcp[server_name])
-        merged.update(entry)
-        # env는 얕은 병합 + 오래된 키 제거
-        merged_env = dict(mcp[server_name].get("env") or {})
-        merged_env.update(entry["env"])
-        for legacy_key in (
-            "SUPER_PROMPT_PACKAGE_ROOT",
-            "PYTHONPATH",
-            "MCP_SERVER_MODE",
-            "SUPER_PROMPT_NPM_SPEC",
-            "PYTHON",
-        ):
-            merged_env.pop(legacy_key, None)
-        merged["env"] = merged_env
-        merged["command"] = entry["command"]
-        merged["args"] = entry["args"]
-        merged["type"] = "stdio"
-        mcp[server_name] = merged
-    else:
-        mcp[server_name] = entry
-
+    # overwrite=True이면 완전히 교체, 아니면 기존 설정과 병합
     if overwrite:
-        # Replace only our server entry; keep others intact but ensure ours matches exactly
         mcp[server_name] = entry
+    else:
+        # 기존 설정과 병합
+        if server_name in mcp and isinstance(mcp[server_name], dict):
+            merged = dict(mcp[server_name])
+            merged.update(entry)
+            # env는 얕은 병합 + 오래된 키 제거
+            merged_env = dict(mcp[server_name].get("env") or {})
+            merged_env.update(entry["env"])
+            for legacy_key in (
+                "SUPER_PROMPT_PACKAGE_ROOT",
+                "PYTHONPATH",
+                "MCP_SERVER_MODE",
+                "SUPER_PROMPT_NPM_SPEC",
+                "PYTHON",
+            ):
+                merged_env.pop(legacy_key, None)
+            merged["env"] = merged_env
+            merged["command"] = entry["command"]
+            merged["args"] = entry["args"]
+            merged["type"] = "stdio"
+            mcp[server_name] = merged
+        else:
+            mcp[server_name] = entry
 
     data["mcpServers"] = mcp
     cfg_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return cfg_path
 
-def ensure_codex_mcp_registered(project_root: Path,
-                                server_name: str = "super-prompt",
-                                overwrite: bool = False) -> Path:
+
+def ensure_codex_mcp_registered(
+    project_root: Path, server_name: str = "super-prompt", overwrite: bool = False
+) -> Path:
     # ~/.codex/config.toml 갱신 (overwrite=True 시 완전 재작성)
     home = Path(os.environ.get("HOME") or "~").expanduser()
     codex_dir = Path(os.environ.get("CODEX_HOME") or (home / ".codex"))
@@ -389,7 +379,7 @@ def perform_ssot_migration(project_root: Path, dry_run: bool = True) -> dict:
             "actions_taken": [],
             "warnings": [],
             "recommendations": [],
-            "success": True
+            "success": True,
         }
 
         # 1. Analyze current status
@@ -412,7 +402,9 @@ def perform_ssot_migration(project_root: Path, dry_run: bool = True) -> dict:
         # 3. Develop migration plan
         if current_status["global_cursor_exists"] or current_status["global_codex_exists"]:
             migration_plan["actions_taken"].append("Global settings cleanup required")
-            migration_plan["recommendations"].append("Run super-prompt setup cleanup --cursor --codex recommended")
+            migration_plan["recommendations"].append(
+                "Run super-prompt setup cleanup --cursor --codex recommended"
+            )
 
         if not current_status["project_cursor_exists"]:
             migration_plan["warnings"].append("Project Cursor settings missing")
@@ -432,7 +424,9 @@ def perform_ssot_migration(project_root: Path, dry_run: bool = True) -> dict:
                 else:
                     migration_plan["warnings"].append("Project priority setup failed")
             else:
-                migration_plan["actions_taken"].append("Project SSOT priority setup planned (dry-run)")
+                migration_plan["actions_taken"].append(
+                    "Project SSOT priority setup planned (dry-run)"
+                )
 
         # 5. Final validation
         if not dry_run:
@@ -448,11 +442,7 @@ def perform_ssot_migration(project_root: Path, dry_run: bool = True) -> dict:
         return migration_plan
 
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "dry_run": dry_run
-        }
+        return {"success": False, "error": str(e), "dry_run": dry_run}
 
 
 def get_ssot_guidance() -> str:

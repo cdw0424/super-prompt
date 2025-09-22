@@ -1866,12 +1866,24 @@ Brief description of the feature.
         # Generate Cursor commands and rules from manifest/templates (idempotent)
         cursor_commands_generated = False
         cursor_rules_generated = False
+        print(f"🔍 DEBUG: About to try generate_commands", file=sys.stderr)
         try:
             from .adapters.cursor_adapter import CursorAdapter
+            print(f"🔍 DEBUG: CursorAdapter imported successfully", file=sys.stderr)
             cursor = CursorAdapter()
+            print(f"🔍 DEBUG: CursorAdapter instance created", file=sys.stderr)
             # Generate Cursor assets locally in project directory
+            print(f"🔍 DEBUG: Calling cursor.generate_commands({target_dir})", file=sys.stderr)
             cursor.generate_commands(target_dir)  # Project-local generation enabled
+            print(f"🔍 DEBUG: cursor.generate_commands completed", file=sys.stderr)
             cursor.generate_rules(target_dir)     # Project-local generation enabled
+        except Exception as e:
+            print(f"🔍 DEBUG: Error in generate_commands: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            raise
+
+        print(f"🔍 DEBUG: After generate_commands try-catch block", file=sys.stderr)
 
             # Verify Cursor assets were generated in project directory
             project_commands_dir = target_dir / ".cursor" / "commands" / "super-prompt"

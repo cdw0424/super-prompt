@@ -12,18 +12,46 @@ from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import typer
+
+# Disable typer completely
+class MockTyper:
+    def command(self, func=None):
+        return func
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+
+typer = MockTyper()
+
+# Disable CLI completely for direct execution
+app = None
 
 
 class MCPClient:
     """MCP client wrapper using stdio transport"""
 
     def __init__(self, server_command: Optional[List[str]] = None):
-        self.server_command = server_command or self._default_server_command()
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+            print("DEBUG: MCPClient.__init__ started", file=sys.stderr)
+        try:
+            self.server_command = server_command or self._default_server_command()
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: server_command set to {self.server_command}", file=sys.stderr)
+        except Exception as e:
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Exception in _default_server_command: {e}", file=sys.stderr)
+            import traceback
+
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                traceback.print_exc()
+            raise
         self._session = None
         self._exit_stack = AsyncExitStack()
         # Ensure no stdout usage in MCP environment
         self._stdout_suppressed = True
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+            print("DEBUG: MCPClient.__init__ completed", file=sys.stderr)
 
     def _default_server_command(self) -> List[str]:
         """Get default MCP server command (bin/sp-mcp equivalent)"""
@@ -31,38 +59,48 @@ class MCPClient:
         python_cmd = self._resolve_python()
 
         # Set up environment like bin/sp-mcp
-        project_root = os.environ.get('SUPER_PROMPT_PROJECT_ROOT') or self._resolve_project_root()
+        project_root = os.environ.get("SUPER_PROMPT_PROJECT_ROOT") or self._resolve_project_root()
         # Calculate package root correctly
         current_file = Path(__file__)
         package_root = str(current_file.parent.parent.parent)
 
         env = os.environ.copy()
-        env.update({
-            'MCP_SERVER_MODE': '1',
-            'SUPER_PROMPT_PROJECT_ROOT': project_root,
-            'SUPER_PROMPT_PACKAGE_ROOT': package_root,
-            'PYTHONPATH': f"{package_root}/packages/core-py:{project_root}:{env.get('PYTHONPATH', '')}".rstrip(':'),
-            'PYTHONUNBUFFERED': '1',
-            'PYTHONUTF8': '1',
-        })
+        env.update(
+            {
+                "MCP_SERVER_MODE": "1",
+                "SUPER_PROMPT_PROJECT_ROOT": project_root,
+                "SUPER_PROMPT_PACKAGE_ROOT": package_root,
+                "PYTHONPATH": f"{package_root}/packages/core-py:{project_root}:{env.get('PYTHONPATH', '')}".rstrip(
+                    ":"
+                ),
+                "PYTHONUNBUFFERED": "1",
+                "PYTHONUTF8": "1",
+            }
+        )
 
         # Return the server command for MCP execution
         # Note: PYTHONPATH will be set in the environment when subprocess is created
-        return [python_cmd, '-m', 'super_prompt.mcp_stdio']
+        return [python_cmd, "-m", "super_prompt.mcp_stdio"]
 
     def _resolve_python(self) -> str:
         """Resolve Python interpreter (use current Python executable)"""
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+            print(f"DEBUG: _resolve_python: sys.executable = {sys.executable}", file=sys.stderr)
         # Use the same Python executable that's running this script
         return sys.executable
 
     def _resolve_project_root(self) -> str:
         """Resolve project root (similar to bin/sp-mcp)"""
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+            print("DEBUG: _resolve_project_root called", file=sys.stderr)
         cwd = os.getcwd()
         current = Path(cwd)
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+            print(f"DEBUG: _resolve_project_root: cwd = {cwd}", file=sys.stderr)
 
         # Look for .git directory
         for parent in [current] + list(current.parents):
-            if (parent / '.git').exists():
+            if (parent / ".git").exists():
                 return str(parent)
 
         return cwd
@@ -72,6 +110,7 @@ class MCPClient:
         try:
             # Import MCP server directly instead of using subprocess
             import super_prompt.mcp_server_new as mcp_server
+
             mcp = mcp_server.mcp
 
             # Create a simple session that directly calls MCP server methods
@@ -83,13 +122,14 @@ class MCPClient:
                     # Call MCP server list_tools directly
                     try:
                         tools = await self.mcp.list_tools()
-                        return type('ToolsResult', (), {'tools': tools})()
+                        return type("ToolsResult", (), {"tools": tools})()
                     except:
                         # Fallback to synchronous call
                         import asyncio
+
                         loop = asyncio.get_event_loop()
                         tools = loop.run_until_complete(self.mcp.list_tools())
-                        return type('ToolsResult', (), {'tools': tools})()
+                        return type("ToolsResult", (), {"tools": tools})()
 
                 async def call_tool(self, name, arguments):
                     # Call MCP server tool directly
@@ -99,6 +139,7 @@ class MCPClient:
                     except:
                         # Fallback to synchronous call
                         import asyncio
+
                         loop = asyncio.get_event_loop()
                         result = loop.run_until_complete(self.mcp.call_tool(name, arguments))
                         return result
@@ -106,16 +147,18 @@ class MCPClient:
                 async def list_prompts(self):
                     try:
                         prompts = await self.mcp.list_prompts()
-                        return type('PromptsResult', (), {'prompts': prompts})()
+                        return type("PromptsResult", (), {"prompts": prompts})()
                     except:
-                        return type('PromptsResult', (), {'prompts': []})()
+                        return type("PromptsResult", (), {"prompts": []})()
 
                 async def get_prompt(self, name, arguments):
                     try:
                         result = await self.mcp.get_prompt(name, arguments)
                         return result
                     except:
-                        return type('PromptResult', (), {'model_dump': lambda: {'error': 'Not available'}})()
+                        return type(
+                            "PromptResult", (), {"model_dump": lambda: {"error": "Not available"}}
+                        )()
 
                 async def __aenter__(self):
                     return self
@@ -124,11 +167,21 @@ class MCPClient:
                     pass
 
             # Create direct session
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Creating DirectMCPSession with mcp: {mcp}", file=sys.stderr)
             self._session = await DirectMCPSession(mcp).__aenter__()
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: DirectMCPSession created successfully", file=sys.stderr)
             self._process = None  # No subprocess
 
         except Exception as e:
-            # Silent client initialization failure
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Exception in MCP client initialization: {e}", file=sys.stderr)
+            import traceback
+
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                traceback.print_exc()
+            # Re-raise for debugging
             raise RuntimeError(f"MCP client initialization failed: {e}") from e
 
         return self
@@ -140,7 +193,7 @@ class MCPClient:
 
         try:
             async for line in self._process.stderr:
-                line = line.decode('utf-8', errors='ignore').strip()
+                line = line.decode("utf-8", errors="ignore").strip()
                 if line:
                     # Silent stderr monitoring for clean MCP operation
                     pass
@@ -150,36 +203,43 @@ class MCPClient:
 
     async def _create_fallback_session(self):
         """Create fallback session for compatibility issues"""
+
         class FallbackSession:
             def __init__(self, process):
                 self.process = process
 
             async def list_tools(self):
                 """Fallback tool listing"""
-                return type('ToolsResult', (), {'tools': []})()
+                return type("ToolsResult", (), {"tools": []})()
 
             async def call_tool(self, name, arguments):
                 """Fallback tool calling"""
-                return type('ToolResult', (), {'content': [{'type': 'text', 'text': f'Fallback: Tool {name} not available'}]})()
+                return type(
+                    "ToolResult",
+                    (),
+                    {"content": [{"type": "text", "text": f"Fallback: Tool {name} not available"}]},
+                )()
 
             async def list_prompts(self):
                 """Fallback prompt listing"""
-                return type('PromptsResult', (), {'prompts': []})()
+                return type("PromptsResult", (), {"prompts": []})()
 
             async def get_prompt(self, name, arguments):
                 """Fallback prompt getting"""
-                return type('PromptResult', (), {'model_dump': lambda: {'error': 'Prompt not available'}})()
+                return type(
+                    "PromptResult", (), {"model_dump": lambda: {"error": "Prompt not available"}}
+                )()
 
         return FallbackSession(self._process)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit"""
         # Close the stdio client session
-        if hasattr(self._session, '__aexit__'):
+        if hasattr(self._session, "__aexit__"):
             await self._session.__aexit__(exc_type, exc_val, exc_tb)
 
         # Terminate the server process
-        if hasattr(self, '_process') and self._process:
+        if hasattr(self, "_process") and self._process:
             try:
                 self._process.terminate()
                 await asyncio.wait_for(self._process.wait(), timeout=5.0)
@@ -193,26 +253,41 @@ class MCPClient:
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools with enhanced error handling"""
         if not self._session:
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: MCP client not initialized - _session is None", file=sys.stderr)
             raise RuntimeError("Client not initialized. Use async context manager.")
 
         try:
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Calling _session.list_tools()", file=sys.stderr)
             result = await self._session.list_tools()
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Got result: {result}", file=sys.stderr)
             tools = [tool.model_dump() for tool in result.tools]
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Converted {len(tools)} tools", file=sys.stderr)
 
             # Validate tool structure
             validated_tools = []
             for tool in tools:
-                if not isinstance(tool, dict) or 'name' not in tool:
-                    # Silent invalid tool format handling for clean MCP operation
+                if not isinstance(tool, dict) or "name" not in tool:
+                    if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                        print(f"DEBUG: Invalid tool format: {tool}", file=sys.stderr)
                     continue
                 validated_tools.append(tool)
 
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Returning {len(validated_tools)} validated tools", file=sys.stderr)
             return validated_tools
 
         except Exception as e:
-            # Silent tool listing failure for clean MCP operation
-            # Return empty list instead of crashing
-            return []
+            if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+                print(f"DEBUG: Exception in list_tools: {e}", file=sys.stderr)
+            import traceback
+
+            traceback.print_exc()
+            # Re-raise exception for debugging
+            raise e
 
     async def call_tool(self, name: str, arguments: Optional[Dict[str, Any]] = None) -> Any:
         """Call a tool by name with enhanced error handling"""
@@ -224,13 +299,13 @@ class MCPClient:
             result = await self._session.call_tool(name, arguments or {})
 
             # Validate result structure
-            if hasattr(result, 'content'):
+            if hasattr(result, "content"):
                 return result.content
-            elif isinstance(result, dict) and 'content' in result:
-                return result['content']
+            elif isinstance(result, dict) and "content" in result:
+                return result["content"]
             else:
                 # Fallback for unexpected result format
-                return [{'type': 'text', 'text': str(result)}]
+                return [{"type": "text", "text": str(result)}]
 
         except Exception as e:
             # Silent tool call failure for clean MCP operation
@@ -273,167 +348,92 @@ class MCPClient:
         return result.model_dump()
 
 
-# CLI Interface
-app = typer.Typer(name="super-prompt-mcp", help="Super Prompt MCP Client")
-
-
-@app.command()
-def list_tools(json_output: bool = typer.Option(False, "--json", help="Output as JSON")):
+# CLI Interface - Simple version without typer
+def list_tools():
     """List available MCP tools"""
-    async def _list_tools():
-        async with MCPClient() as client:
-            tools = await client.list_tools()
-            if json_output:
-                # Silent JSON output for clean MCP operation
-                pass
-            else:
-                # Silent tool listing for clean MCP operation
-                pass
+    try:
+        # Direct MCP server access
+        from super_prompt.mcp_server_new import mcp
+        import asyncio
 
-    asyncio.run(_list_tools())
+        async def get_tools():
+            tools = await mcp.list_tools()
+            return tools
 
+        # Get tools directly
+        tools = asyncio.run(get_tools())
 
-@app.command()
-def call_tool(
-    tool_name: str = typer.Argument(..., help="Name of the tool to call"),
-    args_json: str = typer.Option(None, "--args-json", help="JSON string of arguments"),
-    json_output: bool = typer.Option(False, "--json", help="Output result as JSON")
-):
-    """Call an MCP tool"""
-    async def _call_tool():
-        # Parse arguments
-        arguments = {}
-        if args_json:
-            try:
-                arguments = json.loads(args_json)
-            except json.JSONDecodeError as e:
-                typer.echo(f"Error parsing JSON arguments: {e}", err=True)
-                raise typer.Exit(1)
+        # Display tools for CLI users (only when not in MCP environment)
+        if os.environ.get("MCP_SERVER_MODE") != "1":
+            print("Available MCP Tools:")
+            for tool in tools:
+                tool_name = tool.name
+                tool_description = tool.description
+                print(f"  • {tool_name}: {tool_description}")
+            print(f"\nTotal: {len(tools)} tools available")
 
-        async with MCPClient() as client:
-            try:
-                result = await client.call_tool(tool_name, arguments)
-                if json_output:
-                    # Silent JSON output for clean MCP operation
-                    pass
-                else:
-                    # Silent result output for clean MCP operation
-                    pass
-            except Exception as e:
-                typer.echo(f"Error calling tool '{tool_name}': {e}", err=True)
-                raise typer.Exit(1)
+    except Exception as e:
+        if os.environ.get("MCP_SERVER_MODE") != "1":
+            print(f"Error listing MCP tools: {e}")
+        import traceback
 
-    asyncio.run(_call_tool())
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1":
+            traceback.print_exc()
 
 
-@app.command()
-def list_prompts(json_output: bool = typer.Option(False, "--json", help="Output as JSON")):
-    """List available MCP prompts"""
-    async def _list_prompts():
-        async with MCPClient() as client:
-            prompts = await client.list_prompts()
-            if json_output:
-                # Silent JSON output for clean MCP operation
-                pass
-            else:
-                # Silent prompt listing for clean MCP operation
-                pass
-
-    asyncio.run(_list_prompts())
-
-
-@app.command()
-def get_prompt(
-    prompt_name: str = typer.Argument(..., help="Name of the prompt to get"),
-    args_json: str = typer.Option(None, "--args-json", help="JSON string of arguments"),
-    json_output: bool = typer.Option(False, "--json", help="Output result as JSON")
-):
-    """Get an MCP prompt"""
-    async def _get_prompt():
-        # Parse arguments
-        arguments = {}
-        if args_json:
-            try:
-                arguments = json.loads(args_json)
-            except json.JSONDecodeError as e:
-                typer.echo(f"Error parsing JSON arguments: {e}", err=True)
-                raise typer.Exit(1)
-
-        async with MCPClient() as client:
-            try:
-                result = await client.get_prompt(prompt_name, arguments)
-                if json_output:
-                    # Silent JSON output for clean MCP operation
-                    pass
-                else:
-                    # Silent result output for clean MCP operation
-                    pass
-            except Exception as e:
-                typer.echo(f"Error getting prompt '{prompt_name}': {e}", err=True)
-                raise typer.Exit(1)
-
-    asyncio.run(_get_prompt())
+def main():
+    """Main CLI entry point"""
+    if os.environ.get("SUPER_PROMPT_DEBUG") == "1" and os.environ.get("MCP_SERVER_MODE") != "1":
+        print("DEBUG: main() called", file=sys.stderr)
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        if os.environ.get("SUPER_PROMPT_DEBUG") == "1" and os.environ.get("MCP_SERVER_MODE") != "1":
+            print(f"DEBUG: command = {command}", file=sys.stderr)
+        if command == "list-tools":
+            list_tools()
+        else:
+            if os.environ.get("MCP_SERVER_MODE") != "1":
+                print(f"Unknown command: {command}")
+    else:
+        if os.environ.get("MCP_SERVER_MODE") != "1":
+            print("Usage: python -m super_prompt.mcp_client <command>")
+            print("Available commands: list-tools")
 
 
-@app.command()
-def doctor(
-    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
-    timeout: int = typer.Option(10, "--timeout", help="Timeout in seconds")
-):
-    """Run diagnostics on MCP server connection"""
-    async def _doctor():
-        import time
-        start_time = time.time()
+# CLI commands removed for direct execution
 
-        try:
-            async with asyncio.timeout(timeout):
-                async with MCPClient() as client:
-                    # Test tools listing
-                    tools = await client.list_tools()
-                    tools_count = len(tools)
 
-                    # Test prompts listing
-                    prompts = await client.list_prompts()
-                    prompts_count = len(prompts)
+# CLI commands removed for direct execution
 
-                    # Test a simple tool call if available
-                    test_tool_result = None
-                    if tools:
-                        test_tool = tools[0]['name']
-                        try:
-                            test_tool_result = await client.call_tool(test_tool, {})
-                        except Exception as e:
-                            test_tool_result = f"Error: {e}"
 
-                    response_time = time.time() - start_time
-
-                    result = {
-                        "status": "healthy",
-                        "response_time": f"{response_time:.2f}s",
-                        "tools_count": tools_count,
-                        "prompts_count": prompts_count,
-                        "test_tool_result": test_tool_result,
-                        "server_command": client.server_command
-                    }
-
-                    if json_output:
-                        # Silent JSON output for clean MCP operation
-                        pass
-                    else:
-                        # Silent health check output for clean MCP operation
-                        pass
-
-        except asyncio.TimeoutError:
-            result = {"status": "timeout", "message": f"Connection timed out after {timeout}s"}
-            # Silent timeout output for clean MCP operation
-            pass
-        except Exception as e:
-            result = {"status": "error", "message": str(e)}
-            # Silent error output for clean MCP operation
-            pass
-
-    asyncio.run(_doctor())
+# CLI commands removed for direct execution
 
 
 if __name__ == "__main__":
-    app()
+    # Simple direct execution for testing
+    try:
+        print("Starting MCP client...")
+        # Direct MCP server access
+        from super_prompt.mcp_server_new import mcp
+        import asyncio
+
+        async def get_tools():
+            tools = await mcp.list_tools()
+            return tools
+
+        # Get tools directly
+        tools = asyncio.run(get_tools())
+
+        # Display tools for CLI users
+        print("Available MCP Tools:")
+        for tool in tools:
+            tool_name = tool.name
+            tool_description = tool.description
+            print(f"  • {tool_name}: {tool_description}")
+        print(f"\nTotal: {len(tools)} tools available")
+
+    except Exception as e:
+        print(f"Error listing MCP tools: {e}")
+        import traceback
+
+        traceback.print_exc()

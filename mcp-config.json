@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "super-prompt": {
+      "command": "python",
+      "args": ["-m", "super_prompt.mcp_stdio"],
+      "cwd": "/Users/weklem/Desktop/devs/super-promt",
+      "env": {
+        "PYTHONPATH": "/Users/weklem/Desktop/devs/super-promt/python-packages/super-prompt-core"
+      },
+      "timeout": 30000
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "5.2.41",
-  "description": "Super Prompt v5.2.38 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
+  "version": "5.2.50",
+  "description": "Super Prompt v5.2.50 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
@@ -12,7 +12,7 @@
     "build": "echo 'Build complete - JavaScript project'",
     "prepack": "npm run clean && node scripts/prepare-python-dist.js && npm run build",
     "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",
-    "postinstall": "node install.js && npm run install:python",
+    "postinstall": "node install.js",
     "test": "node --test",
     "dev": "./bin/super-prompt",
     "dev:init": "./bin/super-prompt super:init",
@@ -25,7 +25,8 @@
     "sp:mcp:python": "python -m super_prompt.mcp_client",
     "sp:mcp:list-tools": "python -m super_prompt.mcp_client list-tools",
     "sp:mcp:call": "python -m super_prompt.mcp_client call",
-    "install:python": "python3 -m pip install --break-system-packages ./python-packages/super-prompt-core",
+    "sp:mcp:stdio": "python -m super_prompt.mcp_stdio",
+    "install:python": "python3 -m pip install --break-system-packages --upgrade typer pyyaml pathspec mcp fastmcp && python3 -m pip install --break-system-packages ./python-packages/super-prompt-core || (python -m pip install --break-system-packages --upgrade typer pyyaml pathspec mcp fastmcp && python -m pip install --break-system-packages ./python-packages/super-prompt-core)",
     "ssot:verify": "node scripts/ssot/verify-ssot.js",
     "sp:verify:all": "npm run ssot:verify && npm run build && echo '✅ All verifications passed'"
   },

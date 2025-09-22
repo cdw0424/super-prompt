@@ -12,7 +12,7 @@ import argparse, os, re, sys
 
 
 def log(msg: str) -> None:
-    print(f"-------- {msg}")
+    print(f"-------- {msg}", file=sys.stderr)
 
 
 def read(path: str) -> str:
@@ -66,17 +66,19 @@ def main(argv: list[str]) -> int:
         log(f"OK: new model → {model}")
 
     # Field checks
-    for model in (cur_m.keys() & new_m.keys()):
+    for model in cur_m.keys() & new_m.keys():
         cur_fields = cur_m[model]
         new_fields = new_m[model]
 
         # Dropped fields
         for f in cur_fields.keys() - new_fields.keys():
-            log(f"ERROR: field dropped → {model}.{f} (plan data migration + soft delete?)")
+            log(
+                f"ERROR: field dropped → {model}.{f} (plan data migration + soft delete?)"
+            )
             errors += 1
 
         # Type changes / nullability tightening
-        for f in (cur_fields.keys() & new_fields.keys()):
+        for f in cur_fields.keys() & new_fields.keys():
             old = cur_fields[f]
             newt = new_fields[f]
             if old != newt:
@@ -88,7 +90,9 @@ def main(argv: list[str]) -> int:
                     warns += 1
 
     if errors:
-        log("Summary: breaking changes detected — review migration steps and consider phased rollout")
+        log(
+            "Summary: breaking changes detected — review migration steps and consider phased rollout"
+        )
         return 2
     if warns:
         log("Summary: warnings present — ensure backfills/validations are planned")
@@ -99,4 +103,3 @@ def main(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
-

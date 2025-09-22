@@ -344,8 +344,109 @@ async function animatedInstall() {
         await sleep(300);
         completedStep('2', '.super-prompt utilities installed');
 
-        // Step 3: system dependency checks rely on host Python availability
-        completedStep('3', 'System dependency checks skipped (system Python assumed)');
+        // Step 3: Install Python dependencies
+        console.error(`${colors.cyan}🐍 Installing Python dependencies...${colors.reset}`);
+        try {
+            let pythonInstallSuccess = false;
+
+            // Method 1: Try npm script first
+            try {
+                console.error(`   ${colors.dim}→ Trying npm script method...${colors.reset}`);
+                execSync('npm run install:python', {
+                    stdio: 'inherit',
+                    cwd: packageDir
+                });
+                pythonInstallSuccess = true;
+                console.error(`   ${colors.dim}→ All Python dependencies installed via npm script${colors.reset}`);
+            } catch (npmError) {
+                console.error(`${colors.yellow}   ⚠️ npm script method failed, trying alternative methods...${colors.reset}`);
+
+                // Method 2: Try with python3 -m pip directly
+                try {
+                    console.error(`   ${colors.dim}→ Trying python3 -m pip method...${colors.reset}`);
+                    execSync('python3 -m pip install --break-system-packages --upgrade typer pyyaml pathspec mcp fastmcp', {
+                        stdio: 'inherit',
+                        cwd: packageDir
+                    });
+                    execSync('python3 -m pip install --break-system-packages ./python-packages/super-prompt-core', {
+                        stdio: 'inherit',
+                        cwd: packageDir
+                    });
+                    pythonInstallSuccess = true;
+                    console.error(`   ${colors.dim}→ All Python dependencies installed via python3${colors.reset}`);
+                } catch (pipError) {
+                    // Method 3: Try with python -m pip
+                    try {
+                        console.error(`   ${colors.dim}→ Trying python -m pip method...${colors.reset}`);
+                        execSync('python -m pip install --break-system-packages --upgrade typer pyyaml pathspec mcp fastmcp', {
+                            stdio: 'inherit',
+                            cwd: packageDir
+                        });
+                        execSync('python -m pip install --break-system-packages ./python-packages/super-prompt-core', {
+                            stdio: 'inherit',
+                            cwd: packageDir
+                        });
+                        pythonInstallSuccess = true;
+                        console.error(`   ${colors.dim}→ All Python dependencies installed via python${colors.reset}`);
+                    } catch (pythonError) {
+                        // Method 4: Individual package installation
+                        console.error(`${colors.yellow}   ⚠️ Trying individual package installation...${colors.reset}`);
+                        const pythonDeps = [
+                            'typer>=0.9.0',
+                            'mcp>=0.4.0',
+                            'pyyaml>=6.0',
+                            'pathspec>=0.11.0',
+                            'fastmcp>=0.4.0'
+                        ];
+
+                        for (const dep of pythonDeps) {
+                            try {
+                                execSync(`python3 -m pip install --break-system-packages --upgrade "${dep}"`, {
+                                    stdio: 'inherit',
+                                    cwd: packageDir
+                                });
+                                console.error(`   ${colors.dim}→ Installed ${dep}${colors.reset}`);
+                            } catch (pipErr) {
+                                try {
+                                    execSync(`python -m pip install --break-system-packages --upgrade "${dep}"`, {
+                                        stdio: 'inherit',
+                                        cwd: packageDir
+                                    });
+                                    console.error(`   ${colors.dim}→ Installed ${dep}${colors.reset}`);
+                                } catch (pyErr) {
+                                    console.error(`${colors.red}   ❌ Failed to install ${dep}${colors.reset}`);
+                                    console.error(`${colors.dim}     Run: pip install ${dep}${colors.reset}`);
+                                }
+                            }
+                        }
+
+                        // Try to install the main package
+                        try {
+                            execSync('python3 -m pip install --break-system-packages ./python-packages/super-prompt-core', {
+                                stdio: 'inherit',
+                                cwd: packageDir
+                            });
+                            pythonInstallSuccess = true;
+                            console.error(`   ${colors.dim}→ Super Prompt core installed${colors.reset}`);
+                        } catch (coreErr) {
+                            console.error(`${colors.red}   ❌ Failed to install super-prompt-core${colors.reset}`);
+                        }
+                    }
+                }
+            }
+
+            if (pythonInstallSuccess) {
+                completedStep('3', 'Python dependencies installed successfully');
+            } else {
+                console.error(`${colors.yellow}⚠️  Python installation had issues, but continuing...${colors.reset}`);
+                console.error(`${colors.dim}   → You may need to run: npm run install:python${colors.reset}`);
+                completedStep('3', 'Python dependencies installation attempted');
+            }
+        } catch (error) {
+            console.error(`${colors.yellow}⚠️  Python dependencies installation failed: ${error.message}${colors.reset}`);
+            console.error(`${colors.dim}   → Run manually: npm run install:python${colors.reset}`);
+            completedStep('3', 'Python dependencies installation failed (manual install required)');
+        }
 
         // Step 4: Remove auto-init logic, it's better for the user to run it explicitly.
         
