@@ -1,5 +1,24 @@
 # Changelog
 
+## v5.2.57 — 2025-09-22
+
+- **Fixed Personas Manifest Loading**: Added proper None handling for `yaml.safe_load()` results
+- **Enhanced Error Handling**: Fixed `TypeError` when personas manifest is None or empty
+- **Improved Manifest Validation**: Added safety checks for manifest structure and personas dictionary
+- **Fixed MCP Server Python Path**: Updated `bin/sp-mcp` to use correct Python package
+  path (`python-packages/super-prompt-core` instead of `packages/core-py`)
+- **Enhanced PYTHONPATH Configuration**: MCP server now properly includes project-local
+  Python packages in path resolution
+- **Project-local MCP Configuration**: Added automatic creation of `.cursor/mcp.json`
+  in project root during initialization for project-specific MCP server isolation
+- **Enhanced Project Isolation**: Each project now has its own MCP configuration
+  with project-specific paths and environments
+- **Improved Cursor IDE Integration**: Cursor can now use project-specific MCP
+  configurations instead of relying only on global settings
+- **Perfect stdout/stderr Separation**: Complete MCP protocol compliance with zero stdout pollution
+- **Fixed Package Root Resolution**: Corrected SUPER_PROMPT_PACKAGE_ROOT environment variable handling in init process
+- **Simplified Initialization**: Reduced user inputs from 3 to 1 - now only prompts for project root path, automatically derives MCP server and Python package paths
+
 ## v5.2.49 — 2025-09-22
 
 - **MCP stdout/stderr Cleanup**: Removed all print statements that could pollute

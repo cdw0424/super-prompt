@@ -1605,9 +1605,9 @@ Brief description of the feature.
                     sys.stderr.write(f"DEBUG: traceback: {traceback.format_exc()}\n")
                     sys.stderr.flush()
 
-            # 1. 프로젝트 루트 설정 (사용자 입력 또는 환경 변수 또는 기본값)
-            # 우선순위: 환경 변수 > 사용자 입력 > 기본값
-            debug_echo("Step 1: Setting up project root")
+            # 1. 프로젝트 루트 설정 및 경로 자동 설정
+            # 프로젝트 루트를 기반으로 MCP 서버 경로와 Python 패키지 경로를 자동으로 설정
+            debug_echo("Step 1: Setting up project root and auto-configuring paths")
             project_root_input = os.environ.get("SUPER_PROMPT_PROJECT_ROOT", str(target_dir))
 
             # 기본적으로 대화형 모드 활성화 (사용자가 명시적으로 비활성화하지 않은 경우)
@@ -1625,43 +1625,19 @@ Brief description of the feature.
                 except Exception:
                     pass  # 비대화형 환경에서는 기본값 사용
 
-            # 2. MCP 서버 설정 (사용자 입력 또는 기본값)
+            # 2. MCP 서버 및 Python 패키지 경로 자동 설정 (프로젝트 루트 기반)
             debug_echo("Step 2: Setting up MCP server configuration")
 
-            # MCP 서버 실행 파일 경로 설정
+            # MCP 서버 실행 파일 경로 자동 설정 (프로젝트 루트 기반)
             mcp_server_path = f"{project_root_input}/bin/sp-mcp"
 
-            # Python 패키지 경로 설정
+            # Python 패키지 경로 자동 설정 (프로젝트 루트 기반)
             python_package_path = f"{project_root_input}/.super-prompt/lib"
 
-            if interactive:
-                try:
-                    # MCP 서버 경로 확인
-                    typer.echo("")  # 빈 줄 추가
-                    typer.echo("=" * 60)
-                    mcp_input = typer.prompt(
-                        f"🔧 Input your MCP server path",
-                        default=mcp_server_path
-                    )
-                    typer.echo("=" * 60)
-                    if mcp_input.strip():
-                        mcp_server_path = mcp_input
+            debug_echo(f"Auto-configured MCP server path: {mcp_server_path}")
+            debug_echo(f"Auto-configured Python package path: {python_package_path}")
 
-                    # Python 패키지 경로 확인
-                    typer.echo("")  # 빈 줄 추가
-                    typer.echo("=" * 60)
-                    python_input = typer.prompt(
-                        f"📦 Input your Python package path",
-                        default=python_package_path
-                    )
-                    typer.echo("=" * 60)
-                    if python_input.strip():
-                        python_package_path = python_input
-
-                except Exception:
-                    pass  # 비대화형 환경에서는 기본값 사용
-
-            # 2. Python 패키지 설치 확인 및 설치 (조용한 모드)
+            # 3. Python 패키지 설치 확인 및 설치 (조용한 모드)
             try:
                 import importlib.util
                 if importlib.util.find_spec("super_prompt") is None:
@@ -1776,8 +1752,32 @@ Brief description of the feature.
             except Exception:
                 pass  # 조용히 실패 처리
 
-            # 5. 전역 MCP 설정 사용 (프로젝트 로컬 MCP 설정 생성하지 않음)
-            # MCP 설정은 전역 ~/.cursor/mcp.json에서만 관리됨 (SSOT 준수)
+            # 5. 프로젝트 로컬 MCP 설정 생성 (프로젝트별 격리를 위해)
+            try:
+                # 프로젝트 로컬 .cursor/mcp.json 생성
+                cursor_dir = target_dir / ".cursor"
+                cursor_dir.mkdir(parents=True, exist_ok=True)
+                local_mcp_path = cursor_dir / "mcp.json"
+
+                mcp_config = {
+                    "mcpServers": {
+                        "super-prompt": {
+                            "command": mcp_server_path,
+                            "args": [],
+                            "env": {
+                                "PYTHONPATH": f"{str(python_package_path)}:{str(lib_dir)}",
+                                "SUPER_PROMPT_PACKAGE_ROOT": str(package_root)
+                            }
+                        }
+                    }
+                }
+
+                with open(local_mcp_path, 'w', encoding='utf-8') as f:
+                    json.dump(mcp_config, f, indent=2, ensure_ascii=False)
+
+                typer.echo(f"✅ Created project-local MCP config: {local_mcp_path}")
+            except Exception as e:
+                typer.echo(f"⚠️  Could not create project-local MCP config: {e}")
 
             # 6. 추가 디렉토리들 생성
             try:
@@ -1866,8 +1866,8 @@ Brief description of the feature.
         # Generate Cursor commands and rules from manifest/templates (idempotent)
         cursor_commands_generated = False
         cursor_rules_generated = False
-        print(f"🔍 DEBUG: About to try generate_commands", file=sys.stderr)
         try:
+            print(f"🔍 DEBUG: About to try generate_commands", file=sys.stderr)
             from .adapters.cursor_adapter import CursorAdapter
             print(f"🔍 DEBUG: CursorAdapter imported successfully", file=sys.stderr)
             cursor = CursorAdapter()
@@ -1883,8 +1883,7 @@ Brief description of the feature.
             traceback.print_exc(file=sys.stderr)
             raise
 
-        print(f"🔍 DEBUG: After generate_commands try-catch block", file=sys.stderr)
-
+        try:
             # Verify Cursor assets were generated in project directory
             project_commands_dir = target_dir / ".cursor" / "commands" / "super-prompt"
             project_rules_dir = target_dir / ".cursor" / "rules"

@@ -132,8 +132,11 @@ _TOOL_REGISTRY["sp_mode_set"] = sp_mode_set_mcp
 @mcp.tool(name="sp_grok_mode_on")
 def sp_grok_mode_on_mcp():
     """Switch LLM mode to grok"""
-    result = grok_mode_on()
-    return result.text if hasattr(result, "text") else str(result)
+    try:
+        grok_mode_on()
+        return "-------- Grok mode: ENABLED (.cursor/.grok-mode)"
+    except Exception as e:
+        return f"❌ Error enabling Grok mode: {str(e)}"
 
 
 _TOOL_REGISTRY["sp_grok_mode_on"] = sp_grok_mode_on_mcp
@@ -142,8 +145,11 @@ _TOOL_REGISTRY["sp_grok_mode_on"] = sp_grok_mode_on_mcp
 @mcp.tool(name="sp_gpt_mode_on")
 def sp_gpt_mode_on_mcp():
     """Switch LLM mode to gpt"""
-    result = gpt_mode_on()
-    return result.text if hasattr(result, "text") else str(result)
+    try:
+        gpt_mode_on()
+        return "-------- GPT mode: ENABLED (.cursor/.gpt-mode)"
+    except Exception as e:
+        return f"❌ Error enabling GPT mode: {str(e)}"
 
 
 _TOOL_REGISTRY["sp_gpt_mode_on"] = sp_gpt_mode_on_mcp
@@ -152,8 +158,11 @@ _TOOL_REGISTRY["sp_gpt_mode_on"] = sp_gpt_mode_on_mcp
 @mcp.tool(name="sp_grok_mode_off")
 def sp_grok_mode_off_mcp():
     """Turn off Grok mode"""
-    result = grok_mode_off()
-    return result.text if hasattr(result, "text") else str(result)
+    try:
+        grok_mode_off()
+        return "-------- Grok mode: DISABLED"
+    except Exception as e:
+        return f"❌ Error disabling Grok mode: {str(e)}"
 
 
 _TOOL_REGISTRY["sp_grok_mode_off"] = sp_grok_mode_off_mcp
@@ -162,8 +171,11 @@ _TOOL_REGISTRY["sp_grok_mode_off"] = sp_grok_mode_off_mcp
 @mcp.tool(name="sp_gpt_mode_off")
 def sp_gpt_mode_off_mcp():
     """Turn off GPT mode"""
-    result = gpt_mode_off()
-    return result.text if hasattr(result, "text") else str(result)
+    try:
+        gpt_mode_off()
+        return "-------- GPT mode: DISABLED"
+    except Exception as e:
+        return f"❌ Error disabling GPT mode: {str(e)}"
 
 
 _TOOL_REGISTRY["sp_gpt_mode_off"] = sp_gpt_mode_off_mcp

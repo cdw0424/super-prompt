@@ -9,6 +9,7 @@ installation processes. All persona commands and user operations MUST NEVER modi
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 import os
+import sys
 import yaml
 from ..paths import cursor_assets_root
 from ..mcp_app import _normalize_query
@@ -57,7 +58,10 @@ class CursorAdapter:
             if local_manifest.exists():
                 try:
                     with open(local_manifest, "r", encoding="utf-8") as f:
-                        return yaml.safe_load(f)
+                        manifest = yaml.safe_load(f)
+                        if manifest is None:
+                            manifest = {"personas": {}, "agents": {}}
+                        return manifest
                 except Exception as e:
                     print(
                         f"🔍 DEBUG: Error loading local manifest {local_manifest}: {e}",
@@ -70,7 +74,10 @@ class CursorAdapter:
         if manifest_path.exists():
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
-                    return yaml.safe_load(f)
+                    manifest = yaml.safe_load(f)
+                    if manifest is None:
+                        manifest = {"personas": {}, "agents": {}}
+                    return manifest
             except Exception as e:
                 print(
                     f"🔍 DEBUG: Error loading packaged manifest {manifest_path}: {e}",
@@ -79,7 +86,7 @@ class CursorAdapter:
                 pass
 
         print(f"🔍 DEBUG: No manifest found, returning empty dict", file=sys.stderr)
-        return {"personas": {}}
+        return {"personas": {}, "agents": {}}
 
     def generate_commands(self, project_root: Path) -> None:
         """Generate Cursor slash commands from manifests and copy existing templates"""
@@ -119,6 +126,46 @@ class CursorAdapter:
             raise
 
         print(f"🔍 DEBUG: Starting to search for commands_src_dir", file=sys.stderr)
+
+        # Define known personas at function level for consistent access
+        known_personas = [
+            "analyzer",
+            "architect",
+            "backend",
+            "db-expert",
+            "debate",
+            "dev",
+            "devops",
+            "doc-master",
+            "docs-refector",
+            "frontend",
+            "gpt-mode-off",
+            "gpt-mode-on",
+            "grok-mode-off",
+            "grok-mode-on",
+            "grok",
+            "high",
+            "implement",
+            "mentor",
+            "optimize",
+            "performance",
+            "plan",
+            "qa",
+            "refactorer",
+            "review",
+            "scribe",
+            "security",
+            "seq-ultra",
+            "seq",
+            "service-planner",
+            "specify",
+            "tasks",
+            "tr",
+            "translate",
+            "ultracompressed",
+            "wave",
+        ]
+
         # First, copy all existing .md command files from commands directory
         # Try multiple possible paths for commands (development vs published package)
         commands_src_dir = None
@@ -168,43 +215,6 @@ class CursorAdapter:
                 f"⚠️  Commands source directory not found, generating from known personas",
                 file=sys.stderr,
             )
-            known_personas = [
-                "analyzer",
-                "architect",
-                "backend",
-                "db-expert",
-                "debate",
-                "dev",
-                "devops",
-                "doc-master",
-                "docs-refector",
-                "frontend",
-                "gpt-mode-off",
-                "gpt-mode-on",
-                "grok-mode-off",
-                "grok-mode-on",
-                "grok",
-                "high",
-                "implement",
-                "mentor",
-                "optimize",
-                "performance",
-                "plan",
-                "qa",
-                "refactorer",
-                "review",
-                "scribe",
-                "security",
-                "seq-ultra",
-                "seq",
-                "service-planner",
-                "specify",
-                "tasks",
-                "tr",
-                "translate",
-                "ultracompressed",
-                "wave",
-            ]
 
             for persona_key in known_personas:
                 if not (commands_dir / f"{persona_key}.md").exists():
@@ -217,10 +227,10 @@ class CursorAdapter:
 
         # Load personas from manifest
         manifest = self.load_personas_manifest(project_root)
-        personas = manifest.get("personas", {}) if manifest else {}
+        personas = (manifest.get("personas", {}) if manifest else {}) or {}
 
         print(
-            f"🔍 DEBUG: Loaded personas manifest: {bool(manifest)}, personas count: {len(personas)}",
+            f"🔍 DEBUG: Loaded personas manifest: {bool(manifest)}, personas count: {len(personas) if personas else 0}",
             file=sys.stderr,
         )
         if personas:
@@ -232,7 +242,7 @@ class CursorAdapter:
             )
 
         # Generate command files for each persona in manifest (if not already exists)
-        if personas:  # Only proceed if personas were loaded
+        if personas and isinstance(personas, dict):  # Only proceed if personas were loaded
             for persona_key, persona_config in personas.items():
                 if not (commands_dir / f"{persona_key}.md").exists():
                     self._generate_persona_command(commands_dir, persona_key, persona_config)
@@ -262,19 +272,6 @@ class CursorAdapter:
         print(f"🔍 DEBUG: Calling _generate_sdd_commands", file=sys.stderr)
         self._generate_sdd_commands(commands_dir)
         print(f"🔍 DEBUG: _generate_sdd_commands completed", file=sys.stderr)
-
-        # Generate commands from known personas (fallback for all cases)
-        print(
-            f"🔍 DEBUG: Generating commands from {len(known_personas)} known personas",
-            file=sys.stderr,
-        )
-        for persona_key in known_personas:
-            if not (commands_dir / f"{persona_key}.md").exists():
-                print(f"🔍 DEBUG: Generating command for {persona_key}", file=sys.stderr)
-                self._generate_persona_command(
-                    commands_dir, persona_key, {"description": f"{persona_key} persona"}
-                )
-        print(f"🔍 DEBUG: Finished generating commands from known personas", file=sys.stderr)
 
         # Ensure MCP commands bind explicitly to the Super Prompt server
         for md_file in commands_dir.glob("*.md"):

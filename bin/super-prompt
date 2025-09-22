@@ -404,14 +404,18 @@ case "$CMD" in
     echo "-------- DEBUG: PYTHON_BIN = $PYTHON_BIN" >&2
 
     echo "-------- DEBUG: About to execute Python" >&2
-    echo "-------- DEBUG: Command: $PYTHON_BIN -c \"import sys; sys.path.insert(0, '$APP_HOME/python-packages/super-prompt-core'); from super_prompt.cli import init; import typer; typer.run(init)\" $*" >&2
+    # Set environment variables for Python execution
+    export SUPER_PROMPT_PACKAGE_ROOT="/Users/choi-dong-won/.local/lib/node_modules/@cdw0424/super-prompt"
 
-    exec "$PYTHON_BIN" -c "
+    echo "-------- DEBUG: Command: SUPER_PROMPT_PACKAGE_ROOT='$SUPER_PROMPT_PACKAGE_ROOT' $PYTHON_BIN -c \"import sys; sys.path.insert(0, '$APP_HOME/python-packages/super-prompt-core'); from super_prompt.cli import init; import typer; typer.run(init)\" $*" >&2
+
+    exec env SUPER_PROMPT_PACKAGE_ROOT="$SUPER_PROMPT_PACKAGE_ROOT" "$PYTHON_BIN" -c "
 import sys
 import os
 print('=== DEBUG: Starting super:init ===', file=sys.stderr, flush=True)
 print(f'DEBUG: APP_HOME = {os.environ.get(\"APP_HOME\")}', file=sys.stderr, flush=True)
 print(f'DEBUG: PYTHONPATH = {os.environ.get(\"PYTHONPATH\")}', file=sys.stderr, flush=True)
+print(f'DEBUG: SUPER_PROMPT_PACKAGE_ROOT = {os.environ.get(\"SUPER_PROMPT_PACKAGE_ROOT\")}', file=sys.stderr, flush=True)
 print(f'DEBUG: CLI_MODE = {os.environ.get(\"SUPER_PROMPT_CLI_MODE\")}', file=sys.stderr, flush=True)
 print(f'DEBUG: sys.path before = {sys.path[:3]}', file=sys.stderr, flush=True)
 sys.path.insert(0, '$APP_HOME/python-packages/super-prompt-core')

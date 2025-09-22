@@ -48,8 +48,17 @@ echo "-------- MCP: Python found: $PYTHON_BIN" >&2
 # Set environment variables
 export MCP_SERVER_MODE="1"
 export SUPER_PROMPT_PROJECT_ROOT="$PROJECT_ROOT"
-export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
-export PYTHONPATH="$APP_HOME/packages/core-py:${PYTHONPATH:-}"
+
+# Try to find the actual super-prompt package root
+if [ -d "$APP_HOME/python-packages/super-prompt-core" ]; then
+  export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+elif [ -d "/Users/choi-dong-won/.local/lib/node_modules/@cdw0424/super-prompt" ]; then
+  export SUPER_PROMPT_PACKAGE_ROOT="/Users/choi-dong-won/.local/lib/node_modules/@cdw0424/super-prompt"
+else
+  export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
+fi
+
+export PYTHONPATH="$SUPER_PROMPT_PACKAGE_ROOT/python-packages/super-prompt-core:${PYTHONPATH:-}"
 export PYTHONUNBUFFERED="1"
 export PYTHONUTF8="1"
 
@@ -57,7 +66,7 @@ export PYTHONUTF8="1"
 
 # Execute MCP server with proper stdio handling
 echo "-------- MCP: Executing Python module" >&2
-echo "-------- MCP: PYTHONPATH: $APP_HOME/packages/core-py" >&2
+echo "-------- MCP: PYTHONPATH: $APP_HOME/python-packages/super-prompt-core" >&2
 echo "-------- MCP: Python binary: $PYTHON_BIN" >&2
 echo "-------- MCP: App home: $APP_HOME" >&2
 
@@ -68,4 +77,4 @@ fi
 
 export SUPER_PROMPT_PACKAGE_ROOT="$APP_HOME"
 
-PYTHONPATH="$APP_HOME/packages/core-py" "$PYTHON_BIN" -m super_prompt.mcp_stdio
+PYTHONPATH="$APP_HOME/python-packages/super-prompt-core" "$PYTHON_BIN" -m super_prompt.mcp_stdio
