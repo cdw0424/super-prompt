@@ -179,6 +179,12 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         memory_tag="pipeline_docs_refector",
         empty_prompt="🗂️ Docs Refector pipeline activated. Describe docs to consolidate.",
     ),
+    "resercher": PersonaPipelineConfig(
+        persona="resercher",
+        label="Resercher",
+        memory_tag="pipeline_resercher",
+        empty_prompt="🔎 Resercher pipeline activated. Share the research question and risk level.",
+    ),
     "ultracompressed": PersonaPipelineConfig(
         persona="ultracompressed",
         label="Ultra Compressed",
@@ -296,6 +302,9 @@ PIPELINE_ALIASES: Dict[str, str] = {
     "doc": "doc-master",
     "doc-master": "doc-master",
     "docs-refector": "docs-refector",
+    "resercher": "resercher",
+    "research": "resercher",
+    "researcher": "resercher",
     "dev": "dev",
     "implement": "implement",
     "grok": "grok",

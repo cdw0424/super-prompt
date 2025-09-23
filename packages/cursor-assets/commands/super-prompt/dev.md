@@ -6,37 +6,44 @@ tool: sp_dev
 args:
   query: "${input}"
   persona: "dev"
-  query: "${input}"
 ---
 
 ## Execution Mode
 
-# Dev — Guided Execution
+# Dev — Delivery Pipeline
 
 ## Instructions
-- Provide a short, specific input describing the goal and constraints
-- Prefer concrete artifacts (file paths, diffs, APIs) for higher quality output
-- Use MCP Only: /super-prompt/dev "<your input>"
+- Provide feature goal, affected surfaces, and acceptance criteria up front
+- Link specs/tickets and note test frameworks or deployment constraints
+- Use MCP Only: /super-prompt/dev "<your feature request>"
 
-## Execution Checklist
-- [ ] Define goal and scope
-  - What outcome is expected? Any constraints or deadlines?
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+## Phases & Checklist
+### Phase 0 — Scope Intake
+- [ ] Confirm objective, consumers, and Definition of Done
+- [ ] Capture environment/branch, dependencies, and rollout guardrails
+- [ ] Run Double-Check: /super-prompt/double-check "Confession review for scope framing"
 
-- [ ] Run the tool for primary analysis
-  - Use MCP Only: /super-prompt/dev "<your input>"
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+### Phase 1 — Solution Design
+- [ ] Summarize current architecture and highlight impacted modules
+- [ ] Draft success metrics plus guardrails (perf, security, accessibility)
+- [ ] Identify open questions or missing context to unblock implementation
 
-- [ ] Apply recommendations and produce artifacts
-  - Implement changes, write tests/docs as needed
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+### Phase 2 — Implementation Plan
+- [ ] Break work into ordered tasks with assignees/effort estimates
+- [ ] Note code changes, migrations, or config updates per task
+- [ ] Specify test strategy (unit/integration/e2e) and monitoring updates
 
-- [ ] Convert follow-ups into tasks
-  - Use MCP Only: /super-prompt/tasks "Break down follow-ups into tasks"
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+### Phase 3 — Build & Validation Guidance
+- [ ] Outline coding steps, including reusable helpers and patterns
+- [ ] List commands to run (e.g., `npm test`, `pytest`, linting) and expected outputs
+- [ ] Capture documentation updates, changelog entries, and review artifacts
+
+### Phase 4 — Closeout & Handoff
+- [ ] Summarize status of tasks/tests, flag debt or follow-ups
+- [ ] Provide release/readiness checklist with owners and timestamps
+- [ ] Run Double-Check: /super-prompt/double-check "Confession review for delivery"
 
 ## Outputs
-- Prioritized findings with rationale
-- Concrete fixes/refactors with examples
-- Follow-up TODOs (tests, docs, monitoring)
-
+- Implementation plan with task breakdown and sequencing
+- Testing matrix including commands, expected results, and coverage notes
+- Handoff summary with remaining risks, monitoring steps, and next actions

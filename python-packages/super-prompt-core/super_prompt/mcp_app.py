@@ -193,6 +193,18 @@ def create_app():
         """Documentation refactoring: Content organization, consistency, and maintenance"""
         return run_prompt_based_workflow("docs_refector", query)
 
+    # Abstention-first research analyst
+    @app.tool(name="sp_resercher")
+    def resercher(query: str, persona: str = "resercher") -> str:
+        """Research synthesis with Self-RAG, Chain-of-Verification, and abstention discipline"""
+        return run_prompt_based_workflow("resercher", query)
+
+    # Confessional verification
+    @app.tool(name="sp_double_check")
+    def double_check(query: str, persona: str = "double_check") -> str:
+        """Confessional integrity audit: Verify recent work, surface gaps, and request targeted follow-ups"""
+        return run_prompt_based_workflow("double_check", query)
+
     # Mode management tools
     @app.tool(name="sp_gpt_mode_on")
     def gpt_mode_on() -> str:
@@ -286,6 +298,8 @@ def create_app():
             "sp_service_planner - Service design and customer experience",
             "sp_troubleshooting - Systematic problem diagnosis and resolution",
             "sp_docs_refector - Documentation organization and maintenance",
+            "sp_resercher - Abstention-first research synthesis with evidence enforcement",
+            "sp_double_check - Confessional integrity audit and follow-up requests",
             "sp_gpt_mode_on - Enable GPT mode for structured analysis",
             "sp_grok_mode_on - Enable Grok mode for creative analysis",
             "sp_mode_get - Get current mode setting",

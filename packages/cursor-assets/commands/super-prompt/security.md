@@ -21,19 +21,19 @@ args:
 ## Execution Checklist
 - [ ] Define goal and scope
   - What outcome is expected? Any constraints or deadlines?
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+  - Run Double-Check: /super-prompt/double-check "Confession review for <scope>"
 
 - [ ] Run the tool for primary analysis
   - Use MCP Only: /super-prompt/security "<your input>"
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+  - Run Double-Check: /super-prompt/double-check "Confession review for <scope>"
 
 - [ ] Apply recommendations and produce artifacts
   - Implement changes, write tests/docs as needed
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+  - Run Double-Check: /super-prompt/double-check "Confession review for <scope>"
 
 - [ ] Convert follow-ups into tasks
   - Use MCP Only: /super-prompt/tasks "Break down follow-ups into tasks"
-  - Run Double-Check: /super-prompt/high "Confession review for <scope>"
+  - Run Double-Check: /super-prompt/double-check "Confession review for <scope>"
 
 ## Outputs
 - Prioritized findings with rationale

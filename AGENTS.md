@@ -1,34 +1,35 @@
 # Repository Guidelines
 
+This guide summarizes the conventions required to contribute effectively to `super-prompt`. Follow each section to keep changes aligned with the Cursor/Codex tooling that powers the project.
+
 ## Project Structure & Module Organization
-- Node wrapper: `bin/super-prompt`, package metadata in `package.json`.
-- Python core (MCP server & tools): `packages/core-py/super_prompt/`
-- Cursor assets: `.cursor/commands/super-prompt/`, `.cursor/rules/`
-- Codex assets: `.codex/`
-- Personas manifest (SSOT): `packages/cursor-assets/manifests/personas.yaml` (project override: `personas/manifest.yaml`)
+- Node CLI wrapper lives in `bin/super-prompt`; metadata sits in `package.json`.
+- Python MCP core and tools are under `packages/core-py/super_prompt/`.
+- Cursor assets: `.cursor/commands/super-prompt/` and `.cursor/rules/`; Codex assets: `.codex/`.
+- Personas manifest source of truth is `packages/cursor-assets/manifests/personas.yaml`; override via `personas/manifest.yaml` when needed.
 
 ## Build, Test, and Development Commands
-- Initialize project assets: `npx -y @cdw0424/super-prompt@latest super:init` (or `npm run sp:init`)
-- Start MCP server (Cursor/Codex): `npx --yes --package=@cdw0424/super-prompt sp-mcp` (or `npm run sp:mcp`)
-- Guards: `.codex/router-check.sh` and `scripts/codex/prompt-qa.sh <transcript>`
+- `npm run sp:init` (alias for `npx -y @cdw0424/super-prompt@latest super:init`) bootstraps local assets.
+- `npm run sp:mcp` (alias for `npx --yes --package=@cdw0424/super-prompt sp-mcp`) starts the MCP server for Cursor or Codex.
+- `scripts/codex/router-check.sh` validates routing rules before publishing.
+- `scripts/codex/prompt-qa.sh <transcript>` performs prompt QA on saved conversation logs.
 
 ## Coding Style & Naming Conventions
-- Language: English only in prompts/docs. All logs start with `--------`.
-- JavaScript/JSON: 2‑space indent; Python: 4‑space indent.
-- Names: CLI files kebab‑case; Python symbols snake_case; keep function names descriptive.
-- Do not print secrets/tokens; mask like `sk-***`.
+- Use 2-space indent for JavaScript/JSON, 4-space indent for Python.
+- Prefer descriptive snake_case in Python, kebab-case for CLI entrypoints, and keep prompts/docs in English only.
+- Mask any secrets in output (e.g., `sk-***`) and start custom logs with `--------`.
 
 ## Testing Guidelines
-- For CLI additions, prefer Jest integration tests (`*.int.test.js`) or minimal smoke tests.
-- Validate prompt outputs via `prompt-qa.sh` and keep sample transcripts under `docs/examples/`.
-- Before PR, run: `scripts/codex/router-check.sh` and, if applicable, `npm test`.
+- Favor Jest integration tests (`*.int.test.js`) for CLI features; add focused smoke tests when full coverage is costly.
+- Store sample transcripts under `docs/examples/` and validate prompts with `prompt-qa.sh` before merging.
+- Run `npm test` when JavaScript changes impact runtime behavior.
 
 ## Commit & Pull Request Guidelines
-- Use Conventional Commits (e.g., `feat(cli): ...`, `fix: ...`, `docs: ...`).
-- PRs should include: short description, rationale, screenshots (when UX), and steps to verify.
-- Keep diffs minimal and scoped; avoid unrelated refactors.
+- Follow Conventional Commits such as `feat(cli): add persona loader` or `fix: handle mcp timeout`.
+- PRs must include a concise summary, rationale, relevant screenshots for UX changes, and verification steps (e.g., commands run).
+- Keep diffs minimal and avoid unrelated refactors in the same change set.
 
-## Agent‑Specific Instructions (AMR + SSOT)
-- Auto Model Router (AMR): medium ↔ high switching. Start at medium; escalate to high for PLAN/REVIEW or deep root‑cause, then return to medium for EXECUTION.
-- SSOT: personas manifest → `.cursor/rules` → `AGENTS.md`. Avoid drift; prefer materialized overrides via mode toggles.
-- Modes: `/gpt-mode-on` (GPT‑5), `/grok-mode-on` (Grok); mutual exclusivity enforced.
+## Agent-Specific Instructions
+- Auto Model Router (AMR) enforces medium ↔ high switching: start in medium, escalate to high for planning, reviews, or deep root-cause, then drop back to medium for execution.
+- Respect SSOT precedence order `personas manifest → .cursor/rules → AGENTS.md`; prefer toggle-based overrides instead of ad-hoc edits.
+- `/gpt-mode-on` and `/grok-mode-on` are mutually exclusive—activate only one mode per session.

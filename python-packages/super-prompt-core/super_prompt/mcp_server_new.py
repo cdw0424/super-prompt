@@ -700,6 +700,34 @@ _TOOL_REGISTRY["sp_docs_refector"] = sp_docs_refector
 
 
 @mcp.tool()
+def sp_resercher(query: str, persona: str = "resercher") -> str:
+    """Resercher persona: sp_resercher analysis"""
+    try:
+        from .prompts.workflow_executor import run_prompt_based_workflow
+
+        return run_prompt_based_workflow("resercher", query)
+    except Exception as e:
+        return f"Resercher analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_resercher"] = sp_resercher
+
+
+@mcp.tool()
+def sp_double_check(query: str, persona: str = "double_check") -> str:
+    """Double Check persona: sp_double_check analysis"""
+    try:
+        from .prompts.workflow_executor import run_prompt_based_workflow
+
+        return run_prompt_based_workflow("double_check", query)
+    except Exception as e:
+        return f"Double Check analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_double_check"] = sp_double_check
+
+
+@mcp.tool()
 def sp_seq(query: str) -> str:
     """Sequential persona: sp_seq analysis"""
     try:

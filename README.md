@@ -133,6 +133,8 @@ assistance:
 - `/sp_devops` - DevOps and infrastructure guidance
 - `/sp_mentor` - Educational guidance and code reviews
 - `/sp_scribe` - Professional writing and content creation
+- `/sp_double_check` - Confessional verification and gap surfacing
+- `/sp_resercher` - Abstention-first research with CoVe-RAG and enforced citations
 
 **Database & Optimization**
 

@@ -97,6 +97,20 @@ Use slash commands in your IDE.
 /review "Analyze code changes and suggest improvements"
 ```
 
+### `/double-check` - Confessional Integrity Auditor
+**Best for:** Post-task confession, gap surfacing, targeted follow-up questions
+```
+/double-check "Review my latest changes and list what still needs proof"
+/double-check "Confession: implemented signup flow; what evidence is missing?"
+```
+
+### `/resercher` - Abstention-First Research Analyst
+**Best for:** Evidence-backed investigations, citation-heavy synthesis, hallucination-sensitive topics
+```
+/resercher "Investigate regulatory changes for fintech lending in 2024"
+/resercher "Synthesize climate risk metrics with sources and confidence tags"
+```
+
 ---
 
 ## 🎓 Knowledge & Documentation Commands

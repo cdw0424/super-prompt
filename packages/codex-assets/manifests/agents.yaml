@@ -58,6 +58,14 @@ agents:
       name: High
       description: Deep reasoning specialist (plan/review at high effort)
       flags: ["--high", "--sp-high"]
+    double-check:
+      name: Double Check
+      description: Confessional integrity audit and gap surfacing
+      flags: ["--double-check", "--sp-double-check"]
+    resercher:
+      name: Resercher
+      description: Abstention-first research analyst with citations and verification loops
+      flags: ["--resercher", "--sp-resercher"]
 
   knowledge_guidance:
     mentor:
