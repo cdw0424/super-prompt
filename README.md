@@ -5,9 +5,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
+> **Current Release:** v5.5.0
+
 <!-- SEO: Cursor MCP extension, AI developer productivity, evidential research workflows, zero-config install, global teams -->
 
-Super Prompt is the zero-configuration Model Context Protocol (MCP) extension engineered for **Cursor IDE** and **Codex CLI** teams that need enterprise-grade research, planning, and delivery automation. We combine abstention-first research workflows, evidence-enforced personas, and tightly-coupled Cursor slash commands so every build, review, or investigation ships with citations, tests, and follow-up guardrails.
+Super Prompt is the zero-configuration Model Context Protocol (MCP) extension engineered for **Cursor IDE** teams that need enterprise-grade research, planning, and delivery automation. We combine abstention-first research workflows, evidence-enforced personas, and tightly-coupled Cursor slash commands so every build, review, or investigation ships with citations, tests, and follow-up guardrails.
 
 ---
 
@@ -40,7 +42,7 @@ These principles make Super Prompt suitable for regulated teams, globally distri
 | Layer | What It Does | Why It Exists |
 | ----- | ------------- | ------------- |
 | **Cursor Extension Assets** | Ships curated commands, rules, and MCP wiring into `.cursor/` | Keeps slash commands discoverable without manual configuration |
-| **MCP Server (`sp-mcp`)** | Hosts 29+ tool endpoints (personas, SDD workflows, diagnostics) | Provides consistent protocol-based execution for Cursor and Codex |
+| **MCP Server (`sp-mcp`)** | Hosts 29+ tool endpoints (personas, SDD workflows, diagnostics) | Provides consistent protocol-based execution for Cursor and compatible MCP clients |
 | **Personas Manifest** | Governs reasoning budgets, abstention thresholds, and tool budgets | Ensures every persona follows the same operating philosophy |
 | **Double-Check Ritual** | Confessional audit command invoked by default | Forces final verification and confession before handoff |
 
@@ -69,8 +71,9 @@ super-prompt super:init --force
 The initializer will:
 - Materialize `.cursor/commands/super-prompt/` and `.cursor/rules/`
 - Generate `.super-prompt/` runtime state (mode, config, telemetry)
-- Register `sp-mcp` (MCP server) for both Cursor and Codex clients
+- Register `sp-mcp` (MCP server) for Cursor clients
 - Seed the **Abstention-First CoVe-RAG** assets (`/resercher`, `/double-check`, etc.)
+- Produce `.super-prompt/context/project-dossier.md` for personas to reference
 
 Restart Cursor after initialization so slash commands reload.
 
@@ -79,7 +82,11 @@ Common follow-ups:
 /sp_gpt_mode_on    # Force GPT-5 medium mode
 /sp_grok_mode_on   # Switch to Grok code-fast mode
 /sp_mode_get       # Inspect active engine
+/sp_high_mode_on   # Enable Codex high reasoning for downstream plans
+/sp_high_mode_off  # Return to prompt-based high persona planning
 ```
+
+> Responses automatically mirror the language of your latest message; switch languages simply by changing the language you type in.
 
 ---
 
@@ -91,6 +98,7 @@ Common follow-ups:
    - Emit testing commands and monitoring hooks
    - Call `/double-check` before finalizing
 4. For research-heavy tasks, use `/resercher` first, then hand results to `/dev`, `/review`, or `/doc-master`.
+5. Consult `.super-prompt/context/project-dossier.md` before acting; if it’s missing, run `/super-prompt/init` to regenerate.
 
 Every persona returns Markdown optimized for Cursor’s diff view, making it easy to copy into PRs, design docs, or CLI tasks.
 

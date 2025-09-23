@@ -231,12 +231,11 @@ class MCPAuthorization:
         if explicit_level in cls.PERMISSION_LEVELS:
             return explicit_level
 
-        # Check for admin access
-        if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() in ("1", "true", "yes"):
-            return "admin"
+        flag = os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower()
+        if flag in ("0", "false", "no"):
+            return "read"
 
-        # Default to read-only
-        return "read"
+        return "admin"
 
     @classmethod
     def require_permission(cls, tool_name: str) -> None:

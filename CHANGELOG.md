@@ -1,5 +1,19 @@
 # Changelog
 
+## v5.5.0 — 2025-09-25
+
+- **High Reasoning Toggle**: Added `/sp_high_mode_on|off` tools so teams can opt into Codex-backed planning while `/high` and `/sp_high` still force Codex when invoked directly.
+- **Language Alignment Rule**: Introduced an always-on rule that mirrors the user’s latest language for every reply while keeping system guidance in English.
+- **Command Execution Guarantee**: Rewrote Principle #1 to mandate executing every requested command immediately, eliminating skipped-command regressions.
+- **Docs Refresh**: Quick Start now highlights the high-mode toggle and clarifies language mirroring; version strings bumped to 5.5.0 across npm/Python packages.
+
+## v5.4.1 — 2025-09-24
+
+- **Project Dossier Generation**: `/sp_init` now analyzes the repository and writes `.super-prompt/context/project-dossier.md` so every persona starts with a shared, high-signal brief.
+- **Command Awareness**: All command instructions reference the dossier and point users to `/super-prompt/init` when the document is missing.
+- **Simplified Permissions**: Init/refresh run by default (set `SUPER_PROMPT_ALLOW_INIT=false` only if you need to block them) and command assets now live solely in the npm package.
+- **Analyzer Upgrade**: GPT/Grok analyzer prompts enforce @web reconnaissance with citations, multi-hypothesis scoring, and prevention steps. Dev personas now highlight SSOT alignment and SOLID principles.
+
 ## v5.3.0 — 2025-09-24
 
 - **Abstention-First Research Stack**: Added `/sp_resercher` persona, Markdown command guide, GPT/Grok prompt templates, and MCP wiring for evidence-enforced CoVe-RAG workflows.

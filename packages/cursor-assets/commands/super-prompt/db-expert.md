@@ -117,3 +117,5 @@ DB Expert provides **comprehensive database design and optimization recommendati
 - ✅ **Implementation guidance** for database optimization
 
 Now **professional database expertise** is available through single MCP execution! 🗄️✨
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

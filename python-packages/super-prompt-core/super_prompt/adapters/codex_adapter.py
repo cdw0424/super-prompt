@@ -30,6 +30,9 @@ class CodexAdapter:
 
     def generate_assets(self, _project_root: Path) -> None:
         """Generate Codex integration assets from manifests"""
+        if os.environ.get("SUPER_PROMPT_ENABLE_CODEX", "").lower() not in ("1", "true", "yes"):
+            return
+
         codex_home = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
         codex_home.mkdir(parents=True, exist_ok=True)
 

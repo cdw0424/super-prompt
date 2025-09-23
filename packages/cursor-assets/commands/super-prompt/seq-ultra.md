@@ -15,3 +15,5 @@ args:
 # **seq-ultra - Super Prompt MCP Tool**
 
 🧠 Sequential Ultra Ultra-deep sequential reasoning for complex problems
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

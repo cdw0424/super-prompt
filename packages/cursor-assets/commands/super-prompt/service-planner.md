@@ -16,3 +16,5 @@ args:
 
 🧭 Service Planner Service planning expert (product strategy from discovery →
 delivery → growth)
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

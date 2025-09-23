@@ -709,7 +709,7 @@ def callback(
             active_sdd_action = action
             feature_query = query
 
-    # High reasoning is now handled via MCP tool (sp.high), not CLI
+    # High reasoning is now handled via MCP tool (sp_high), not CLI
 
     if active_sdd_action and feature_query:
         sdd_command(action=active_sdd_action, feature=feature_query, project_root=None)

@@ -13,9 +13,10 @@ args:
 # Double-Check — Guided Execution
 
 ## Instructions
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.
 - Provide a concise summary of what you just completed and what you think is still pending
 - Admit uncertainty openly; "I don't know" is preferred over guessing
-- Use MCP Only: /super-prompt/double-check "<your confession & next steps>"
+- Use MCP Only (MCP server call): /super-prompt/double-check "<your confession & next steps>"
 
 ## Phases & Checklist
 ### Phase 1 — Confession Intake

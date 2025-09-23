@@ -7,7 +7,6 @@ This document reflects the Single Source of Truth for commands, aligned with the
 After running `npx super-prompt init`:
 - `.cursor/commands/super-prompt/` contains all persona commands
 - `.cursor/rules/` contains global rules (SSOT/AMR); model guidance installs on toggle
-- `.codex/` contains Codex assets
 
 Start MCP server: `npx super-prompt mcp:serve`
 Use slash commands in your IDE.
@@ -102,6 +101,13 @@ Use slash commands in your IDE.
 ```
 /double-check "Review my latest changes and list what still needs proof"
 /double-check "Confession: implemented signup flow; what evidence is missing?"
+```
+
+### `/init` - Project Bootstrap & Asset Sync
+**Best for:** Refreshing Super Prompt assets after upgrades or repo setup
+```
+/init
+/init "Refresh workspace assets"
 ```
 
 ### `/resercher` - Abstention-First Research Analyst
@@ -240,6 +246,7 @@ Use slash commands in your IDE.
 
 - `/gpt-mode-on` / `/gpt-mode-off` — GPT‑5 guidance and persona overrides (materialized)
 - `/grok-mode-on` / `/grok-mode-off` — Grok guidance and persona overrides (materialized)
+- `/high-mode-on` / `/high-mode-off` — Toggle Codex-backed high reasoning for `/high` and `sp_high`
 - Aliases: `/codex-mode-on`, `/codex-mode-off`
 
 ---

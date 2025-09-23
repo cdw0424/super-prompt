@@ -16,3 +16,5 @@ args:
 
 🤖 Grok Mode On
 Enable Grok mode instantly and persist for this project
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

@@ -168,3 +168,5 @@ The complete Spec-Driven Development workflow:
 3. **📋 Tasks**: Task breakdown and project execution planning
 
 Each phase builds upon the previous, creating a comprehensive development approach that ensures quality, feasibility, and successful implementation.
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

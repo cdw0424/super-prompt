@@ -1,119 +1,46 @@
 ---
-description: doc-master command - Documentation architecture, writing, and verification
+description: doc-master command - Documentation architecture and fact-driven authoring
 run: mcp
 server: super-prompt
 tool: sp_doc_master
 args:
   query: "${input}"
   persona: "doc-master"
-## Execution Mode
-
-➡️ Execution: sp_doc_master MCP (server: super-prompt; tool as defined above).
-
 ---
 
-# **doc-master - Super Prompt MCP Tool**
+## Execution Mode
 
-**Expert Focus**: Documentation architecture, technical writing, and content verification
+# Doc Master — Documentation Blueprint
 
-## 🎯 **Documentation Mastery Workflow**
+## Instructions
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.
+- Capture the documentation audience, channel (docs site, runbook, enablement), and success criteria before writing.
+- Use MCP Only (MCP server call): /super-prompt/doc-master "<documentation goal>"
+- Work strictly from verified facts; cite all sources (SSOT, tickets, external references) inline.
+- When gaps remain, launch Cursor `@web` searches and escalate to `/super-prompt/high` for cross-team alignment or approvals.
 
-### **Single Step Analysis:**
+## Phases & Checklist
+### Phase 0 — Discovery
+- [ ] Confirm who the documentation serves and what problem it must solve
+- [ ] Inventory authoritative sources (SSOT, ADRs, code owners, compliance requirements)
+- [ ] Flag gaps or contradictions that require human clarification
 
-1. **📚 Documentation Analysis** - Current Tool (doc-master)
-   - Design comprehensive documentation architecture and structure
-   - Create high-quality technical documentation and content
-   - Verify documentation accuracy, completeness, and usability
+### Phase 1 — Information Architecture
+- [ ] Propose the content model (Diátaxis, LADR, or custom) and navigation hierarchy
+- [ ] Map each audience task to a doc artifact (concept, tutorial, reference, troubleshooting)
+- [ ] Specify reusable components (snippets, diagrams, glossary entries)
 
-## 🏗️ **Implementation Strategy**
+### Phase 2 — Content Blueprint
+- [ ] Draft section outlines with headings, key points, citations, and TODO markers
+- [ ] Provide representative samples (code, CLI, UI) with accuracy notes and update cadence
+- [ ] Define voice/tone rules, terminology guardrails, and inclusive language guidance
 
-### **Current Structure vs Optimized Structure:**
+### Phase 3 — Governance & Operations
+- [ ] Establish review workflow (SMEs, legal, security) and doc-as-code automation (lint, build, link check)
+- [ ] Outline freshness strategy: owners, review intervals, telemetry and feedback loops
+- [ ] Plan localization/accessibility steps (glossaries, WCAG compliance, media specs)
 
-| **Current Structure** | **Optimized Structure** |
-|----------------------|-------------------------|
-| Basic documentation | Single `sp_doc_master` MCP call |
-| Limited writing support | Clean MCP protocol compliance |
-| Manual verification | Automated documentation assessment |
-
-### **Documentation TODO System:**
-
-## 📋 **Documentation Mastery TODO List**
-
-### Phase 1: Documentation Planning
-- [x] **Documentation Overview**
-  - Query: `${input}`
-- [x] **Audience Analysis**
-  - Identify target audience and documentation needs
-
-### Phase 2: Architecture Design
-- [ ] **Structure Development**
-  - Design comprehensive documentation architecture and hierarchy
-- [ ] **Content Organization**
-  - Organize content into logical sections and navigation
-
-### Phase 3: Content Creation
-- [ ] **Technical Writing**
-  - Create clear, concise, and accurate technical documentation
-- [ ] **Content Verification**
-  - Verify content accuracy, completeness, and consistency
-
-### Phase 4: Quality Assurance
-- [ ] **Review & Validation**
-  - Review documentation for quality, clarity, and usability
-- [ ] **Publishing Strategy**
-  - Plan documentation publishing and maintenance processes
-
-## 🚀 **Execution Method**
-
-### **Single MCP Execution Mode:**
-1. User inputs `/super-prompt/doc-master "documentation task"`
-2. `sp_doc_master` tool executes alone
-3. One persona performs complete documentation mastery
-4. Single comprehensive documentation guidance output
-
-### **Mode-Specific Optimization:**
-- **Grok Mode**: Creative documentation approaches and innovative structures
-- **GPT Mode**: Structured documentation frameworks and proven methodologies
-
-### **Usage Example:**
-```
-1. /super-prompt/doc-master "Create API documentation structure"
-    ↓
-2. sp_doc_master executes alone (safe single call)
-    ↓
-3. One persona performs complete documentation mastery
-    ↓
-4. Comprehensive documentation guidance output
-```
-
-## 💡 **Documentation Advantages**
-
-### **1. Single Execution Safety**
-- Execute only one MCP tool per documentation task
-- Complete prevention of infinite recursion and circular calls
-
-### **2. Comprehensive Documentation**
-- Documentation architecture design and structure planning
-- Technical writing and content creation support
-- Documentation verification and quality assurance
-
-### **3. Technical Writing Excellence**
-- Industry-standard technical writing practices and methodologies
-- Content organization and information architecture
-- Documentation maintenance and version control
-
-### **4. Implementation Guidance**
-- Concrete documentation creation and publishing plans
-- Content review and validation strategies
-- Documentation maintenance and update procedures
-
-## 🔥 **Conclusion**
-
-Doc Master provides **comprehensive documentation architecture and writing expertise**!
-
-- ✅ **Single safe execution** of documentation tasks
-- ✅ **Complete documentation mastery** in one call
-- ✅ **Industry best practices** for technical writing
-- ✅ **Implementation guidance** for documentation projects
-
-Now **professional documentation mastery** is available through single MCP execution! 📚✨
+## Outputs
+- Documentation architecture diagram and rationale
+- Section-by-section blueprint with fact-checked content notes and citations
+- Maintenance playbook covering review cadence, metrics, and localization/accessibility actions

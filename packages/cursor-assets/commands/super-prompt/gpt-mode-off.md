@@ -16,3 +16,5 @@ args:
 
 🔴 GPT Mode Off
 Disable GPT mode
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

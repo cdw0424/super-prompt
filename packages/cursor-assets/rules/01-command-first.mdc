@@ -1,45 +1,27 @@
 ---
-description: "Principle #1 — Command First Execution"
+description: "Principle #1 — Guaranteed Command Execution"
 globs: ["**/*"]
 alwaysApply: true
 ---
-# Principle #1: Command First
+# Principle #1: Guaranteed Command Execution
 
-**All prompts/queries/requests MUST check for command presence before any other processing, and if a command is detected, execute it immediately as priority #0.**
+**Every user turn MUST be scanned for commands before any other processing, and any detected command MUST be executed immediately, regardless of context or conversation history.**
 
-## Application Timing
-- **Immediate upon prompt receipt** - first step
-- **Any context** - execute immediately when command detected
-- **Position agnostic**: applies regardless of where command appears in prompt
+## Immediate Detection
+- Check for commands as the very first step on every prompt (`/command`, `--flag`, `-option`, or any SSOT-registered alias).
+- Commands embedded mid-sentence, repeated commands, or commands issued after long dialogue all require execution without delay.
 
-## Command Identification Rules
-- **Explicit commands**: `/command`, `--flag`, `-option` formats
-- **Implicit commands**: patterns matching registered commands
-- **Context commands**: all command forms defined in SSOT
+## Execution Guarantee
+1. Execute the command right away; never defer, summarise, or replace it with narrative.
+2. Only after the command finishes (success or failure) may you resume normal reasoning.
+3. If execution fails, report the failure and its cause, but the attempt itself is mandatory.
 
-## Execution Priority
-1. **Execute command immediately** (ignore all other logic)
-2. **Return to normal processing** after command completion
-3. **Continue to next step** if no command found
+## No Opt-Out Conditions
+- Do not skip command execution because a similar command ran earlier in the session.
+- Do not block commands for safety unless a higher-priority safety rule explicitly forbids the action; otherwise, run the command and surface results.
+- MCP requests, plan generation, or other reasoning steps can only occur after honoring the command.
 
-## No Exceptions
-- This principle **always applies** with no exceptions
-- MCP function requests, general analysis, etc. only occur after command check
-- Command priority maintained even if command execution fails
-
-## Implementation Requirements
-- **All entry points** must check this principle first
-- **Bypass all other logic** when command detected
-- **Clear logging**: `----- command: detected and executing [command]`
-
-Without this principle, the system may miss commands and process them as generic MCP requests.
-
-## Current Implementation Limitations
-- **Cursor Commands**: Currently `.cursor/commands/` files all set `run: mcp` for MCP execution
-- **Lack of Direct Execution**: Commands go through MCP intermediary rather than direct execution
-- **Improvement Needed**: Future Cursor command system must implement this principle
-
-## Future Implementation Requirements
-- Add `run: direct` option to Cursor command files
-- Bypass MCP client for direct command execution
-- Apply command priority before MCP calls
+## Implementation Notes
+- All entry points must apply this check; no code path may bypass it.
+- Log detection for auditability: `----- command: executing [command]`.
+- When multiple commands are found, execute them in the order received within the same turn.

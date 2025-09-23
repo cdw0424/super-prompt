@@ -148,3 +148,5 @@ This is **Phase 2 of Spec-Driven Development**!
 - ✅ **Project Management**: Timeline and risk assessment
 
 **Ready for the final SDD phase: Task Breakdown!** 🚀📋
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -23,7 +24,16 @@ from ...utils.progress import progress
 from ...utils.authorization import MCPAuthorization
 from ...tools.registry import register_tool
 from ...mode_store import get_mode, set_mode
+from ...high_mode import is_high_mode_enabled, set_high_mode
 from ...paths import package_root, project_root, project_data_dir
+from ...analysis.project_analyzer import (
+    analyze_project_structure,
+    analyze_dependencies,
+    analyze_codebase_stats,
+    analyze_config_files,
+    collect_project_metadata,
+)
+from ...memory.store import MemoryStore
 
 def _validate_assets():
     """Validate that required assets exist"""
@@ -38,10 +48,15 @@ def _validate_assets():
         raise RuntimeError(f"Too few commands found ({n}). Fallback disabled.")
 
 
-def _copytree(src, dst, force=False):
+def _copytree(src, dst, force=False, clean=False):
     """Copy directory tree with force option"""
     if not src.exists():
         return
+    if clean and dst.exists():
+        if dst.is_dir():
+            shutil.rmtree(dst)
+        else:
+            dst.unlink()
     dst.mkdir(parents=True, exist_ok=True)
     for p in src.rglob("*"):
         rel = p.relative_to(src)
@@ -53,6 +68,148 @@ def _copytree(src, dst, force=False):
                 continue
             t.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(p, t)
+
+
+def ensure_project_dossier(project_root: Path, data_root: Path) -> Path:
+    """Ensure the project dossier exists, generating it if necessary."""
+    dossier_dir = data_root / "context"
+    dossier_path = dossier_dir / "project-dossier.md"
+    if dossier_path.exists():
+        return dossier_path
+    return _generate_project_dossier(project_root, data_root)
+
+
+def _generate_project_dossier(project_root: Path, data_root: Path) -> Path:
+    """Analyze the repository and write a human-readable dossier."""
+    dossier_dir = data_root / "context"
+    dossier_dir.mkdir(parents=True, exist_ok=True)
+    dossier_path = dossier_dir / "project-dossier.md"
+
+    structure = analyze_project_structure(project_root)
+    dependencies = analyze_dependencies(project_root)
+    stats = analyze_codebase_stats(project_root)
+    config = analyze_config_files(project_root)
+    metadata = collect_project_metadata(project_root)
+
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%SZ")
+
+    def _format_file_entry(entry):
+        size_kb = entry.get("size", 0) / 1024
+        lines = entry.get("lines")
+        return f"- `{entry.get('path', 'unknown')}` — {size_kb:.1f} KB, {lines or 0} lines"
+
+    def _format_time_entry(entry):
+        ts = entry.get("mtime")
+        if ts:
+            dt = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
+        else:
+            dt = "unknown"
+        return f"- `{entry.get('path', 'unknown')}` — updated {dt}"
+
+    languages = stats.get("languages", {})
+    top_langs = sorted(languages.items(), key=lambda x: x[1], reverse=True)[:5]
+    file_types = structure.get("file_types", {})
+    top_types = sorted(file_types.items(), key=lambda x: x[1], reverse=True)[:10]
+    largest_files = [_format_file_entry(e) for e in stats.get("largest_files", [])[:5]]
+    newest_files = [_format_time_entry(e) for e in stats.get("newest_files", [])[:5]]
+
+    node_dep = dependencies.get("node") or {}
+    python_deps = dependencies.get("python") or []
+
+    lines = []
+    lines.append(f"# Project Dossier")
+    lines.append("")
+    lines.append(f"Generated: {timestamp} UTC")
+    lines.append("")
+    lines.append("## Overview")
+    lines.append(f"- Root: `{project_root}`")
+    lines.append(f"- Project name: {metadata.get('name', 'unknown')}")
+    lines.append(f"- Detected type: {metadata.get('type', 'unknown')}")
+    langs_list = ", ".join(sorted(set(metadata.get("languages", [])))) or "unknown"
+    lines.append(f"- Primary languages: {langs_list}")
+    if top_langs:
+        distribution = ", ".join(f"{lang or 'unknown'} ({count})" for lang, count in top_langs)
+        lines.append(f"- Language distribution (files): {distribution}")
+    lines.append(f"- Total files indexed: {structure.get('total_files', 0)}")
+    lines.append(f"- Total lines counted: {stats.get('total_lines', 0)}")
+    lines.append("")
+
+    lines.append("## Key File Types")
+    if top_types:
+        for ext, count in top_types:
+            lines.append(f"- `{ext or 'unknown'}` × {count}")
+    else:
+        lines.append("- No file type data available")
+    lines.append("")
+
+    lines.append("## Largest Files")
+    if largest_files:
+        lines.extend(largest_files)
+    else:
+        lines.append("- No file statistics available")
+    lines.append("")
+
+    lines.append("## Recent Changes")
+    if newest_files:
+        lines.extend(newest_files)
+    else:
+        lines.append("- No recent file activity detected")
+    lines.append("")
+
+    lines.append("## Dependencies Snapshot")
+    if node_dep:
+        lines.append("### Node.js")
+        lines.append(f"- package: {node_dep.get('name', 'unknown')}@{node_dep.get('version', 'unknown')}")
+        lines.append(f"- dependencies: {node_dep.get('dependencies_count', 0)} (prod) / {node_dep.get('dev_dependencies_count', 0)} (dev)")
+    if python_deps:
+        lines.append("### Python")
+        for dep in python_deps:
+            lines.append(f"- `{dep.get('file')}` present (size {dep.get('size', 0)} bytes)")
+    if not node_dep and not python_deps:
+        lines.append("- No standard dependency manifests detected")
+    lines.append("")
+
+    lines.append("## Configuration Signals")
+    git_cfg = config.get("git", {})
+    if git_cfg.get("has_gitignore"):
+        lines.append("- `.gitignore` present")
+    docker_cfg = config.get("docker", {})
+    for key, present in docker_cfg.items():
+        if present:
+            lines.append(f"- `{key}` detected")
+    for ci in config.get("ci_cd", []):
+        lines.append(f"- CI/CD config: `{ci}`")
+    for editor, present in config.get("editors", {}).items():
+        if present:
+            lines.append(f"- Editor config: `{editor}`")
+    if len(lines) > 0 and lines[-1] == "## Configuration Signals":
+        lines.append("- No configuration files detected")
+    lines.append("")
+
+    lines.append("## How to Refresh")
+    lines.append("- Run `/super-prompt/init` after significant structural changes to regenerate this dossier.")
+    lines.append("- Commands and personas should consult this file for project context before acting.")
+    lines.append("")
+
+    dossier_path.write_text("\n".join(lines), encoding="utf-8")
+
+    try:
+        store = MemoryStore.open(project_root)
+        store.set_kv(
+            "project_dossier",
+            {
+                "generated_at": timestamp,
+                "structure": structure,
+                "dependencies": dependencies,
+                "statistics": stats,
+                "config": config,
+                "metadata": metadata,
+            },
+        )
+    except Exception:
+        pass
+
+    return dossier_path
 
 
 def _install_cli_dependencies():
@@ -151,9 +308,22 @@ def _init_impl(force: bool = False) -> str:
 
     # Asset copy (only necessary files, overwrite policy controlled by force)
     src = package_root() / "packages" / "cursor-assets"
-    # Example: selective copy of commands/super-prompt/*, rules/*, etc.
-    _copytree(src / "commands", pr / ".cursor" / "commands", force=force)
-    _copytree(src / "rules", pr / ".cursor" / "rules", force=force)
+    commands_src_root = src / "commands"
+    commands_dst_root = pr / ".cursor" / "commands"
+    commands_dst_root.mkdir(parents=True, exist_ok=True)
+    if commands_src_root.exists():
+        for item in commands_src_root.iterdir():
+            target = commands_dst_root / item.name
+            if item.is_dir():
+                _copytree(item, target, force=True, clean=force)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(item, target)
+
+    # Rules are curated solely by Super Prompt; safe to clean when forcing
+    rules_src = src / "rules"
+    rules_dst = pr / ".cursor" / "rules"
+    _copytree(rules_src, rules_dst, force=True, clean=force)
 
     # Ensure project directories (Codex assets live in ~/.codex)
     for d in ["specs", "memory"]:
@@ -168,11 +338,12 @@ def _init_impl(force: bool = False) -> str:
         pass
 
     # Generate Codex assets based on manifest
-    try:
-        from ...adapters.codex_adapter import CodexAdapter
-        CodexAdapter().generate_assets(pr)
-    except Exception as e:
-        pass  # Handle any other exceptions gracefully
+    if os.environ.get("SUPER_PROMPT_ENABLE_CODEX", "").lower() in ("1", "true", "yes"):
+        try:
+            from ...adapters.codex_adapter import CodexAdapter
+            CodexAdapter().generate_assets(pr)
+        except Exception:
+            pass  # Handle any other exceptions gracefully
 
     # CLI auto-installation (OpenAI CLI + Codex CLI)
     _install_cli_dependencies()
@@ -199,6 +370,12 @@ def _init_impl(force: bool = False) -> str:
 
     # Verify all MCP tools are exposed for copied commands
     try:
+        dossier_path = _generate_project_dossier(pr, data)
+        progress.show_success(f"Project dossier generated: {dossier_path}")
+    except Exception as dossier_error:
+        progress.show_error(f"Project dossier generation failed: {dossier_error}")
+
+    try:
         _verify_mcp_tool_alignment(pr)
         progress.show_success("MCP tool alignment verified")
     except Exception as verify_error:
@@ -219,12 +396,11 @@ def init(force: bool = False):
             progress.show_progress("🚀 Super Prompt initialization started")
             progress.show_info("Checking permissions...")
 
-            # MCP-only enforcement: Backdoor prohibited
-            if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() not in ("1", "true", "yes"):
-                progress.show_error("No initialization permissions")
+            # Initialization is now allowed by default; environment flag becomes optional hard-disable
+            if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() in ("0", "false", "no"):
+                progress.show_error("Initialization disabled via SUPER_PROMPT_ALLOW_INIT")
                 raise PermissionError(
-                    "MCP: init/refresh is disabled by default. "
-                    "Set environment variable SUPER_PROMPT_ALLOW_INIT=true and try again."
+                    "SUPER_PROMPT_ALLOW_INIT is set to false/0; unset it to enable initialization."
                 )
 
             progress.show_success("Initialization permissions confirmed")
@@ -267,12 +443,10 @@ def refresh():
             progress.show_progress("🔄 Super Prompt asset refresh")
             progress.show_info("Checking permissions...")
 
-            # MCP-only enforcement: Backdoor prohibited
-            if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() not in ("1", "true", "yes"):
-                progress.show_error("No refresh permissions")
+            if os.environ.get("SUPER_PROMPT_ALLOW_INIT", "").lower() in ("0", "false", "no"):
+                progress.show_error("Refresh disabled via SUPER_PROMPT_ALLOW_INIT")
                 raise PermissionError(
-                    "MCP: init/refresh is disabled by default. "
-                    "Set environment variable SUPER_PROMPT_ALLOW_INIT=true and try again."
+                    "SUPER_PROMPT_ALLOW_INIT is set to false/0; unset it to enable refresh."
                 )
 
             progress.show_success("Refresh permissions confirmed")
@@ -456,4 +630,30 @@ def gpt_mode_off(a=None, k=None, **kwargs):
             return "gpt mode turned off"
     except Exception as e:
         progress.show_error(f"GPT mode off failed: {str(e)}")
+        raise
+
+
+@register_tool("sp.high_mode_on")
+def high_mode_on(a=None, k=None, **kwargs):
+    """Enable Codex-backed high reasoning mode."""
+
+    try:
+        with memory_span("sp.high_mode_on") as span_id:
+            set_high_mode(True)
+            return "high mode enabled"
+    except Exception as e:
+        progress.show_error(f"High mode on failed: {str(e)}")
+        raise
+
+
+@register_tool("sp.high_mode_off")
+def high_mode_off(a=None, k=None, **kwargs):
+    """Disable Codex-backed high reasoning mode."""
+
+    try:
+        with memory_span("sp.high_mode_off") as span_id:
+            set_high_mode(False)
+            return "high mode disabled"
+    except Exception as e:
+        progress.show_error(f"High mode off failed: {str(e)}")
         raise

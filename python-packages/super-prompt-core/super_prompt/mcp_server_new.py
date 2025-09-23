@@ -4,6 +4,7 @@ Super Prompt MCP Server - Simple Version
 This is a simple version of the MCP server that manually registers all tools using @mcp.tool() decorator.
 """
 
+import json
 import os
 import sys
 from typing import Optional
@@ -46,9 +47,46 @@ from .mode_store import get_mode, set_mode
 from .context.collector import ContextCollector
 from .core.memory_manager import span_manager, progress, memory_span
 from .personas.pipeline_manager import PersonaPipeline
+from .codex.client import run_codex_high_with_fallback
+from .prompts.workflow_executor import run_prompt_based_workflow
+from .high_mode import is_high_mode_enabled, set_high_mode
 
 # Tool registry for stdio access
 _TOOL_REGISTRY = {}
+
+
+def _format_codex_context(context_result, max_files: int = 6, snippet_chars: int = 600, max_chars: int = 8000) -> str:
+    """Convert collected context into a compact digest for Codex prompts."""
+
+    if not context_result:
+        return ""
+
+    files = list(context_result.get("files") or [])
+    if not files:
+        return ""
+
+    selected = files[:max_files]
+    header_paths = ", ".join(part.get("path", "") for part in selected if part.get("path"))
+    sections = []
+    if header_paths:
+        sections.append(f"Focus files: {header_paths}")
+
+    for idx, part in enumerate(selected, start=1):
+        path = part.get("path", "unknown") or "unknown"
+        snippet = (part.get("content") or "").strip()
+        if not snippet:
+            continue
+        snippet = snippet.replace("```", "``")
+        if len(snippet) > snippet_chars:
+            snippet = snippet[:snippet_chars] + "..."
+        sections.append(f"[{idx}] {path}\n{snippet}")
+
+    digest = "\n\n".join(sections).strip()
+    if not digest:
+        return ""
+    if len(digest) > max_chars:
+        digest = digest[:max_chars] + "\n\n[context truncated]"
+    return digest
 
 
 # Register basic tools
@@ -181,6 +219,32 @@ def sp_gpt_mode_off_mcp():
 _TOOL_REGISTRY["sp_gpt_mode_off"] = sp_gpt_mode_off_mcp
 
 
+@mcp.tool(name="sp_high_mode_on")
+def sp_high_mode_on_mcp():
+    """Enable Codex-backed high reasoning."""
+    try:
+        set_high_mode(True)
+        return "-------- High mode: ENABLED"
+    except Exception as e:
+        return f"❌ Error enabling high mode: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_high_mode_on"] = sp_high_mode_on_mcp
+
+
+@mcp.tool(name="sp_high_mode_off")
+def sp_high_mode_off_mcp():
+    """Disable Codex-backed high reasoning."""
+    try:
+        set_high_mode(False)
+        return "-------- High mode: DISABLED"
+    except Exception as e:
+        return f"❌ Error disabling high mode: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_high_mode_off"] = sp_high_mode_off_mcp
+
+
 # Context Management Protocol Tools
 @mcp.tool()
 def sp_context_collect(query: str, max_tokens: int = 16000) -> str:
@@ -297,49 +361,83 @@ _TOOL_REGISTRY["sp_memory_stats"] = sp_memory_stats
 
 
 # Persona-based analysis tools
-@mcp.tool()
-def sp_high(query: str, persona: str = "high"):
-    """High persona: sp_high analysis (defaults to prompt workflow unless USE_PIPELINE=true)."""
-    try:
-        use_pipeline = os.getenv("USE_PIPELINE", "false").lower() == "true"
-        if not use_pipeline:
-            try:
-                from .prompts.workflow_executor import run_prompt_based_workflow
+def _normalize_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    return text in {"1", "true", "yes", "on"}
 
-                return run_prompt_based_workflow("high", query)
-            except Exception:
-                use_pipeline = True
+
+@mcp.tool()
+def sp_high(query: str, persona: str = "high", force_codex: Optional[bool] = False):
+    """High persona planning via Codex high-effort reasoning."""
+
+    try:
+        force = _normalize_bool(force_codex)
+
+        if not force and not is_high_mode_enabled():
+            use_pipeline = os.getenv("USE_PIPELINE", "false").lower() == "true"
+            if not use_pipeline:
+                try:
+                    return run_prompt_based_workflow("high", query)
+                except Exception:
+                    use_pipeline = True
+
+            if use_pipeline:
+                pipeline = PersonaPipeline()
+                result = pipeline.run_persona("high", query)
+                return result.text if hasattr(result, "text") else str(result)
 
         with memory_span(f"persona_high_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running high analysis for: {query[:50]}...")
+            progress.show_progress(f"Collecting context for high reasoning: {query[:64]}...")
 
             collector = ContextCollector()
             context_result = collector.collect_context(query, max_tokens=8000)
+            context_digest = _format_codex_context(context_result)
 
             span_manager.write_event(
                 span_id,
                 {
-                    "type": "persona_analysis_started",
-                    "persona": "high",
-                    "query": query,
-                    "context_files": len(context_result.get("files", [])),
+                    "type": "codex_context_prepared",
+                    "persona": persona or "high",
+                    "query_preview": query[:120],
+                    "context_files": [
+                        part.get("path")
+                        for part in (context_result.get("files") or [])[:6]
+                    ],
                 },
             )
 
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("high", query)
+            progress.show_progress("Running Codex high reasoning plan...")
+            plan_output = run_codex_high_with_fallback(query=query, context=context_digest, persona=persona)
 
+            success = not isinstance(plan_output, dict) and not str(plan_output).startswith("❌")
             span_manager.write_event(
-                span_id, {"type": "persona_analysis_completed", "persona": "high", "success": True}
+                span_id,
+                {
+                    "type": "codex_high_completed",
+                    "persona": persona or "high",
+                    "success": success,
+                    "preview": str(plan_output)[:400],
+                },
             )
 
-            response = result.text if hasattr(result, "text") else str(result)
-            progress.show_success("High analysis completed")
-            return response
+            if success:
+                progress.show_success("High reasoning plan ready")
+            else:
+                progress.show_error("Codex high reasoning reported an issue")
 
-    except Exception as e:
-        progress.show_error(f"High analysis failed: {str(e)}")
-        return f"High analysis error: {str(e)}"
+            if isinstance(plan_output, dict):
+                return json.dumps(plan_output, ensure_ascii=False)
+            return plan_output
+
+    except Exception as error:
+        progress.show_error(f"High analysis failed: {error}")
+        return f"High analysis error: {error}"
 
 
 _TOOL_REGISTRY["sp_high"] = sp_high

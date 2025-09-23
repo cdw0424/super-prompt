@@ -1,4 +1,5 @@
 # Local analysis reports and sessions
+.cursor/
 .codex/reports/
 memory/
 memory-bank/

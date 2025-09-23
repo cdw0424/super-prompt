@@ -1,0 +1,10 @@
+---
+description: "Language alignment and response discipline"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Language Alignment
+- Detect the language of the user's most recent message and answer in that language (preserve code blocks as-is).
+- If the language cannot be determined confidently, default to English.
+- System and rule files remain in English; only runtime responses adapt to the user.
+- Maintain clarity and professionalism in every language; do not mix languages unless the user explicitly does so.

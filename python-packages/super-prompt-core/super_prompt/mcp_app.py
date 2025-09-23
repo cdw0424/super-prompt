@@ -1,7 +1,48 @@
 # packages/core-py/super_prompt/mcp_app.py
 # Complete MCP application with all Super Prompt v5.0.5 personas
 
+import json
+import os
+
 from .prompts.workflow_executor import run_prompt_based_workflow
+from .codex.client import run_codex_high_with_fallback
+from .context.collector import ContextCollector
+from .personas.pipeline_manager import PersonaPipeline
+from .high_mode import is_high_mode_enabled
+
+
+def _format_codex_context(context_result, max_files: int = 6, snippet_chars: int = 600, max_chars: int = 8000) -> str:
+    """Convert collected context into a compact digest for Codex prompts."""
+
+    if not context_result:
+        return ""
+
+    files = list(context_result.get("files") or [])
+    if not files:
+        return ""
+
+    selected = files[:max_files]
+    header_paths = ", ".join(part.get("path", "") for part in selected if part.get("path"))
+    sections = []
+    if header_paths:
+        sections.append(f"Focus files: {header_paths}")
+
+    for idx, part in enumerate(selected, start=1):
+        path = part.get("path", "unknown") or "unknown"
+        snippet = (part.get("content") or "").strip()
+        if not snippet:
+            continue
+        snippet = snippet.replace("```", "``")
+        if len(snippet) > snippet_chars:
+            snippet = snippet[:snippet_chars] + "..."
+        sections.append(f"[{idx}] {path}\n{snippet}")
+
+    digest = "\n\n".join(sections).strip()
+    if not digest:
+        return ""
+    if len(digest) > max_chars:
+        digest = digest[:max_chars] + "\n\n[context truncated]"
+    return digest
 
 
 def _normalize_query(query: str) -> str:
@@ -21,9 +62,34 @@ def create_app():
 
     # High-level strategic analysis
     @app.tool(name="sp_high")
-    def high(query: str, persona: str = "high") -> str:
-        """High-level strategic analysis: Executive summaries, big-picture thinking, and strategic planning"""
-        return run_prompt_based_workflow("high", query)
+    def high(query: str, persona: str = "high", force_codex: bool = False) -> str:
+        """High-effort planning powered by Codex (plan-first execution)."""
+
+        force = force_codex
+        if not isinstance(force, bool):
+            force = str(force).strip().lower() in {"1", "true", "yes", "on"}
+
+        if not force and not is_high_mode_enabled():
+            use_pipeline = os.getenv("USE_PIPELINE", "false").lower() == "true"
+            if not use_pipeline:
+                try:
+                    return run_prompt_based_workflow("high", query)
+                except Exception:
+                    use_pipeline = True
+
+            if use_pipeline:
+                pipeline = PersonaPipeline()
+                result = pipeline.run_persona("high", query)
+                return result.text if hasattr(result, "text") else str(result)
+
+        collector = ContextCollector()
+        context_result = collector.collect_context(query, max_tokens=8000)
+        context_digest = _format_codex_context(context_result)
+
+        plan_output = run_codex_high_with_fallback(query=query, context=context_digest, persona=persona)
+        if isinstance(plan_output, dict):
+            return json.dumps(plan_output, ensure_ascii=False)
+        return plan_output
 
     # Systematic root cause analysis
     @app.tool(name="sp_analyzer")

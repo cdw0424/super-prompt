@@ -1,398 +1,273 @@
 # packages/core-py/super_prompt/codex/client.py
-"""
-Codex client with API-first and CLI fallback.
-Prioritizes API for speed, falls back to CLI with auto-login.
-"""
+"""Codex CLI integration helpers for Super Prompt."""
 
-import os
-import sys
+from __future__ import annotations
+
 import json
-import shlex
-from typing import Dict, Any, Optional, Union
+import os
+import shutil
+import subprocess
+import textwrap
 from dataclasses import dataclass
-from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
+# Markers returned by the Codex CLI when authentication is missing
+_LOGIN_MARKERS = (
+    "login",
+    "authenticate",
+    "authorization",
+    "sign in",
+    "no active session",
+    "api key",
+    "로그인",
+)
+
+_LOGIN_REQUIRED_MESSAGE = """❌ **Codex 로그인 필요**\n\n터미널에서 `codex login`을 실행해 인증을 완료한 뒤 다시 시도해주세요.\n인증이 끝나기 전까지 고급 추론 계획은 계속할 수 없습니다."""
+
+_INSTALL_TIMEOUT_MESSAGE = """❌ **Codex CLI 설치 실패**\n\n`sudo npm install -g @openai/codex@latest` 명령이 완료되지 않았습니다.\n\n1. Node.js와 npm이 설치되어 있는지 확인하세요.\n2. 관리자 권한이 필요한 경우 터미널에서 직접 명령을 실행하세요.\n3. 설치가 완료된 뒤 다시 시도해주세요."""
 
 
 @dataclass
 class CodexUnavailableError(Exception):
     """Raised when Codex dependencies are missing or unavailable."""
+
     error_type: str
     message: str
     hint: str
 
     def to_dict(self) -> Dict[str, str]:
-        return {
-            "error": f"{self.error_type}: {self.message}",
-            "hint": self.hint
-        }
+        return {"error": f"{self.error_type}: {self.message}", "hint": self.hint}
 
 
-def _check_codex_dependencies() -> Optional[CodexUnavailableError]:
-    """
-    Check if Codex dependencies are available and properly configured.
-    Returns CodexUnavailableError if any dependency is missing, None if all good.
-    """
+def _ensure_codex_cli_latest(timeout: int = 240) -> Optional[str]:
+    """Install or update the Codex CLI to the latest version via npm."""
 
-    # Check for Codex MCP bridge
-    try:
-        from ..paths import package_root
-        bridge_path = package_root() / "src" / "tools" / "codex-mcp.js"
-        if not bridge_path.exists():
-            return CodexUnavailableError(
-                error_type="MissingMCPBridge",
-                message="Codex MCP bridge file is missing",
-                hint=f"Ensure codex-mcp.js exists at {bridge_path}"
-            )
-    except Exception as e:
-        return CodexUnavailableError(
-            error_type="MCPBridgeError",
-            message=f"Cannot locate MCP bridge: {e}",
-            hint="Check Super Prompt installation and file structure"
+    if shutil.which("npm") is None:
+        return (
+            "❌ **npm을 찾을 수 없습니다**\n\n"
+            "Node.js와 npm을 먼저 설치한 뒤 다시 시도해주세요.\n"
+            "macOS 예시: `brew install node`"
         )
 
-    return None  # Dependencies are available
-
-
-def _run_codex_high_cli(query: str, context: str = "", retry_after_login: bool = False) -> str:
-    """
-    CLI execution for high reasoning with proactive installation and login.
-    Automatically handles CLI installation, update, and login when missing.
-    """
-    import subprocess
-    import shutil
-
-    # Step 1: Check if OpenAI CLI is available, install if missing
-    if not retry_after_login:  # Only check/install on first attempt
-        openai_path = shutil.which("openai")
-        if not openai_path:
-
-            # First, try to install OpenAI CLI via pip
-            try:
-                pip_proc = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "openai"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=120
-                )
-                if pip_proc.returncode != 0:
-                    return """❌ **OpenAI CLI 설치 실패**
-
-OpenAI CLI를 설치할 수 없습니다.
-
-## 🔧 해결 방법:
-
-### 1. 수동 설치
-```bash
-pip install openai
-```
-
-### 2. 권한 문제인 경우
-```bash
-pip install --user openai
-```
-
-### 3. Python 버전 확인
-```bash
-python --version  # Python 3.8+ 권장
-pip --version
-```
-
-설치 완료 후 다시 시도해주세요."""
-
-            except subprocess.TimeoutExpired:
-                return "❌ **설치 시간 초과**\n\nOpenAI CLI 설치가 너무 오래 걸립니다. 수동으로 설치해주세요."
-            except Exception as e:
-                return f"❌ **설치 오류**: {str(e)}\n\n수동으로 설치해주세요."
-
-        # Step 2: Install/Update Codex CLI
-        try:
-            update_proc = subprocess.run(
-                ["sudo", "npm", "install", "-g", "@openai/codex@latest"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=180
-            )
-            if update_proc.returncode != 0:
-                # Check if npm is available
-                npm_path = shutil.which("npm")
-                if not npm_path:
-                    return """❌ **npm이 설치되어 있지 않습니다**
-
-Codex CLI를 설치하려면 Node.js와 npm이 필요합니다.
-
-## 🔧 Node.js 설치 방법:
-
-### macOS (권장):
-```bash
-# Homebrew 사용
-brew install node
-
-# 또는 공식 설치 프로그램
-# https://nodejs.org/ 에서 다운로드
-```
-
-### 다른 OS:
-- **Windows**: https://nodejs.org/ 에서 설치
-- **Linux**: 패키지 매니저 사용 (`apt install nodejs npm`)
-
-설치 완료 후 다시 시도해주세요."""
-            else:
-        except subprocess.TimeoutExpired:
-        except Exception as e:
-
-    # Step 3: Check login status and login if needed
     try:
-        check = subprocess.run(
-            ["openai", "api", "keys", "list"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=30
-        )
-
-        # Step 4: If not logged in, launch login
-        if check.returncode != 0:
-
-            try:
-                login_proc = subprocess.run(
-                    ["openai", "login"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=300  # 5 minutes for login
-                )
-
-                if login_proc.returncode != 0:
-                    error_msg = login_proc.stderr.strip() or login_proc.stdout.strip() or "Login failed"
-                    return f"""❌ **OpenAI 로그인 실패**
-
-로그인 과정에서 오류가 발생했습니다.
-
-## 🔧 해결 방법:
-
-### 1. 수동 로그인
-```bash
-openai login
-```
-
-### 2. 브라우저에서 로그인
-명령어 실행 시 브라우저가 열리면 인증을 완료해주세요.
-
-### 3. API 키 직접 설정 (선택사항)
-환경변수에 OpenAI API 키를 설정할 수도 있습니다:
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-```
-
-### 오류 상세:
-{error_msg}
-
-로그인 완료 후 다시 시도해주세요."""
-
-                # Retry after successful login
-                return _run_codex_high_cli(query, context, retry_after_login=True)
-
-            except subprocess.TimeoutExpired:
-                return """❌ **로그인 시간 초과**
-
-OpenAI 로그인 과정이 너무 오래 걸립니다.
-
-## 🔧 해결 방법:
-
-1. **수동 로그인**:
-   ```bash
-   openai login
-   ```
-
-2. **브라우저에서 완료**:
-   - 로그인 명령어 실행 시 열리는 브라우저에서 인증을 완료해주세요
-   - 인증이 완료될 때까지 기다려주세요
-
-다시 시도해주세요."""
-
-    except FileNotFoundError:
-        return """❌ **OpenAI CLI를 찾을 수 없습니다**
-
-OpenAI CLI가 제대로 설치되지 않았습니다.
-
-## 🔧 재설치 방법:
-```bash
-# 기존 설치 제거 (선택사항)
-pip uninstall openai
-
-# 재설치
-pip install openai
-
-# Codex CLI 재설치
-sudo npm install -g @openai/codex@latest
-```
-
-설치 완료 후 다시 시도해주세요."""
-
-    # Step 5: Execute Codex high plan
-    try:
-        payload = json.dumps({"query": query, "context": context or ""})
         proc = subprocess.run(
-            ["openai", "codex", "high-plan"],
-            input=payload,
+            ["sudo", "npm", "install", "-g", "@openai/codex@latest"],
+            capture_output=True,
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-            timeout=300  # 5 minutes for execution
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return _INSTALL_TIMEOUT_MESSAGE
+    except FileNotFoundError:
+        return (
+            "❌ **npm 실행 실패**\n\n"
+            "PATH에 npm이 없거나 손상되었습니다. Node.js 재설치를 검토해주세요."
+        )
+    except Exception as error:  # pragma: no cover - defensive branch
+        return f"❌ **Codex CLI 설치 오류**\n\n{error}"
+
+    if proc.returncode != 0:
+        details = proc.stderr.strip() or proc.stdout.strip() or "원인을 알 수 없는 오류"
+        if "password" in details.lower():
+            return (
+                "❌ **sudo 권한 필요**\n\n"
+                "자동 설치에 실패했습니다. 터미널에서 직접 다음 명령을 실행해주세요:\n"
+                "`sudo npm install -g @openai/codex@latest`"
+            )
+        return (
+            "❌ **Codex CLI 설치 실패**\n\n"
+            f"{details}\n\n"
+            "터미널에서 `sudo npm install -g @openai/codex@latest`를 직접 실행해 문제를 해결한 뒤 다시 시도해주세요."
         )
 
-        if proc.returncode != 0:
-            error_msg = proc.stderr.strip() or proc.stdout.strip() or "Unknown error"
-            return f"""❌ **Codex CLI 실행 실패**
+    if shutil.which("codex") is None:
+        return (
+            "❌ **codex 실행 파일을 찾을 수 없습니다**\n\n"
+            "글로벌 설치가 성공적으로 완료되지 않았습니다. 설치 명령을 수동으로 다시 실행해 주세요."
+        )
 
-고수준 추론을 실행하는 중 오류가 발생했습니다.
-
-## 🔧 해결 방법:
-
-1. **재시도**: 동일한 쿼리로 다시 시도해보세요
-2. **CLI 상태 확인**:
-   ```bash
-   openai --version
-   openai api keys.list
-   ```
-
-3. **업데이트**:
-   ```bash
-   sudo npm update -g @openai/codex@latest
-   ```
-
-### 오류 상세:
-{error_msg}
-
-문제가 지속되면 OpenAI CLI나 Codex CLI의 최신 버전을 확인해주세요."""
-
-        result = proc.stdout.strip()
-        if not result:
-            return """⚠️ **출력 없음**
-
-Codex CLI가 응답을 생성했지만 내용이 비어있습니다.
-
-## 🔧 해결 방법:
-
-1. **쿼리 재구성**: 더 구체적인 질문을 시도해보세요
-2. **컨텍스트 추가**: 추가 정보를 제공해보세요
-3. **재시도**: 동일한 쿼리로 다시 시도해보세요
-
-예시:
-- "빅뱅 이론에 대해 자세히 설명해주세요"
-- "우주의 기원과 진화 과정에 대해 알려주세요" """
-
-        return result
-
-    except subprocess.TimeoutExpired:
-        return """❌ **실행 시간 초과**
-
-Codex CLI 실행이 5분을 초과했습니다.
-
-## 🔧 해결 방법:
-
-1. **더 간단한 쿼리**: 복잡한 질문을 간단하게 나누어 시도해보세요
-2. **네트워크 확인**: 인터넷 연결 상태를 확인해주세요
-3. **재시도**: 동일한 쿼리로 다시 시도해보세요
-
-시간이 오래 걸리는 경우 OpenAI 서비스 상태를 확인해주세요."""
-
-    except Exception as e:
-        return f"""❌ **예상치 못한 오류**
-
-시스템 오류가 발생했습니다.
-
-## 🔧 해결 방법:
-
-1. **재시도**: 동일한 쿼리로 다시 시도해보세요
-2. **CLI 재설치**:
-   ```bash
-   pip install --upgrade openai
-   sudo npm install -g @openai/codex@latest
-   ```
-
-3. **로그 확인**: 터미널에서 자세한 오류 로그를 확인해주세요
-
-### 오류 상세:
-{str(e)}
-
-문제가 지속되면 시스템 관리자에게 문의해주세요."""
+    return None
 
 
-def run_codex_high_with_fallback(query: str, context: str = "") -> Union[str, Dict[str, str]]:
-    """
-    High reasoning that always uses CLI with automatic update and login.
-    Follows the flow: npm install -> check login -> execute, with retry after login.
-    """
+def _sanitize_prompt(prompt: str, max_chars: int = 15000) -> str:
+    """Trim excessively long prompts to avoid CLI argument limits."""
+
+    prompt = prompt.strip()
+    if len(prompt) <= max_chars:
+        return prompt
+    return prompt[: max_chars - 80] + "\n\n[context truncated to fit Codex CLI input limits]"
+
+
+def _build_high_prompt(query: str, persona: str, context: str) -> str:
+    """Compose the high-effort reasoning prompt for Codex."""
+
+    persona = persona or "high"
+    clean_query = (query or "").strip() or "No user query provided."
+    context_block = (context or "").strip() or "No repository context collected."
+    if len(context_block) > 6000:
+        context_block = context_block[:6000] + "\n\n[context truncated]"
+
+    instructions = textwrap.dedent(
+        f"""
+        You are the Super Prompt high-effort planner operating under persona `{persona}`.
+        Analyse the repository context and craft a detailed execution plan before any coding begins.
+
+        Return Markdown with these sections:
+        1. PLAN — Numbered steps, each with intent, key files, and expected outputs.
+        2. RISKS — Bullet list of open questions, uncertainties, or external dependencies.
+        3. VALIDATION — Commands or checks to confirm the work (tests, linters, playbooks).
+        4. FOLLOW-UPS — MCP commands or human actions required after completing the plan.
+
+        Incorporate repository constraints, AGENTS.md guidance, and persona expectations.
+        Stay factual, avoid speculation, and keep the plan executable by other MCP tools.
+        """
+    ).strip()
+
+    return textwrap.dedent(
+        f"""
+        {instructions}
+
+        [USER QUERY]
+        {clean_query}
+
+        [REPOSITORY CONTEXT]
+        {context_block}
+        """
+    ).strip()
+
+
+def _run_codex_exec_high(prompt: str) -> str:
+    """Execute the Codex CLI with high reasoning configuration."""
+
+    sanitized = _sanitize_prompt(prompt)
+    command = [
+        "codex",
+        "exec",
+        "-c",
+        'model_reasoning_effort="high"',
+        "-c",
+        "reasoning_summaries=false",
+        "--sandbox",
+        "read-only",
+        sanitized,
+    ]
+
     try:
-        return _run_codex_high_cli(query, context)
-    except Exception as cli_error:
-        return {
-            "error": f"Codex CLI execution failed: {str(cli_error)}",
-            "hint": "Try running 'sudo npm install -g @openai/codex@latest' and 'openai login' manually"
-        }
+        proc = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        return (
+            "❌ **Codex 실행 시간 초과**\n\n"
+            "프롬프트가 너무 크거나 네트워크가 지연되고 있습니다. 입력을 축소한 뒤 다시 시도해주세요."
+        )
+    except FileNotFoundError:
+        return (
+            "❌ **codex 실행 파일을 찾을 수 없습니다**\n\n"
+            "글로벌 설치가 누락되었습니다. `sudo npm install -g @openai/codex@latest`로 설치 후 다시 시도하세요."
+        )
+
+    stdout = proc.stdout.strip()
+    stderr = proc.stderr.strip()
+
+    if proc.returncode != 0:
+        failure_text = f"{stdout}\n{stderr}".strip().lower()
+        if any(marker in failure_text for marker in _LOGIN_MARKERS):
+            return _LOGIN_REQUIRED_MESSAGE
+
+        details = stderr or stdout or "원인을 알 수 없는 오류"
+        return (
+            "❌ **Codex 실행 실패**\n\n"
+            f"{details}\n\n"
+            "터미널에서 동일한 명령을 수동으로 실행해 상태를 확인해 주세요."
+        )
+
+    # Codex CLI may stream results on stdout or stderr depending on version
+    content = stdout or stderr
+    if not content:
+        return (
+            "⚠️ **Codex 응답 없음**\n\n"
+            "Codex가 빈 응답을 반환했습니다. 입력을 다시 구성하거나 추가 컨텍스트를 제공해 보세요."
+        )
+
+    return content
+
+
+def run_codex_high_with_fallback(
+    query: str,
+    context: str = "",
+    persona: str = "high",
+) -> Union[str, Dict[str, str]]:
+    """High-effort reasoning wrapper that always calls the Codex CLI."""
+
+    install_error = _ensure_codex_cli_latest()
+    if install_error:
+        return install_error
+
+    prompt = _build_high_prompt(query, persona, context)
+    return _run_codex_exec_high(prompt)
 
 
 def run_codex(
     query: str,
     context: str = "",
     mode: str = "general",
-    use_cli: bool = True
+    persona: str = "general",
+    use_cli: bool = True,
 ) -> Union[str, Dict[str, str]]:
-    """
-    Unified Codex assistance with API-first, CLI fallback.
-    """
-    if mode == "high":
-        return run_codex_high_with_fallback(query, context)
+    """Unified Codex accessor with CLI-backed high reasoning."""
 
-    # For other modes, try the existing integration
+    if mode == "high":
+        return run_codex_high_with_fallback(query, context, persona or "high")
+
     try:
         from .integration import call_codex_assistance
-        return call_codex_assistance(query, context, mode)
-    except Exception as e:
+
+        return call_codex_assistance(query, context, persona or mode)
+    except Exception as error:  # pragma: no cover - defensive fallback
         return {
-            "error": f"Codex assistance failed: {str(e)}",
-            "hint": "Check your OpenAI API key or try 'openai login'"
+            "error": f"Codex assistance failed: {error}",
+            "hint": "Run 'codex exec' manually or check your Codex installation",
         }
 
 
 def get_codex_status() -> Dict[str, Any]:
-    """
-    Get comprehensive status of Codex configuration with API and CLI info.
-    """
-    import subprocess
+    """Report Codex installation status for diagnostics."""
 
-    status = {
-        "method": "api-first-with-cli-fallback",
-        "api_available": False,
-        "cli_available": False,
-        "npm_available": False,
-        "available": False,
-        "issues": []
+    status: Dict[str, Any] = {
+        "cli_available": shutil.which("codex") is not None,
+        "npm_available": shutil.which("npm") is not None,
+        "latest_version": None,
+        "requires_login": False,
+        "issues": [],
     }
 
-    # Check npm availability (for CLI updates)
-    try:
-        npm_result = subprocess.run(["npm", "--version"], capture_output=True, timeout=3)
-        status["npm_available"] = npm_result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        status["issues"].append("npm not available (needed for CLI updates)")
+    if not status["npm_available"]:
+        status["issues"].append("npm not available (required for Codex CLI updates)")
 
-    # Check OpenAI CLI installation
-    try:
-        openai_result = subprocess.run(["openai", "--version"], capture_output=True, timeout=3)
-        status["cli_available"] = openai_result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        status["issues"].append("OpenAI CLI not found or not working")
+    if not status["cli_available"]:
+        status["issues"].append("codex CLI not found globally")
 
-    # Check API key
+    # Check authentication status by probing codex auth info if available
+    try:
+        auth_check = subprocess.run(
+            ["codex", "auth", "status"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if auth_check.returncode != 0:
+            combined = (auth_check.stdout + auth_check.stderr).lower()
+            if any(marker in combined for marker in _LOGIN_MARKERS):
+                status["requires_login"] = True
+    except Exception:
+        pass
+
     api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPENAI_KEY")
-    status["api_available"] = bool(api_key)
-
-    # Overall availability - either API or CLI should work
-    status["available"] = status["api_available"] or status["cli_available"]
+    if api_key:
+        status["api_key_present"] = True
 
     return status

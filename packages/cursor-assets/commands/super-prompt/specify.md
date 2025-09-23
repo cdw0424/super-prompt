@@ -143,3 +143,5 @@ This is the **foundation of Spec-Driven Development**!
 - ✅ **Systematic Documentation**: Professional specification output
 
 **Ready for the next SDD phase: Planning!** 🚀📋
+
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.

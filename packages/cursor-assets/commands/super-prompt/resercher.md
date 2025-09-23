@@ -13,9 +13,10 @@ args:
 # Resercher — Guided Execution
 
 ## Instructions
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.
 - Frame the inquiry succinctly, noting domain, timeframe, and stakes
 - State your confidence threshold `t` (default 0.75) and prefer "I don't know" over speculation
-- Use MCP Only: /super-prompt/resercher "<your research goal>"
+- Use MCP Only (MCP server call): /super-prompt/resercher "<your research goal>"
 
 ## Phases & Checklist
 ### Phase 0 — Risk Triage & Abstention Guard
@@ -41,7 +42,7 @@ args:
 ### Phase 4 — Final Synthesis & Handoff
 - [ ] Produce final brief with sections: Findings, Evidence Table, Uncertainties, Next Queries
 - [ ] Include explicit abstention statements where claims lack ≥t confidence
-- [ ] Run Double-Check: /super-prompt/double-check "Confession review for <scope>"
+- [ ] Run Double-Check MCP: /super-prompt/double-check "Confession review for <scope>"
 
 ## Outputs
 - Structured research memo with abstention-first rationale

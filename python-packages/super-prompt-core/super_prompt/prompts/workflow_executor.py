@@ -7,6 +7,8 @@ import os
 from typing import Dict, Any, Optional
 from .gpt_prompts import GPT_PROMPTS
 from .grok_prompts import GROK_PROMPTS
+from ..paths import project_root, project_data_dir
+from ..personas.tools.system_tools import ensure_project_dossier
 
 
 class PromptWorkflowExecutor:
@@ -52,6 +54,11 @@ class PromptWorkflowExecutor:
     def execute_workflow(self, persona: str, query: str, mode: Optional[str] = None) -> str:
         """Execute a prompt-based workflow for the given persona"""
         # Get the prompt template (strict persona; no cross-persona fallback)
+        try:
+            ensure_project_dossier(project_root(), project_data_dir())
+        except Exception:
+            pass
+
         template = self.get_prompt_template(persona, mode)
 
         if not template:

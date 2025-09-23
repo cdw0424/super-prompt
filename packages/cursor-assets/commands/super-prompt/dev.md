@@ -13,15 +13,17 @@ args:
 # Dev — Delivery Pipeline
 
 ## Instructions
+- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.
 - Provide feature goal, affected surfaces, and acceptance criteria up front
 - Link specs/tickets and note test frameworks or deployment constraints
-- Use MCP Only: /super-prompt/dev "<your feature request>"
+- Validate plans against the SSOT (spec/plan/tasks) and uphold SOLID design principles throughout
+- Use MCP Only (MCP server call): /super-prompt/dev "<your feature request>"
 
 ## Phases & Checklist
 ### Phase 0 — Scope Intake
 - [ ] Confirm objective, consumers, and Definition of Done
 - [ ] Capture environment/branch, dependencies, and rollout guardrails
-- [ ] Run Double-Check: /super-prompt/double-check "Confession review for scope framing"
+- [ ] Run Double-Check MCP: /super-prompt/double-check "Confession review for scope framing"
 
 ### Phase 1 — Solution Design
 - [ ] Summarize current architecture and highlight impacted modules
@@ -41,7 +43,7 @@ args:
 ### Phase 4 — Closeout & Handoff
 - [ ] Summarize status of tasks/tests, flag debt or follow-ups
 - [ ] Provide release/readiness checklist with owners and timestamps
-- [ ] Run Double-Check: /super-prompt/double-check "Confession review for delivery"
+- [ ] Run Double-Check MCP: /super-prompt/double-check "Confession review for delivery"
 
 ## Outputs
 - Implementation plan with task breakdown and sequencing
