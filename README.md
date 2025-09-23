@@ -1,19 +1,3 @@
----
-title: Super Prompt — Zero‑config MCP toolkit for Cursor & Codex
-description: Super Prompt is a zero-config, MCP-powered toolkit for Cursor IDE and Codex, providing 29+ AI tools, personas, SDD workflow, and slash commands.
-keywords:
-  - Super Prompt
-  - MCP
-  - Cursor IDE
-  - Codex
-  - AI tools
-  - Personas
-  - SDD
-  - Slash commands
-  - Documentation tooling
-last_updated_utc: 2025-09-23T00:00:00Z
----
-
 # Super Prompt
 
 > 한국어 요약: Super Prompt는 Cursor와 Codex에서 바로 쓸 수 있는 MCP 기반 툴킷입니다. 설치 한 줄로 29개+ 도구와 6개 페르소나, SDD 워크플로, 슬래시 커맨드를 제공합니다. 프롬프트/문서/작업은 영어를 기준으로 하며, 비밀값은 항상 `sk-***` 형태로 마스킹하세요.

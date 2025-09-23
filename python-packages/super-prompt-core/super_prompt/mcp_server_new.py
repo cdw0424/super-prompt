@@ -388,35 +388,11 @@ _TOOL_REGISTRY["sp_grok"] = sp_grok
 def sp_gpt(query: str, persona: str = "gpt"):
     """Gpt persona: sp_gpt analysis"""
     try:
-        with memory_span(f"persona_gpt_{hash(query) % 10000}") as span_id:
-            progress.show_progress(f"Running gpt analysis for: {query[:50]}...")
-
-            collector = ContextCollector()
-            context_result = collector.collect_context(query, max_tokens=8000)
-
-            span_manager.write_event(
-                span_id,
-                {
-                    "type": "persona_analysis_started",
-                    "persona": "gpt",
-                    "query": query,
-                    "context_files": len(context_result.get("files", [])),
-                },
-            )
-
-            pipeline = PersonaPipeline()
-            result = pipeline.run_persona("gpt", query)
-
-            span_manager.write_event(
-                span_id, {"type": "persona_analysis_completed", "persona": "gpt", "success": True}
-            )
-
-            response = result.text if hasattr(result, "text") else str(result)
-            progress.show_success("Gpt analysis completed")
-            return response
+        # Use prompt-based workflow for GPT persona (no pipeline config for 'gpt')
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        return run_prompt_based_workflow("gpt", query)
 
     except Exception as e:
-        progress.show_error(f"Gpt analysis failed: {str(e)}")
         return f"Gpt analysis error: {str(e)}"
 
 
@@ -532,7 +508,7 @@ def sp_doc_master(query: str) -> str:
     """Doc Master persona: sp_doc_master analysis"""
     try:
         pipeline = PersonaPipeline()
-        result = pipeline.run_persona("doc_master", query)
+        result = pipeline.run_persona("doc-master", query)
         return result.text if hasattr(result, "text") else str(result)
     except Exception as e:
         return f"Doc Master analysis error: {str(e)}"
@@ -581,6 +557,244 @@ def sp_backend(query: str) -> str:
 
 
 _TOOL_REGISTRY["sp_backend"] = sp_backend
+
+
+@mcp.tool()
+def sp_dev(query: str) -> str:
+    """Dev persona: sp_dev analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("dev", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Dev analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_dev"] = sp_dev
+
+
+@mcp.tool()
+def sp_security(query: str) -> str:
+    """Security persona: sp_security analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("security", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Security analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_security"] = sp_security
+
+
+@mcp.tool()
+def sp_performance(query: str) -> str:
+    """Performance persona: sp_performance analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("performance", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Performance analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_performance"] = sp_performance
+
+
+@mcp.tool()
+def sp_qa(query: str) -> str:
+    """QA persona: sp_qa analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("qa", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"QA analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_qa"] = sp_qa
+
+
+@mcp.tool()
+def sp_devops(query: str) -> str:
+    """DevOps persona: sp_devops analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("devops", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"DevOps analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_devops"] = sp_devops
+
+
+@mcp.tool()
+def sp_db_expert(query: str) -> str:
+    """DB Expert persona: sp_db_expert analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("db-expert", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"DB Expert analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_db_expert"] = sp_db_expert
+
+
+@mcp.tool()
+def sp_review(query: str) -> str:
+    """Review persona: sp_review analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("review", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Review analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_review"] = sp_review
+
+
+@mcp.tool()
+def sp_optimize(query: str) -> str:
+    """Optimize persona: sp_optimize analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("optimize", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Optimize analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_optimize"] = sp_optimize
+
+
+@mcp.tool()
+def sp_service_planner(query: str) -> str:
+    """Service Planner persona: sp_service_planner analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("service-planner", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Service Planner analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_service_planner"] = sp_service_planner
+
+
+@mcp.tool()
+def sp_docs_refector(query: str) -> str:
+    """Docs Refector persona: sp_docs_refector analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("docs-refector", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Docs Refector analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_docs_refector"] = sp_docs_refector
+
+
+@mcp.tool()
+def sp_seq(query: str) -> str:
+    """Sequential persona: sp_seq analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("seq", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Sequential analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_seq"] = sp_seq
+
+
+@mcp.tool()
+def sp_seq_ultra(query: str) -> str:
+    """Sequential Ultra persona: sp_seq_ultra analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("seq-ultra", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Sequential Ultra analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_seq_ultra"] = sp_seq_ultra
+
+
+@mcp.tool()
+def sp_ultracompressed(query: str) -> str:
+    """Ultra Compressed persona: sp_ultracompressed analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("ultracompressed", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Ultra Compressed analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_ultracompressed"] = sp_ultracompressed
+
+
+@mcp.tool()
+def sp_wave(query: str) -> str:
+    """Wave persona: sp_wave analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("wave", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Wave analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_wave"] = sp_wave
+
+
+@mcp.tool()
+def sp_debate(query: str) -> str:
+    """Debate persona: sp_debate analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("debate", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Debate analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_debate"] = sp_debate
+
+
+@mcp.tool()
+def sp_mentor(query: str) -> str:
+    """Mentor persona: sp_mentor analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("mentor", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Mentor analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_mentor"] = sp_mentor
+
+
+@mcp.tool()
+def sp_scribe(query: str) -> str:
+    """Scribe persona: sp_scribe analysis"""
+    try:
+        pipeline = PersonaPipeline()
+        result = pipeline.run_persona("scribe", query)
+        return result.text if hasattr(result, "text") else str(result)
+    except Exception as e:
+        return f"Scribe analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_scribe"] = sp_scribe
 
 # Export the mcp instance and tool registry for use by mcp_stdio.py
 __all__ = ["mcp", "_TOOL_REGISTRY"]
