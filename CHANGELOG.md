@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.3.0 — 2025-09-24
+
+- **Abstention-First Research Stack**: Added `/sp_resercher` persona, Markdown command guide, GPT/Grok prompt templates, and MCP wiring for evidence-enforced CoVe-RAG workflows.
+- **Universal Double-Check**: Introduced `/sp_double_check` command with confession ritual and ensured every persona checklist routes through the audit before handoff.
+- **Delivery Playbook Refresh**: Rebuilt `/sp_dev` guidance into phased scope→design→plan→build→handoff execution pipeline.
+- **Cursor-Ready Documentation**: Rewrote README to position Super Prompt as Cursor's research & delivery copilot, including SEO/GEO guidance and architecture overview.
+
 ## v5.2.65 — 2025-09-23
 
 - **README Touch-ups**: Minor text/anchor updates for clarity and SEO.

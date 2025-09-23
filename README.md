@@ -1,276 +1,207 @@
-# Super Prompt
+# Super Prompt — Cursor Research & Delivery Copilot
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dt/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
-Super Prompt is a zero-config, MCP-powered toolkit for Cursor IDE and Codex. It provides
-29+ AI tools including 6 specialized personas, context management, SDD workflow
-tools, and seamless slash command integration. All tools are accessible via
-Cursor's slash commands (/) for instant AI assistance.
+<!-- SEO: Cursor MCP extension, AI developer productivity, evidential research workflows, zero-config install, global teams -->
 
-## 1) Install (one line)
+Super Prompt is the zero-configuration Model Context Protocol (MCP) extension engineered for **Cursor IDE** and **Codex CLI** teams that need enterprise-grade research, planning, and delivery automation. We combine abstention-first research workflows, evidence-enforced personas, and tightly-coupled Cursor slash commands so every build, review, or investigation ships with citations, tests, and follow-up guardrails.
 
+---
+
+## Table of Contents
+1. [Product Philosophy](#product-philosophy)
+2. [How Super Prompt Works](#how-super-prompt-works)
+3. [Installation](#installation)
+4. [Quick Start (90 seconds)](#quick-start-90-seconds)
+5. [Using Super Prompt Inside Cursor](#using-super-prompt-inside-cursor)
+6. [Command Catalogue](#command-catalogue)
+7. [Personas & Workflows](#personas--workflows)
+8. [Global & SEO Readiness](#global--seo-readiness)
+9. [Operations & Troubleshooting](#operations--troubleshooting)
+10. [Frequently Asked Questions](#frequently-asked-questions)
+
+---
+
+## Product Philosophy
+We designed Super Prompt as a **service-quality extension** for developers building in Cursor:
+- **MCP-first reliability** – every action runs through the MCP server so logs, retries, and guardrails are predictable.
+- **Abstention over hallucination** – research personas enforce evidence thresholds, citations, and double-check rituals.
+- **Delivery accountability** – development personas emit task plans, test matrices, and deployment checklists by default.
+- **Cursor-native UX** – everything installs under `.cursor/` and surfaces through familiar slash commands (no extra UI).
+
+These principles make Super Prompt suitable for regulated teams, globally distributed squads, and anyone who needs auditable AI support rather than opaque answers.
+
+---
+
+## How Super Prompt Works
+| Layer | What It Does | Why It Exists |
+| ----- | ------------- | ------------- |
+| **Cursor Extension Assets** | Ships curated commands, rules, and MCP wiring into `.cursor/` | Keeps slash commands discoverable without manual configuration |
+| **MCP Server (`sp-mcp`)** | Hosts 29+ tool endpoints (personas, SDD workflows, diagnostics) | Provides consistent protocol-based execution for Cursor and Codex |
+| **Personas Manifest** | Governs reasoning budgets, abstention thresholds, and tool budgets | Ensures every persona follows the same operating philosophy |
+| **Double-Check Ritual** | Confessional audit command invoked by default | Forces final verification and confession before handoff |
+
+Super Prompt is packaged on npm; the initializer copies assets, sets up `.super-prompt/` runtime state, and registers the MCP server so Cursor recognizes every tool immediately.
+
+---
+
+## Installation
 ```bash
 npm install -g @cdw0424/super-prompt@latest
 ```
 
-## 2) Quick Start
+Requirements:
+- Node.js ≥ 18.17
+- Cursor IDE ≥ v0.42 (slash command support)
+- macOS, Linux, or Windows WSL2
 
+> **Tip:** For CI/CD or shared dev containers, add the install command to your base image. Super Prompt does not require global configuration beyond copying assets.
+
+---
+
+## Quick Start (90 seconds)
 ```bash
 super-prompt super:init --force
 ```
-
 The initializer will:
+- Materialize `.cursor/commands/super-prompt/` and `.cursor/rules/`
+- Generate `.super-prompt/` runtime state (mode, config, telemetry)
+- Register `sp-mcp` (MCP server) for both Cursor and Codex clients
+- Seed the **Abstention-First CoVe-RAG** assets (`/resercher`, `/double-check`, etc.)
 
-- create `.cursor/` and copy command/rule assets
-- create `.super-prompt/` internal config
-- register the MCP server with 29+ AI tools
+Restart Cursor after initialization so slash commands reload.
 
-Then restart Cursor (fully quit and relaunch).
-
-**Slash Commands**: All tools are accessible via Cursor's slash commands (/) for
-instant AI assistance:
-
+Common follow-ups:
 ```bash
-/sp_analyzer "Analyze this code performance"
-/sp_architect "Design a microservice architecture"
-/sp_doc_master "Generate API documentation"
-/sp_refactorer "Refactor this function"
-/sp_frontend "Review React component"
-/sp_backend "Optimize database queries"
+/sp_gpt_mode_on    # Force GPT-5 medium mode
+/sp_grok_mode_on   # Switch to Grok code-fast mode
+/sp_mode_get       # Inspect active engine
 ```
 
-You can also call documentation tooling directly:
+---
 
+## Using Super Prompt Inside Cursor
+1. **Trigger the command palette** (`/`) and type `sp_` to filter Super Prompt commands.
+2. Provide focused prompts (include file paths, acceptance criteria, risk notes).
+3. Observe the persona rubric in the response; most workflows will automatically:
+   - Propose phased plans (Scopes, Design, Build, Handoff)
+   - Emit testing commands and monitoring hooks
+   - Call `/double-check` before finalizing
+4. For research-heavy tasks, use `/resercher` first, then hand results to `/dev`, `/review`, or `/doc-master`.
+
+Every persona returns Markdown optimized for Cursor’s diff view, making it easy to copy into PRs, design docs, or CLI tasks.
+
+---
+
+## Command Catalogue
+Below is the canonical list of Super Prompt slash commands (also available via `COMMANDS.md`).
+
+### Core Development Personas
+- `/sp_dev` – Feature delivery pipeline with task breakdowns and test matrices
+- `/sp_architect` – System design, trade-off mapping, ADR-ready briefs
+- `/sp_backend` / `/sp_frontend` – Implementation guidance per stack, with observability hooks
+- `/sp_refactorer` – Technical debt reduction playbooks and regression safety nets
+- `/sp_doc_master` – Information architecture, documentation workflows, review gates
+
+### Research & Verification
+- `/sp_resercher` – Abstention-first CoVe-RAG research with enforced citations
+- `/sp_double_check` – Confessional audit before merge/deploy handoffs
+- `/sp_analyzer` – Root-cause investigations with evidence tracking
+- `/sp_review` – Code review specialist aligned with specs and plans
+- `/sp_high` – High-effort strategic reasoning (plan/review mode)
+
+### Operations & Quality
+- `/sp_security` – Threat modeling, compliance guardrails
+- `/sp_performance` – Performance analysis, SLO alignment
+- `/sp_qa` – Test strategy, automation coverage
+- `/sp_devops` – CI/CD, infra rollout, observability upgrades
+
+### Workflow Automation
+- `/sp_specify`, `/sp_plan`, `/sp_tasks`, `/sp_implement` – Full Software Design Doc (SDD) pipeline
+- `/sp_seq`, `/sp_seq_ultra` – Sequential reasoning loops (5 or 10 iterations)
+- `/sp_optimize`, `/sp_wave`, `/sp_service_planner` – Optimization and phased delivery support
+
+### Utilities & Toggles
+- `/sp_translate`, `/sp_tr` – Code and language translation
+- `/sp_ultracompressed` – Executive-summary compression
+- `/sp_gpt_mode_on` / `/sp_grok_mode_on` / `/sp_mode_get` – Engine management
+
+All commands are also callable via the CLI (`super-prompt dev "Implement onboarding"`), which is useful for scripts and CI hooks.
+
+---
+
+## Personas & Workflows
+Super Prompt ships personas tuned for different delivery phases:
+
+| Persona | Primary Output | Core Principles |
+| ------- | -------------- | --------------- |
+| **Dev** | Task plan, test matrix, release handoff | Clarify scope → design → plan → build → confess |
+| **Resercher** | Evidence-backed research briefs | Self-RAG retrieval, Chain-of-Verification, abstain when unsure |
+| **Double Check** | Confessional audit + next steps | Confession intake → integrity audit → gap resolution → information request |
+| **Doc Master** | Documentation IA & governance | Structure-first writing with review cadences |
+| **Security / Performance / QA** | Risk registers & validation plans | KPIs, observability hooks, thresholds |
+
+Each persona is defined in `packages/cursor-assets/manifests/personas.yaml` and mirrored into `personas/manifest.yaml` for project-level overrides. If you need custom behavior, edit the override manifest, rerun `super:init`, and restart Cursor.
+
+---
+
+## Global & SEO Readiness
+- **International Usage**: Super Prompt works across North America, EMEA, APAC, and LATAM teams. Prompts and doc outputs stay in English by design to keep cross-region handoffs consistent.
+- **Geo Awareness**: Research workflows encourage citing local regulations and standards. Use `/sp_resercher` to gather region-specific insights before implementation.
+- **Search Discoverability**: We publish npm metadata (`keywords`, `homepage`, `repository`) to improve SEO for phrases such as *Cursor MCP extension*, *AI pair programmer*, and *Chain-of-Verification research*. Linking this README in your internal wiki helps reinforce search ranking.
+
+---
+
+## Operations & Troubleshooting
+**Reinstall or refresh assets**
 ```bash
-/super-prompt/doc-master "Create API documentation structure"
+npm install -g @cdw0424/super-prompt@latest
+super-prompt super:init --force
 ```
 
-**Mode Switching**:
-
+**Start MCP server manually**
 ```bash
-/sp_gpt_mode_on    # Switch to GPT mode
-/sp_grok_mode_on   # Switch to Grok mode
-/sp_mode_get       # Check current mode
-```
-
-## 3) Modes (per language)
-
-- **GPT mode (default)**: structured, deterministic, great for APIs, reviews,
-  docs
-- **Grok mode**: exploratory, creative, great for architecture, debugging,
-  ideation
-
-You can mix modes per task; the tool registry is stable during switches.
-
-## 4) MCP Server (Cursor/Codex)
-
-After initialization, the MCP server configuration is placed at `.cursor/mcp.json` (Cursor) and `.codex/mcp.json` (Codex, if used). You can also start the server directly for diagnostics:
-
-```bash
-# Start MCP server directly
 npx --yes --package=@cdw0424/super-prompt sp-mcp
 ```
 
-To verify MCP assets and rules (SSOT):
-
+**Verify assets**
 ```bash
-# Verify SSOT materialization
 node ./scripts/ssot/verify-ssot.js | cat
-
-# Verify Cursor command assets
 node ./scripts/cursor/verify-commands.js | cat
 ```
 
-## 5) If something goes wrong
+Common resolutions:
+- **Slash commands missing:** rerun `super:init`, restart Cursor, confirm `.cursor/commands/super-prompt` contents.
+- **Mode confusion:** run `/sp_mode_get`, then toggle `/sp_gpt_mode_on` or `/sp_grok_mode_on` as needed.
+- **CI usage:** call `super-prompt <tool> "query"` directly; the MCP server is optional outside Cursor.
 
-Try in order:
-
-```bash
-# Ensure latest package
-npm install -g @cdw0424/super-prompt@latest
-
-# Re-run initializer
-super-prompt super:init --force
-
-# Still odd? Use npx (bypasses PATH)
-npx --yes @cdw0424/super-prompt@latest super:init --force
-```
-
-Using an older global binary? The CLI now auto-switches to the npm global binary
-when it detects a Homebrew/legacy wrapper first in PATH. No manual PATH edits
-needed.
-
-## 6) What we believe (short)
-
-- **MCP-first**: clear tool boundaries, reproducible automations
-- **Zero‑config UX**: it should "just work" on first run
-- **Productivity personas**: focused prompts with measurable outputs
-
-## 7) What you get
-
-### MCP Tools (29+ slash commands)
-
-All tools are accessible via Cursor's slash commands (/) for instant AI
-assistance:
-
-**Persona Tools (6)**
-
-- `/sp_analyzer` - Code analysis and performance optimization
-- `/sp_architect` - System architecture design and planning
-- `/sp_frontend` - Frontend development and UI/UX guidance
-- `/sp_backend` - Backend development and API design
-- `/sp_refactorer` - Code refactoring and cleanup
-- `/sp_doc_master` - Documentation generation and organization
-
-**Specialized Tools**
-
-- `/sp_security` - Security analysis and threat modeling
-- `/sp_performance` - Performance optimization and profiling
-- `/sp_qa` - Quality assurance and testing strategies
-- `/sp_devops` - DevOps and infrastructure guidance
-- `/sp_mentor` - Educational guidance and code reviews
-- `/sp_scribe` - Professional writing and content creation
-- `/sp_double_check` - Confessional verification and gap surfacing
-- `/sp_resercher` - Abstention-first research with CoVe-RAG and enforced citations
-
-**Database & Optimization**
-
-- `/sp_db_expert` - Database design and query optimization
-- `/sp_optimize` - Code optimization suggestions
-
-**Creative & Strategic**
-
-- `/sp_grok` - Creative problem solving with Grok AI
-- `/sp_debate` - Structured technical debates
-- `/sp_service_planner` - Service architecture planning
-- `/sp_wave` - Advanced service planning
-
-**Development Workflow (SDD)**
-
-- `/sp_specify` - Create detailed technical specifications
-- `/sp_plan` - Generate implementation plans from specs
-- `/sp_tasks` - Break down plans into actionable tasks
-- `/sp_implement` - Implementation guidance
-
-**Advanced Analysis**
-
-- `/sp_seq` - Sequential thinking and analysis
-- `/sp_seq_ultra` - Deep sequential analysis
-- `/sp_high` - High-level thinking and abstraction
-
-**Utilities**
-
-- `/sp_translate` - Code translation between languages
-- `/sp_tr` - Quick translation tool
-- `/sp_ultracompressed` - Ultra-compressed responses
-- `/sp_gpt_mode_on` / `/sp_gpt_mode_off` - GPT mode control
-- `/sp_grok_mode_on` / `/sp_grok_mode_off` - Grok mode control
-- `/sp_mode_get` - Check current mode
-
-## 8) MCP Server Configuration
-
-After running `super:init`, the MCP server is automatically configured at
-`.cursor/mcp.json`. Each tool is independently callable through Cursor's slash
-commands.
-
-## 9) Advanced Usage
-
-### Direct Command Line Usage
-
-For debugging or direct tool usage:
-
-```bash
-# Run any tool directly
-super-prompt analyzer "analyze this code pattern"
-super-prompt architect "design a microservice"
-super-prompt doc-master "create API documentation"
-```
-
-### Project-Specific Configuration
-
-Super Prompt stores configuration in `.super-prompt/` directory:
-
-- `config.json` - Main configuration
-- `mode.json` - Current mode (GPT/Grok)
-
-## 10) Troubleshooting
-
-| Issue | Solution |
-| --- | --- |
-| **Tools not showing in Cursor** | Restart Cursor completely (quit and relaunch) |
-| **"Command failed" error** | Run `super-prompt super:init --force` to reinitialize |
-| **Python errors during install** | Ensure Python 3.8+ is installed: `python3 --version` |
-| **Permission errors** | Use `sudo npm install -g @cdw0424/super-prompt@latest` |
-| **Version shows older release after installation** | Run `npm uninstall -g @cdw0424/super-prompt` to remove old versions, then reinstall with `npm install -g @cdw0424/super-prompt@latest` |
-
-## 11) Documentation
-
-- **[CHANGELOG](./CHANGELOG.md)** - Version history and updates
-- **[Architecture Overview](./docs/architecture-v5.md)** - System design and
-  implementation details
-
-## 12) SEO metadata and anchors
-
-- Prefer clean, descriptive H2/H3 headings.
-- Use stable anchors in docs and link to them from issues/PRs.
-- Include a metadata/frontmatter block with `title`, `description`, `keywords`, and `last_updated_utc` (UTC).
-
-Frontmatter template for docs pages:
-
-```yaml
 ---
-title: <Page Title>
-description: <Short description (≤160 chars)>
-keywords:
-  - Super Prompt
-  - <Topic>
-last_updated_utc: 2025-09-23T00:00:00Z
+
+## Frequently Asked Questions
+
+**Does Super Prompt phone home?**  
+No. MCP communication stays on `stdin/stdout`. We log only to `.super-prompt/` for local telemetry (optional).
+
+**Can I customize personas?**  
+Yes. Edit `personas/manifest.yaml`, then rerun the initializer. Your overrides remain in repo, so teammates share the same guidance.
+
+**How does abstention scoring work?**  
+Research personas enforce a configurable threshold `t` (default 0.75). If evidence fails or contradictions exceed 0.2, the assistant returns "I don't know" with follow-up requests.
+
+**Is this production ready?**  
+Super Prompt is used internally across multiple geo-distributed teams. We treat it as service software—every release ships with changelog entries, and MCP assets are validated before publish.
+
+**Where can I learn more about Cursor MCP?**  
+See the [Cursor MCP announcement](https://www.cursor.com/mcp) and [Model Context Protocol Spec](https://modelcontextprotocol.io/).
+
 ---
-```
 
-## 13) GEO and localization guidance
+### Stay Updated
+- npm: [`@cdw0424/super-prompt`](https://www.npmjs.com/package/@cdw0424/super-prompt)
+- Changelog: `CHANGELOG.md`
+- Issues & feedback: open a GitHub issue or reach the maintainers on Cursor Discord
 
-- Primary documentation language is English. Keep prompts/docs in English.
-- Add concise Korean summaries when helpful; avoid diverging content.
-- Use region-neutral examples and UTC timestamps.
-- Never print secrets or tokens; mask like `sk-***`.
-- Prefer absolute paths in examples when clarity matters, e.g., `/Users/<you>/project/.cursor/mcp.json`.
-
-Localization snippet template:
-
-```md
-> 한국어 요약: <1–2 lines summary. English remains canonical.>
-```
-
-## 14) SDD & SSOT verification checklist
-
-- Align with SSOT order:
-  1) `packages/cursor-assets/manifests/personas.yaml` (or `personas/manifest.yaml`)
-  2) `.cursor/rules/*.mdc`
-  3) `AGENTS.md`
-- Ensure SPEC/PLAN/TASKS exist for new features under `specs/`.
-- Run acceptance self-check before PR:
-  - Validate success criteria
-  - Verify non-functional constraints
-  - Safe logging (no secrets/PII)
-  - Regression tests added
-  - Documentation updated
-
-Helpful scripts:
-
-```bash
-bash ./scripts/codex/router-check.sh | cat
-python3 ./scripts/sdd/acceptance_self_check.py | cat
-```
-
-## License
-
-MIT © Daniel Choi
-
-## Contributing
-
-Issues and PRs welcome at
-[GitHub](https://github.com/cdw0424/super-prompt/issues).
+Let Super Prompt handle the research, planning, and verification routine so your team can ship production-quality software faster—with evidence, global context, and zero manual setup.
