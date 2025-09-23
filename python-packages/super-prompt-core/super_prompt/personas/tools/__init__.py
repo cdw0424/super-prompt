@@ -12,8 +12,10 @@ from .system_tools import (
     mode_set,
     grok_mode_on,
     gpt_mode_on,
+    claude_mode_on,
     grok_mode_off,
-    gpt_mode_off
+    gpt_mode_off,
+    claude_mode_off
 )
 
 __all__ = [
@@ -26,6 +28,8 @@ __all__ = [
     "mode_set",
     "grok_mode_on",
     "gpt_mode_on",
+    "claude_mode_on",
     "grok_mode_off",
-    "gpt_mode_off"
+    "gpt_mode_off",
+    "claude_mode_off"
 ]

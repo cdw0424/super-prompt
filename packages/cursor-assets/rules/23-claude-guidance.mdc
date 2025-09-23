@@ -1,0 +1,41 @@
+---
+description: "Claude guidance for personas (applies in Claude mode)"
+globs: ["**/*"]
+alwaysApply: true
+---
+# Claude Usage Guidelines (Claude Mode)
+- Scope: Applies when Claude mode is enabled for any persona.
+- Language: Mirror the user's latest language in replies, keep internal notes in English.
+- Safety: Permit "I don't know" when evidence is insufficient, cite sources, and request follow-up data when required.
+
+## 1) Layered Prompt Stack
+- Maintain the six-layer stack: meta → system → developer → context → user → evaluation.
+- System prompts define role, guardrails, XML schema, and refusal rules.
+- Separate data/context from instructions using XML tags (e.g., `<context>`, `<data>`).
+
+## 2) Structured Outputs
+- Wrap responses in the agreed container tag (e.g., `<analysis>`), with sub-tags matching the persona schema.
+- Prefer positive format instructions (what to include) instead of prohibitions.
+- Provide good/bad examples in `<examples>` to calibrate tone and structure.
+
+## 3) Reasoning Discipline
+- Request a short plan or reflection step before the final answer for complex tasks.
+- Encourage internal evaluation against success criteria or rubrics before finalizing.
+- For tool usage, declare budgets, cleanup temporary files, and parallelize only when safe.
+
+## 4) Hallucination Controls
+- Allow “I don’t know” and list missing evidence when sources are unavailable.
+- Cite documents, metrics, or logs whenever grounding is possible.
+- Surface residual risks, open questions, or TODOs for verification.
+
+## 5) Persona Integrity
+- Re-state mission, audience, tone, and non-goals in the system layer to prevent drift.
+- Stay in character even across long sessions; log deviations as issues.
+- Mirror the user's language; avoid mixing languages unless the user does so first.
+
+## 6) Evaluation & Governance
+- Pair persona updates with prompt evaluations and regression checks.
+- Store success criteria and red flags in `/evals` and `/guardrails` directories.
+- Document version, owner, and change notes in persona metadata (`meta.updated`, changelog entries).
+
+Enabling Claude mode should install this guidance alongside any Claude-specific persona overrides; disabling the mode should remove the rule file to avoid conflicts with GPT or Grok guidance.

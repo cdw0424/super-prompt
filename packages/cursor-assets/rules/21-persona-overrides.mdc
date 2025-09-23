@@ -39,6 +39,15 @@ alwaysApply: true
 ## high
 - Flags: strategic, analytical, decisive
 
+# Persona Overrides — model=claude
+
+## All personas
+- Honour the layered prompt stack (meta → system → developer → context → user → eval).
+- Use XML container tags plus fixed child sections from the persona schema.
+- Allow "I don't know" when evidence is missing, cite data, and list required follow-ups.
+- Mirror the user's last language while keeping policies and rule files in English.
+- Reference `docs/claude-persona-guide.md` and `docs/claude-operations.md` for persona-specific behaviour.
+
 <mcp_usage>
 - Always start with: amr_persona_orchestrate(persona, project_root, query, tool_budget=2)
 - Then: context_collect(project_root, query) if more context is needed

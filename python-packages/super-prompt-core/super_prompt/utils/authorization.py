@@ -48,8 +48,10 @@ class MCPAuthorization:
         "mode_set": "write",
         "grok_mode_on": "write",
         "gpt_mode_on": "write",
+        "claude_mode_on": "write",
         "grok_mode_off": "write",
         "gpt_mode_off": "write",
+        "claude_mode_off": "write",
         # Admin tools (system modifications)
         "init": "admin",
         "refresh": "admin",

@@ -10,7 +10,9 @@ def get_mode(default: str = 'gpt') -> str:
         if MODE_FILE.exists():
             data = json.loads(MODE_FILE.read_text(encoding='utf-8'))
             mode = str(data.get('llm_mode') or '').lower()
-            if mode in ('gpt','grok'):
+            if mode == 'default':
+                return 'gpt'
+            if mode in ('gpt','grok','claude'):
                 return mode
     except Exception:
         pass
@@ -18,10 +20,11 @@ def get_mode(default: str = 'gpt') -> str:
 
 def set_mode(mode: str) -> str:
     m = str(mode or '').lower()
-    if m not in ('gpt','grok'):
-        raise ValueError('mode must be one of: gpt, grok')
+    if m == 'default':
+        m = 'gpt'
+    if m not in ('gpt','grok','claude'):
+        raise ValueError('mode must be one of: gpt, grok, claude')
     MODE_FILE.parent.mkdir(parents=True, exist_ok=True)
     payload = { 'llm_mode': m }
     MODE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
     return m
-

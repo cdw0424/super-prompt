@@ -61,6 +61,31 @@ personas:
           - Introduce context via XML/Markdown tags with clear section headings/definitions.
           - Optimize for cache hits: keep prompt prefixes stable; avoid changing history; prefer incremental diffs.
           </grok_guidance>
+      claude:
+        guidance: &claude_common |
+          <claude_guidance>
+            <architecture>
+              - Layered prompt stack: meta → system → developer → context → user → evaluation.
+              - Keep roles and guardrails in the system prompt; keep tasks and data in dedicated tags.
+            </architecture>
+            <principles>
+              - State the persona role in <persona>; place goals and constraints in <instructions>.
+              - Use XML sections (<context>, <data>, <examples>) to separate knowledge from directives.
+              - Prefer positive format instructions (what to do) instead of prohibitions.
+              - Provide good/bad examples and request stepwise reasoning before the final answer.
+              - Allow "I don't know" when evidence is insufficient and cite sources or data when available.
+              - Encourage explicit tool budgets and clean up temporary files after use.
+            </principles>
+            <language>
+              - Mirror the user's latest language in outputs while keeping internal notes in English.
+              - Stay concise, professional, and avoid mixing languages unless the user does so first.
+            </language>
+            <guardrails>
+              - Mask secrets, flag missing data, and request follow-up inputs when needed.
+              - Maintain persona tone, mission, and non-goals; log residual risks explicitly.
+              - Close with evaluation checkpoints or TODOs aligned with success criteria.
+            </guardrails>
+          </claude_guidance>
 
   architect:
     name: "Architect"
@@ -120,6 +145,8 @@ personas:
           - Use Markdown/XML sections (e.g., <architecture>, <tradeoffs>, <tests>).
           - Optimize for cache hits by keeping the system prompt consistent.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   backend:
     name: "Backend"
@@ -178,6 +205,8 @@ personas:
           - Mark sections with XML/Markdown (e.g., <endpoints>, <models>, <errors>).
           - Optimize cache hits; keep prompt prefix stable.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   frontend:
     name: "Frontend"
@@ -234,6 +263,8 @@ personas:
           - Use Markdown/XML sections (e.g., <components>, <a11y>, <styles>).
           - Optimize cache hits by keeping headings stable.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
     model_overrides:
       gpt:
         flags: ["--seq", "--c7"]
@@ -274,6 +305,8 @@ personas:
         flags: ["--magic"]
         guidance: |
           Keep prompts lean and focus on concrete UI diffs and a11y checks.
+      claude:
+        guidance: *claude_common
 
   security:
     name: "Security"
@@ -329,6 +362,8 @@ personas:
           - Use sections like <findings>, <cwe>, <remediation>.
           - Keep prompt prefix stable for cache hits.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
     model_overrides:
       gpt:
         guidance: |
@@ -367,6 +402,8 @@ personas:
       grok:
         guidance: |
           Return prioritized findings list with short remediation steps.
+      claude:
+        guidance: *claude_common
 
   performance:
     name: "Performance"
@@ -419,6 +456,8 @@ personas:
           - Iterate hypotheses quickly; run tool-assisted experiments.
           - Prefer native tool calling; optimize for cache by keeping context headers stable.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   mentor:
     name: "Mentor"
@@ -471,6 +510,8 @@ personas:
           - Encourage user to refine prompts leveraging low cost/speed.
           - Use sections for <goal>, <constraints>, <next_steps>.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   refactorer:
     name: "Refactorer"
@@ -523,6 +564,8 @@ personas:
           - Iterate small diffs rapidly; use native tool calling.
           - Keep prompt prefix stable to leverage cache hits.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   qa:
     name: "QA"
@@ -575,6 +618,8 @@ personas:
           - Propose rapid test iterations; use native tool calling.
           - Keep prompts stable to hit cache.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   devops:
     name: "DevOps"
@@ -627,6 +672,8 @@ personas:
           - Iterate quickly; prefer native tool calling for logs/config lookups.
           - Keep prompts stable for cache hits.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   scribe:
     name: "Scribe"
@@ -678,6 +725,8 @@ personas:
           - Ask for exact audience and target files; avoid generic docs.
           - Iterate fast with native tool calling; stable structure for cache.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   dev:
     name: "Dev"
@@ -733,6 +782,8 @@ personas:
           - Provide specific files/modules; set explicit goals and acceptance.
           - Iterate quickly using native tool calling; stable prompts for cache.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   tr:
     name: "Troubleshooter"
@@ -785,6 +836,8 @@ personas:
           - Iterate hypotheses and tests rapidly; native tool calling preferred.
           - Keep prompts stable to leverage cache.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   high:
     name: "High Reasoning"
@@ -837,6 +890,8 @@ personas:
           - Provide specific decision contexts; iterate outlines rapidly.
           - Use native tool calling for quick evidence gathering; keep prompt core stable for cache.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   double_check:
     name: "Double Check"
@@ -920,6 +975,8 @@ personas:
               - Requests are specific and unblock the next action.
             </self_check>
           </grok_persona>
+      claude:
+        guidance: *claude_common
 
   resercher:
     name: "Resercher"
@@ -1000,6 +1057,8 @@ personas:
               - Ensure contradiction ratio < 0.2 or recommend abstention.
             </self_check>
           </grok_persona>
+      claude:
+        guidance: *claude_common
 
   doc-master:
     name: "Doc Master"
@@ -1051,6 +1110,8 @@ personas:
           - Provide concrete IA/sections; iterate quickly; prefer native tool calling.
           - Keep headings stable for cache hits.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   seq:
     name: "Sequential"
@@ -1103,6 +1164,8 @@ personas:
           - Keep steps concise; prefer quick iterations and native tool calling.
           - Maintain stable structure to maximize cache hits.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   seq-ultra:
     name: "Sequential Ultra"
@@ -1155,6 +1218,8 @@ personas:
           - Use iterative, tool-rich steps; keep the prompt core stable.
           - Prefer MCP tools; avoid XML tool-call outputs.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   ultracompressed:
     name: "Ultra Compressed"
@@ -1206,6 +1271,8 @@ personas:
           - Optimize for speed and cache hits; keep prompts extremely stable and short.
           - Prefer native tool calling with minimal arguments.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   review:
     name: "Review"
@@ -1256,6 +1323,8 @@ personas:
           <grok_guidance>
           - Provide focused comments; reference exact lines/files.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   optimize:
     name: "Optimize"
@@ -1306,6 +1375,8 @@ personas:
           <grok_guidance>
           - Iterate small changes rapidly; keep context scoped.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   db-expert:
     name: "DB Expert"
@@ -1356,6 +1427,8 @@ personas:
           <grok_guidance>
           - Provide table/field references; avoid vague requests.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   translate:
     name: "Translate"
@@ -1407,6 +1480,8 @@ personas:
           <grok_guidance>
           - Provide file paths and target language; iterate quickly.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   wave:
     name: "Wave"
@@ -1457,6 +1532,8 @@ personas:
           <grok_guidance>
           - Use concise phase outlines; keep headers stable.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   debate:
     name: "Debate"
@@ -1507,6 +1584,8 @@ personas:
           <grok_guidance>
           - Keep iterations short; highlight decisive evidence.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   grok:
     name: "Grok Session"
@@ -1557,6 +1636,8 @@ personas:
           <grok_guidance>
           - Use native tool-calling and stable prompts for cache hits.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
     model_overrides:
       gpt:
         guidance: |
@@ -1598,6 +1679,8 @@ personas:
           - Optimize for speed and cache hits; keep prompts extremely stable and short.
           - Prefer native tool calling with minimal arguments.
           </grok_guidance>
+      claude:
+        guidance: *claude_common
 
   service-planner:
     name: "Service Planner"
@@ -1659,6 +1742,8 @@ personas:
             - Use context_collect(project_root, query) only when specific gaps block progress.
             </mcp_usage>
           </persona_guidance>
+      claude:
+        guidance: *claude_common
 
   grok-mode-on:
     name: "Grok Mode On"

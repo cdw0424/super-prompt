@@ -534,7 +534,7 @@ def list_personas():
 
 @register_tool("sp.mode_get")
 def mode_get():
-    """Get current LLM mode (gpt|grok)"""
+    """Get current LLM mode (gpt|grok|claude)"""
     try:
         with memory_span("sp.mode_get") as span_id:
             mode = get_mode()
@@ -555,7 +555,7 @@ def mode_get():
 
 @register_tool("sp.mode_set")
 def mode_set(mode: str):
-    """Set LLM mode to 'gpt' or 'grok'"""
+    """Set LLM mode to 'gpt', 'grok', or 'claude'"""
     # MCP Authorization check
     MCPAuthorization.require_permission("mode_set")
 
@@ -630,6 +630,32 @@ def gpt_mode_off(a=None, k=None, **kwargs):
             return "gpt mode turned off"
     except Exception as e:
         progress.show_error(f"GPT mode off failed: {str(e)}")
+        raise
+
+
+@register_tool("sp.claude_mode_on")
+def claude_mode_on(a=None, k=None, **kwargs):
+    """Switch LLM mode to claude"""
+    try:
+        with memory_span("sp.claude_mode_on") as span_id:
+            set_mode("claude")
+
+            return "mode set to claude"
+    except Exception as e:
+        progress.show_error(f"Claude mode on failed: {str(e)}")
+        raise
+
+
+@register_tool("sp.claude_mode_off")
+def claude_mode_off(a=None, k=None, **kwargs):
+    """Turn off Claude mode"""
+    try:
+        with memory_span("sp.claude_mode_off") as span_id:
+            set_mode("default")
+
+            return "claude mode turned off"
+    except Exception as e:
+        progress.show_error(f"Claude mode off failed: {str(e)}")
         raise
 
 

@@ -244,8 +244,9 @@ Use slash commands in your IDE.
 
 ## 🎛️ Mode Control
 
-- `/gpt-mode-on` / `/gpt-mode-off` — GPT‑5 guidance and persona overrides (materialized)
-- `/grok-mode-on` / `/grok-mode-off` — Grok guidance and persona overrides (materialized)
+- `/gpt-mode-on` / `/gpt-mode-off` — GPT‑5 guidance and persona overrides
+- `/grok-mode-on` / `/grok-mode-off` — Grok “code-fast” guidance
+- `/claude-mode-on` / `/claude-mode-off` — Claude XML/guardrail-focused guidance (mirrors user language)
 - `/high-mode-on` / `/high-mode-off` — Toggle Codex-backed high reasoning for `/high` and `sp_high`
 - Aliases: `/codex-mode-on`, `/codex-mode-off`
 

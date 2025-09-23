@@ -43,7 +43,9 @@ function verify() {
   let ok = true;
   const problems = [];
   const MODE_TOOL_SET = new Set([
-    'sp_gpt_mode_on','sp_grok_mode_on','sp_gpt_mode_off','sp_grok_mode_off',
+    'sp_gpt_mode_on','sp_grok_mode_on','sp_claude_mode_on',
+    'sp_gpt_mode_off','sp_grok_mode_off','sp_claude_mode_off',
+    'sp_high_mode_on','sp_high_mode_off',
     'sp_mode_get','sp_mode_set','sp_list_commands','sp_list_personas','sp.version'
   ]);
 
@@ -94,4 +96,3 @@ function verify() {
 }
 
 verify();
-

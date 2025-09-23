@@ -2,10 +2,11 @@
 
 ## v5.5.0 — 2025-09-25
 
+- **Claude Mode & Persona Guidance**: Added `/sp_claude_mode_on|off`, Claude operations/persona guides, manifest overrides, and rule install so Claude can run alongside GPT/Grok.
 - **High Reasoning Toggle**: Added `/sp_high_mode_on|off` tools so teams can opt into Codex-backed planning while `/high` and `/sp_high` still force Codex when invoked directly.
 - **Language Alignment Rule**: Introduced an always-on rule that mirrors the user’s latest language for every reply while keeping system guidance in English.
 - **Command Execution Guarantee**: Rewrote Principle #1 to mandate executing every requested command immediately, eliminating skipped-command regressions.
-- **Docs Refresh**: Quick Start now highlights the high-mode toggle and clarifies language mirroring; version strings bumped to 5.5.0 across npm/Python packages.
+- **Docs Refresh**: Quick Start now highlights the Claude/high toggles and clarifies language mirroring; version strings bumped to 5.5.0 across npm/Python packages.
 
 ## v5.4.1 — 2025-09-24
 

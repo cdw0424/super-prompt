@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
-> **Current Release:** v5.5.0
+> **Current Release:** v5.5.1
 
 <!-- SEO: Cursor MCP extension, AI developer productivity, evidential research workflows, zero-config install, global teams -->
 
@@ -81,12 +81,15 @@ Common follow-ups:
 ```bash
 /sp_gpt_mode_on    # Force GPT-5 medium mode
 /sp_grok_mode_on   # Switch to Grok code-fast mode
+/sp_claude_mode_on # Enable Claude XML/tag-driven guidance
 /sp_mode_get       # Inspect active engine
 /sp_high_mode_on   # Enable Codex high reasoning for downstream plans
 /sp_high_mode_off  # Return to prompt-based high persona planning
 ```
 
 > Responses automatically mirror the language of your latest message; switch languages simply by changing the language you type in.
+
+Claude-specific persona design and runbooks live under `docs/claude-persona-guide.md` and `docs/claude-operations.md`.
 
 ---
 
@@ -135,7 +138,8 @@ Below is the canonical list of Super Prompt slash commands (also available via `
 ### Utilities & Toggles
 - `/sp_translate`, `/sp_tr` – Code and language translation
 - `/sp_ultracompressed` – Executive-summary compression
-- `/sp_gpt_mode_on` / `/sp_grok_mode_on` / `/sp_mode_get` – Engine management
+- `/sp_gpt_mode_on` / `/sp_grok_mode_on` / `/sp_claude_mode_on` / `/sp_mode_get` – Engine management
+- `/sp_high_mode_on` / `/sp_high_mode_off` – Codex high-reasoning delegation
 
 All commands are also callable via the CLI (`super-prompt dev "Implement onboarding"`), which is useful for scripts and CI hooks.
 
@@ -157,7 +161,7 @@ Each persona is defined in `packages/cursor-assets/manifests/personas.yaml` and 
 ---
 
 ## Global & SEO Readiness
-- **International Usage**: Super Prompt works across North America, EMEA, APAC, and LATAM teams. Prompts and doc outputs stay in English by design to keep cross-region handoffs consistent.
+- **International Usage**: Super Prompt works across North America, EMEA, APAC, and LATAM teams. Prompts and doc outputs stay in English by default, while Claude mode mirrors the user’s latest language automatically for responses.
 - **Geo Awareness**: Research workflows encourage citing local regulations and standards. Use `/sp_resercher` to gather region-specific insights before implementation.
 - **Search Discoverability**: We publish npm metadata (`keywords`, `homepage`, `repository`) to improve SEO for phrases such as *Cursor MCP extension*, *AI pair programmer*, and *Chain-of-Verification research*. Linking this README in your internal wiki helps reinforce search ranking.
 
@@ -183,7 +187,7 @@ node ./scripts/cursor/verify-commands.js | cat
 
 Common resolutions:
 - **Slash commands missing:** rerun `super:init`, restart Cursor, confirm `.cursor/commands/super-prompt` contents.
-- **Mode confusion:** run `/sp_mode_get`, then toggle `/sp_gpt_mode_on` or `/sp_grok_mode_on` as needed.
+- **Mode confusion:** run `/sp_mode_get`, then toggle `/sp_gpt_mode_on`, `/sp_grok_mode_on`, or `/sp_claude_mode_on` as needed.
 - **CI usage:** call `super-prompt <tool> "query"` directly; the MCP server is optional outside Cursor.
 
 ---

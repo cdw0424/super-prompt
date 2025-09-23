@@ -18,8 +18,10 @@ TOOL_METADATA: Dict[str, Dict[str, Any]] = {
     "sp.mode_set": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.grok_mode_on": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.gpt_mode_on": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.claude_mode_on": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.grok_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.gpt_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
+    "sp.claude_mode_off": {"category": "system", "tags": ["system", "mode"], "destructive": True},
     "sp.architect": {
         "category": "persona",
         "persona": "Architect",

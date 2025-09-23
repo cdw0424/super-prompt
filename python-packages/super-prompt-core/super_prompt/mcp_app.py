@@ -312,6 +312,26 @@ def create_app():
         except Exception as e:
             return f"❌ Error activating Grok mode: {str(e)}"
 
+    @app.tool(name="sp_claude_mode_on")
+    def claude_mode_on() -> str:
+        """Enable Claude mode for structured, tag-driven prompt execution"""
+        try:
+            import json
+            import os
+
+            mode_data = {"mode": "claude", "timestamp": "2025-09-20T00:00:00Z"}
+            mode_file = os.path.join(os.getcwd(), ".super-prompt", "mode.json")
+
+            os.makedirs(os.path.dirname(mode_file), exist_ok=True)
+
+            with open(mode_file, "w") as f:
+                json.dump(mode_data, f, indent=2)
+
+            return "✅ Claude mode activated. Personas will adopt Claude-native prompt structure and safety policies."
+
+        except Exception as e:
+            return f"❌ Error activating Claude mode: {str(e)}"
+
     @app.tool(name="sp_mode_get")
     def mode_get() -> str:
         """Get current LLM mode setting"""
@@ -368,6 +388,7 @@ def create_app():
             "sp_double_check - Confessional integrity audit and follow-up requests",
             "sp_gpt_mode_on - Enable GPT mode for structured analysis",
             "sp_grok_mode_on - Enable Grok mode for creative analysis",
+            "sp_claude_mode_on - Enable Claude mode for XML-structured, safety-focused response workflows",
             "sp_mode_get - Get current mode setting",
             "sp_list_commands - List all available commands"
         ]

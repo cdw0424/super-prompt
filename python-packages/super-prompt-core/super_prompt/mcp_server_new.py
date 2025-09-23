@@ -39,8 +39,10 @@ from .personas.tools.system_tools import (
     mode_set,
     grok_mode_on,
     gpt_mode_on,
+    claude_mode_on,
     grok_mode_off,
     gpt_mode_off,
+    claude_mode_off,
 )
 from .sdd.architecture import render_sdd_brief, list_sdd_sections
 from .mode_store import get_mode, set_mode
@@ -193,6 +195,19 @@ def sp_gpt_mode_on_mcp():
 _TOOL_REGISTRY["sp_gpt_mode_on"] = sp_gpt_mode_on_mcp
 
 
+@mcp.tool(name="sp_claude_mode_on")
+def sp_claude_mode_on_mcp():
+    """Switch LLM mode to claude"""
+    try:
+        claude_mode_on()
+        return "-------- Claude mode: ENABLED (.cursor/.claude-mode)"
+    except Exception as e:
+        return f"❌ Error enabling Claude mode: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_claude_mode_on"] = sp_claude_mode_on_mcp
+
+
 @mcp.tool(name="sp_grok_mode_off")
 def sp_grok_mode_off_mcp():
     """Turn off Grok mode"""
@@ -217,6 +232,19 @@ def sp_gpt_mode_off_mcp():
 
 
 _TOOL_REGISTRY["sp_gpt_mode_off"] = sp_gpt_mode_off_mcp
+
+
+@mcp.tool(name="sp_claude_mode_off")
+def sp_claude_mode_off_mcp():
+    """Turn off Claude mode"""
+    try:
+        claude_mode_off()
+        return "-------- Claude mode: DISABLED"
+    except Exception as e:
+        return f"❌ Error disabling Claude mode: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_claude_mode_off"] = sp_claude_mode_off_mcp
 
 
 @mcp.tool(name="sp_high_mode_on")

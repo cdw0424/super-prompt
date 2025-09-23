@@ -78,11 +78,18 @@ resolve_mode() {
   local mode="${LLM_MODE:-gpt}"
   local enable_gpt="${ENABLE_GPT:-}"
   local enable_grok="${ENABLE_GROK:-}"
+  local enable_claude="${ENABLE_CLAUDE:-}"
 
-  # Mutual exclusion validation
-  if [ "$enable_gpt" = "true" ] && [ "$enable_grok" = "true" ]; then
-    echo "-------- ERROR: Cannot enable both GPT and Grok modes simultaneously" >&2
-    echo "-------- Please set either LLM_MODE=gpt or LLM_MODE=grok, or use --gpt or --grok flag" >&2
+  local selected_flags=0
+  for flag in "$enable_gpt" "$enable_grok" "$enable_claude"; do
+    if [ "$flag" = "true" ]; then
+      selected_flags=$((selected_flags + 1))
+    fi
+  done
+
+  if [ $selected_flags -gt 1 ]; then
+    echo "-------- ERROR: Cannot enable multiple modes simultaneously" >&2
+    echo "-------- Valid modes: gpt, grok, claude (choose one via LLM_MODE or --gpt/--grok/--claude)" >&2
     exit 1
   fi
 
@@ -91,11 +98,13 @@ resolve_mode() {
     mode="gpt"
   elif [ "$enable_grok" = "true" ]; then
     mode="grok"
+  elif [ "$enable_claude" = "true" ]; then
+    mode="claude"
   fi
 
   # Validation check
-  if [ "$mode" != "gpt" ] && [ "$mode" != "grok" ]; then
-    echo "-------- ERROR: Invalid mode '$mode'. Supported modes: gpt, grok" >&2
+  if [ "$mode" != "gpt" ] && [ "$mode" != "grok" ] && [ "$mode" != "claude" ]; then
+    echo "-------- ERROR: Invalid mode '$mode'. Supported modes: gpt, grok, claude" >&2
     exit 1
   fi
 
@@ -120,6 +129,10 @@ parse_args_and_cmd() {
         ;;
       --grok)
         export ENABLE_GROK="true"
+        shift
+        ;;
+      --claude)
+        export ENABLE_CLAUDE="true"
         shift
         ;;
       --mode=*)
@@ -179,6 +192,8 @@ route_codex_flags() {
     --doc-master|--sp-doc-master) TOOL="sp.doc-master" ;;
     --high-mode-on|--sp-high-mode-on) TOOL="sp.high_mode_on" ;;
     --high-mode-off|--sp-high-mode-off) TOOL="sp.high_mode_off" ;;
+    --claude-mode-on|--sp-claude-mode-on) TOOL="sp.claude_mode_on" ;;
+    --claude-mode-off|--sp-claude-mode-off) TOOL="sp.claude_mode_off" ;;
     # SDD
     --sp-sdd-spec|--specify|--sp-specify) TOOL="sp.specify" ;;
     --sp-sdd-plan|--plan|--sp-plan) TOOL="sp.plan" ;;
@@ -256,6 +271,8 @@ resolve_direct_tool() {
     gpt-mode-off) echo "sp.gpt_mode_off" ;;
     grok-mode-on) echo "sp.grok_mode_on" ;;
     grok-mode-off) echo "sp.grok_mode_off" ;;
+    claude-mode-on) echo "sp.claude_mode_on" ;;
+    claude-mode-off) echo "sp.claude_mode_off" ;;
     high-mode-on) echo "sp.high_mode_on" ;;
     high-mode-off) echo "sp.high_mode_off" ;;
     ultracompressed) echo "sp.ultracompressed" ;;
