@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "5.2.62",
-  "description": "Super Prompt v5.2.62 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
+  "version": "5.2.63",
+  "description": "Super Prompt v5.2.63 - Pure Python MCP Dual IDE Prompt Engineering Toolkit",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"

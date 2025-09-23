@@ -1,11 +1,29 @@
+---
+title: Super Prompt — Zero‑config MCP toolkit for Cursor & Codex
+description: Super Prompt is a zero-config, MCP-powered toolkit for Cursor IDE and Codex, providing 29+ AI tools, personas, SDD workflow, and slash commands.
+keywords:
+  - Super Prompt
+  - MCP
+  - Cursor IDE
+  - Codex
+  - AI tools
+  - Personas
+  - SDD
+  - Slash commands
+  - Documentation tooling
+last_updated_utc: 2025-09-23T00:00:00Z
+---
+
 # Super Prompt
+
+> 한국어 요약: Super Prompt는 Cursor와 Codex에서 바로 쓸 수 있는 MCP 기반 툴킷입니다. 설치 한 줄로 29개+ 도구와 6개 페르소나, SDD 워크플로, 슬래시 커맨드를 제공합니다. 프롬프트/문서/작업은 영어를 기준으로 하며, 비밀값은 항상 `sk-***` 형태로 마스킹하세요.
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![npm downloads](https://img.shields.io/npm/dt/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
-Super Prompt is a zero-config, MCP-powered toolkit for Cursor IDE. It provides
+Super Prompt is a zero-config, MCP-powered toolkit for Cursor IDE and Codex. It provides
 29+ AI tools including 6 specialized personas, context management, SDD workflow
 tools, and seamless slash command integration. All tools are accessible via
 Cursor's slash commands (/) for instant AI assistance.
@@ -42,6 +60,12 @@ instant AI assistance:
 /sp_backend "Optimize database queries"
 ```
 
+You can also call documentation tooling directly:
+
+```bash
+/super-prompt/doc-master "Create API documentation structure"
+```
+
 **Mode Switching**:
 
 ```bash
@@ -59,7 +83,26 @@ instant AI assistance:
 
 You can mix modes per task; the tool registry is stable during switches.
 
-## 4) If something goes wrong
+## 4) MCP Server (Cursor/Codex)
+
+After initialization, the MCP server configuration is placed at `.cursor/mcp.json` (Cursor) and `.codex/mcp.json` (Codex, if used). You can also start the server directly for diagnostics:
+
+```bash
+# Start MCP server directly
+npx --yes --package=@cdw0424/super-prompt sp-mcp
+```
+
+To verify MCP assets and rules (SSOT):
+
+```bash
+# Verify SSOT materialization
+node ./scripts/ssot/verify-ssot.js | cat
+
+# Verify Cursor command assets
+node ./scripts/cursor/verify-commands.js | cat
+```
+
+## 5) If something goes wrong
 
 Try in order:
 
@@ -78,13 +121,13 @@ Using an older global binary? The CLI now auto-switches to the npm global binary
 when it detects a Homebrew/legacy wrapper first in PATH. No manual PATH edits
 needed.
 
-## 5) What we believe (short)
+## 6) What we believe (short)
 
 - **MCP-first**: clear tool boundaries, reproducible automations
 - **Zero‑config UX**: it should "just work" on first run
 - **Productivity personas**: focused prompts with measurable outputs
 
-## 6) What you get
+## 7) What you get
 
 ### MCP Tools (29+ slash commands)
 
@@ -143,13 +186,13 @@ assistance:
 - `/sp_grok_mode_on` / `/sp_grok_mode_off` - Grok mode control
 - `/sp_mode_get` - Check current mode
 
-## 7) MCP Server Configuration
+## 8) MCP Server Configuration
 
 After running `super:init`, the MCP server is automatically configured at
 `.cursor/mcp.json`. Each tool is independently callable through Cursor's slash
 commands.
 
-## 8) Advanced Usage
+## 9) Advanced Usage
 
 ### Direct Command Line Usage
 
@@ -169,7 +212,7 @@ Super Prompt stores configuration in `.super-prompt/` directory:
 - `config.json` - Main configuration
 - `mode.json` - Current mode (GPT/Grok)
 
-## 9) Troubleshooting
+## 10) Troubleshooting
 
 | Issue | Solution |
 | --- | --- |
@@ -179,11 +222,65 @@ Super Prompt stores configuration in `.super-prompt/` directory:
 | **Permission errors** | Use `sudo npm install -g @cdw0424/super-prompt@latest` |
 | **Version shows older release after installation** | Run `npm uninstall -g @cdw0424/super-prompt` to remove old versions, then reinstall with `npm install -g @cdw0424/super-prompt@latest` |
 
-## 10) Documentation
+## 11) Documentation
 
 - **[CHANGELOG](./CHANGELOG.md)** - Version history and updates
 - **[Architecture Overview](./docs/architecture-v5.md)** - System design and
   implementation details
+
+## 12) SEO metadata and anchors
+
+- Prefer clean, descriptive H2/H3 headings.
+- Use stable anchors in docs and link to them from issues/PRs.
+- Include a metadata/frontmatter block with `title`, `description`, `keywords`, and `last_updated_utc` (UTC).
+
+Frontmatter template for docs pages:
+
+```yaml
+---
+title: <Page Title>
+description: <Short description (≤160 chars)>
+keywords:
+  - Super Prompt
+  - <Topic>
+last_updated_utc: 2025-09-23T00:00:00Z
+---
+```
+
+## 13) GEO and localization guidance
+
+- Primary documentation language is English. Keep prompts/docs in English.
+- Add concise Korean summaries when helpful; avoid diverging content.
+- Use region-neutral examples and UTC timestamps.
+- Never print secrets or tokens; mask like `sk-***`.
+- Prefer absolute paths in examples when clarity matters, e.g., `/Users/<you>/project/.cursor/mcp.json`.
+
+Localization snippet template:
+
+```md
+> 한국어 요약: <1–2 lines summary. English remains canonical.>
+```
+
+## 14) SDD & SSOT verification checklist
+
+- Align with SSOT order:
+  1) `packages/cursor-assets/manifests/personas.yaml` (or `personas/manifest.yaml`)
+  2) `.cursor/rules/*.mdc`
+  3) `AGENTS.md`
+- Ensure SPEC/PLAN/TASKS exist for new features under `specs/`.
+- Run acceptance self-check before PR:
+  - Validate success criteria
+  - Verify non-functional constraints
+  - Safe logging (no secrets/PII)
+  - Regression tests added
+  - Documentation updated
+
+Helpful scripts:
+
+```bash
+bash ./scripts/codex/router-check.sh | cat
+python3 ./scripts/sdd/acceptance_self_check.py | cat
+```
 
 ## License
 

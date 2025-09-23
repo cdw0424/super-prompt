@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.2.63 — 2025-09-23
+
+- **README Refresh (SEO/GEO)**: Added frontmatter template, concise KR summary, MCP server guidance, `/super-prompt/doc-master` usage, GEO localization guidelines, and SSOT/SDD verification checklist.
+- **Docs SEO Guidance**: Introduced metadata/frontmatter examples (title, description, keywords, last_updated_utc) and anchor practices.
+- **Publishing Prep**: Clarified verification scripts for SSOT and SDD acceptance self-check.
+
 ## v5.2.60 — 2025-09-22
 
 - **Fixed Assets Path Resolution**: Corrected `assets_root()` in `paths.py` to properly find template files in published npm packages
