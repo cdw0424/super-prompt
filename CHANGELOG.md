@@ -1,10 +1,8 @@
 # Changelog
 
-## v5.2.64 — 2025-09-23
+## v5.2.65 — 2025-09-23
 
-- **README Refresh (SEO/GEO)**: Added frontmatter template, concise KR summary, MCP server guidance, `/super-prompt/doc-master` usage, GEO localization guidelines, and SSOT/SDD verification checklist. (minor updates post-publish)
-- **Docs SEO Guidance**: Introduced metadata/frontmatter examples (title, description, keywords, last_updated_utc) and anchor practices.
-- **Publishing Prep**: Clarified verification scripts for SSOT and SDD acceptance self-check.
+- **README Touch-ups**: Minor text/anchor updates for clarity and SEO.
 
 ## v5.2.60 — 2025-09-22
 
