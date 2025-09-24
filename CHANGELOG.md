@@ -1,5 +1,16 @@
 # Changelog
 
+## v5.6.2 — 2025-09-27
+
+- **Dev Command Autonomy**: Repositioned the Dev workflow as a pragmatic engineer playbook (no SDD dependency), enforcing concise planning, execution evidence, and mandatory Double-Check MCP sign-off.
+- **SDD Implement Overhaul**: Rebuilt `/implement` command and persona to execute documented SDD tasks sequentially, capture validation proof per task, and update artifacts before final Double-Check MCP.
+- **Implement Persona Added**: Introduced a dedicated SDD execution persona with guardrails around task scope, artifact freshness, and verification loops.
+
+## v5.6.1 — 2025-09-27
+
+- **Memory Module Fallback**: Bundled a defensive in-process `MemoryStore` so CLI runs cleanly even if the Python `memory` directory is trimmed out of global installs.
+- **Version Sync**: Bumped npm and Python package metadata to 5.6.1, aligning README release badge and installer messaging.
+
 ## v5.6.0 — 2025-09-26
 
 - **Cross-Platform Init Flow**: `super:init` now prompts for macOS vs Windows (default macOS), stores the selection, and exports `SUPER_PROMPT_TARGET_OS` so follow-up tooling mirrors the choice.
