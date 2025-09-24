@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.6.0 — 2025-09-26
+
+- **Cross-Platform Init Flow**: `super:init` now prompts for macOS vs Windows (default macOS), stores the selection, and exports `SUPER_PROMPT_TARGET_OS` so follow-up tooling mirrors the choice.
+- **Windows-Friendly Paths**: Project-local MCP configs emit the correct executable (`sp-mcp.cmd`) and path separators on Windows, ensuring Cursor launches the server without manual edits.
+- **Persistent Config Sync**: The chosen OS is written to `~/.super-prompt/config.json`, reused on subsequent runs, and forwarded into MCP env vars for consistency.
+- **Docs Refresh**: README quick start now highlights the new environment prompt and reiterates that it defaults to macOS while guiding Windows users to switch modes.
+
 ## v5.5.0 — 2025-09-25
 
 - **Claude Mode & Persona Guidance**: Added `/sp_claude_mode_on|off`, Claude operations/persona guides, manifest overrides, and rule install so Claude can run alongside GPT/Grok.

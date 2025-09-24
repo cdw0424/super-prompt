@@ -1349,6 +1349,51 @@ def init(
         target_dir = Path(project_root).resolve() if project_root else Path.cwd().resolve()
         os.environ["SUPER_PROMPT_PROJECT_ROOT"] = str(target_dir)
 
+        def normalize_target_os(value: Optional[str]) -> Optional[str]:
+            if not value:
+                return None
+            lowered = value.strip().lower()
+            if lowered in {"mac", "macos", "darwin"}:
+                return "mac"
+            if lowered in {"win", "windows", "win32"}:
+                return "windows"
+            return None
+
+        target_os_env = normalize_target_os(os.environ.get("SUPER_PROMPT_TARGET_OS"))
+        target_os_config: Optional[str] = None
+        stored_config: dict = {}
+        config_path = Path.home() / ".super-prompt" / "config.json"
+        if config_path.exists():
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    stored_config = json.load(f)
+                target_os_config = normalize_target_os(stored_config.get("targetOs"))
+            except Exception:
+                target_os_config = None
+                stored_config = {}
+
+        interactive_allowed = (
+            os.environ.get("SUPER_PROMPT_INTERACTIVE", "1") == "1"
+            and sys.stdin.isatty()
+            and sys.stdout.isatty()
+        )
+        target_os = target_os_env or target_os_config or "mac"
+        if interactive_allowed and not target_os_env:
+            typer.echo("")
+            typer.echo("환경 선택에 따라 설치 경로가 조정됩니다.")
+            answer = typer.prompt("초기화할 환경을 선택하세요 (mac/windows)", default=target_os)
+            target_os = normalize_target_os(answer) or target_os
+
+        os.environ["SUPER_PROMPT_TARGET_OS"] = target_os
+        stored_config["targetOs"] = target_os
+        try:
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(config_path, "w", encoding="utf-8") as f:
+                json.dump(stored_config, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+        typer.echo(f"✅ Target OS: {target_os}")
+
         # Python dependencies are managed via system Python
         typer.echo("ℹ️  Using system Python for dependencies")
 
@@ -1629,10 +1674,11 @@ Brief description of the feature.
             debug_echo("Step 2: Setting up MCP server configuration")
 
             # MCP 서버 실행 파일 경로 자동 설정 (프로젝트 루트 기반)
-            mcp_server_path = f"{project_root_input}/bin/sp-mcp"
+            mcp_executable = "sp-mcp.cmd" if target_os == "windows" else "sp-mcp"
+            mcp_server_path = str(Path(project_root_input) / "bin" / mcp_executable)
 
             # Python 패키지 경로 자동 설정 (프로젝트 루트 기반)
-            python_package_path = f"{project_root_input}/.super-prompt/lib"
+            python_package_path = str(Path(project_root_input) / ".super-prompt" / "lib")
 
             debug_echo(f"Auto-configured MCP server path: {mcp_server_path}")
             debug_echo(f"Auto-configured Python package path: {python_package_path}")
@@ -1765,8 +1811,11 @@ Brief description of the feature.
                             "command": mcp_server_path,
                             "args": [],
                             "env": {
-                                "PYTHONPATH": f"{str(python_package_path)}:{str(lib_dir)}",
-                                "SUPER_PROMPT_PACKAGE_ROOT": str(package_root)
+                                "PYTHONPATH": os.pathsep.join(
+                                    [str(python_package_path), str(lib_dir)]
+                                ),
+                                "SUPER_PROMPT_PACKAGE_ROOT": str(package_root),
+                                "SUPER_PROMPT_TARGET_OS": target_os,
                             }
                         }
                     }

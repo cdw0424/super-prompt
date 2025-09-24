@@ -3,7 +3,30 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
+import readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
 import { createMemoryClient } from '../mcp/memory';
+
+type TargetOs = 'mac' | 'windows';
+
+function normalizeTargetOs(value?: unknown): TargetOs | null {
+  if (!value || typeof value !== 'string') return null;
+  const lowered = value.trim().toLowerCase();
+  if (lowered === 'mac' || lowered === 'macos' || lowered === 'darwin') return 'mac';
+  if (lowered === 'win' || lowered === 'windows' || lowered === 'win32') return 'windows';
+  return null;
+}
+
+async function promptForTargetOs(defaultOs: TargetOs): Promise<TargetOs> {
+  const rl = readline.createInterface({ input, output });
+  try {
+    const answer = (await rl.question('초기화할 환경을 선택하세요 (mac/windows) [mac]: ')).trim();
+    const normalized = normalizeTargetOs(answer);
+    return normalized ?? defaultOs;
+  } finally {
+    rl.close();
+  }
+}
 
 function ensureDir(p: string) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 function copyIfMissing(src: string, dst: string) {
@@ -93,6 +116,25 @@ export async function run(_ctx?: any) {
     ensureDir(appHome);
     const cfgDst = path.join(appHome, 'config.json');
 
+    let existingConfig: Record<string, any> | null = null;
+    if (fs.existsSync(cfgDst)) {
+      try {
+        existingConfig = JSON.parse(fs.readFileSync(cfgDst, 'utf-8'));
+      } catch (err) {
+        console.warn('-------- WARN: 기존 config.json 파싱 실패, 새 구성을 생성합니다:', (err as Error).message);
+      }
+    }
+
+    const envTargetOs = normalizeTargetOs(process.env.SUPER_PROMPT_TARGET_OS);
+    const previousTargetOs = existingConfig ? normalizeTargetOs(existingConfig.targetOs) : null;
+    const interactive = process.stdin.isTTY && process.stdout.isTTY;
+    let targetOs: TargetOs = envTargetOs ?? previousTargetOs ?? 'mac';
+    if (!envTargetOs && interactive) {
+      targetOs = await promptForTargetOs(targetOs);
+    }
+    process.env.SUPER_PROMPT_TARGET_OS = targetOs;
+    console.error(`-------- init: target OS set to ${targetOs}`);
+
     const tplRoot = path.join(__dirname, '..', '..', 'templates');
     const cfgTpl = path.join(tplRoot, 'config', 'super-prompt.config.json');
     if (fs.existsSync(cfgTpl)) {
@@ -108,6 +150,18 @@ export async function run(_ctx?: any) {
       }
     }
 
+    let configData: Record<string, any> = existingConfig ?? {};
+    if (!existingConfig) {
+      try {
+        configData = JSON.parse(fs.readFileSync(cfgDst, 'utf-8'));
+      } catch {
+        configData = {};
+      }
+    }
+    configData.targetOs = targetOs;
+    fs.writeFileSync(cfgDst, JSON.stringify(configData, null, 2));
+    console.error('-------- updated: ~/.super-prompt/config.json (targetOs)');
+
     // 3) 프로젝트 루트에 Cursor/Codex 템플릿 배치(존재하면 건너뜀)
     const cwd = process.cwd();
     const cursorDir = path.join(cwd, '.cursor');
@@ -118,7 +172,7 @@ export async function run(_ctx?: any) {
     // 3-0) MCP 설정: 항상 올바른 로컬 경로로 설정
     const mcpCfg = path.join(cursorDir, 'mcp.json');
     const projectRoot = process.cwd();
-    const mcpScriptPath = './bin/sp-mcp'; // 항상 상대 경로 사용
+    const mcpScriptPath = targetOs === 'windows' ? '.\\bin\\sp-mcp' : './bin/sp-mcp';
     const cfg = {
       mcpServers: {
         'super-prompt': {
@@ -131,6 +185,7 @@ export async function run(_ctx?: any) {
             SUPER_PROMPT_PROJECT_ROOT: projectRoot,
             PYTHONUNBUFFERED: '1',
             PYTHONUTF8: '1',
+            SUPER_PROMPT_TARGET_OS: targetOs,
           }
         }
       }
