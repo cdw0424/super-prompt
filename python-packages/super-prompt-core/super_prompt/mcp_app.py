@@ -249,9 +249,9 @@ def create_app():
 
     # Troubleshooting
     @app.tool(name="sp_troubleshooting")
-    def troubleshooting(query: str, persona: str = "troubleshooting") -> str:
+    def troubleshooting(query: str, persona: str = "tr") -> str:
         """Troubleshooting: Systematic problem diagnosis, root cause analysis, and resolution strategies"""
-        return run_prompt_based_workflow("troubleshooting", query)
+        return run_prompt_based_workflow(persona or "tr", query)
 
     # Documentation refactoring
     @app.tool(name="sp_docs_refector")

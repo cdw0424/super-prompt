@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.17-brightgreen)](https://nodejs.org/)
 
-> **Current Release:** v5.6.2
+> **Current Release:** v5.6.5
 
 <!-- SEO: Cursor MCP extension, AI developer productivity, evidential research workflows, zero-config install, global teams -->
 

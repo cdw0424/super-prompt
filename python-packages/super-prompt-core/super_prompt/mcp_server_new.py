@@ -587,12 +587,12 @@ _TOOL_REGISTRY["sp.sdd_architecture"] = sp_sdd_architecture
 
 
 @mcp.tool()
-def sp_troubleshooting(query: str, persona: str = "troubleshooting"):
+def sp_troubleshooting(query: str, persona: str = "tr"):
     """Troubleshooting: Systematic problem diagnosis, root cause analysis, and resolution strategies"""
     try:
         from .prompts.workflow_executor import run_prompt_based_workflow
 
-        return run_prompt_based_workflow("troubleshooting", query)
+        return run_prompt_based_workflow(persona or "tr", query)
     except Exception as e:
         return f"Troubleshooting error: {str(e)}"
 

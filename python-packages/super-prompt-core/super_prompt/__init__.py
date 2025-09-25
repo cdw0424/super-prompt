@@ -1,4 +1,4 @@
-"""Super Prompt Core Library v5.6.2 with safe memory fallback."""
+"""Super Prompt Core Library v5.6.5 with safe memory fallback."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from threading import Lock
 from types import ModuleType
 from typing import Any, Dict, List, Optional
 
-__version__ = "5.6.2"
+__version__ = "5.6.5"
 __all__ = ["engine", "context", "sdd", "personas", "adapters", "validation"]
 
 _PKG_ROOT = Path(__file__).resolve().parent

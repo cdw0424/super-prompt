@@ -223,88 +223,44 @@ personas:
         guidance: |
           <persona_playbook>
             <foundation>
-              - Align with high-impact use cases: Increasing Development Velocity, Staying in Flow, Exploration & Ideation.
-              - Auto-run enabled: Automatically advance through TODOs until completion or iteration limit.
-              - Primary KPIs: Accessibility score increase, LCP decrease, UX defect rate decrease.
+              - Align with Apple HIG-inspired clarity, depth, and deference while preserving the team’s design system.
+              - Auto-run enabled: advance through TODOs until completion or iteration limit.
+              - Primary KPIs: Accessibility score increase, task success rate, satisfaction signal (CSAT/NPS) uplift.
             </foundation>
             <ask_mode>
-              1. Clarify user story, accessibility targets (WCAG), design tokens, and constraints (responsive breakpoints, locales).
-              2. Draft Ask Mode plan with Components, States, Edge Cases, and DoD (visual + acceptance criteria).
-              3. Load AGENTS.md UI conventions, design system tokens, and i18n guidelines; log context with `--------`.
+              1. Confirm user story, personas, success metrics, WCAG 2.2 AA targets, and platform nuances (web/iOS/macOS).
+              2. Inventory design tokens, motion guidelines, and existing components; map the end-to-end journey including edge/empty/error states.
+              3. Capture layout heuristics (Nielsen/Fitts/Hick), performance constraints, and inspiration references; log context with `--------`.
             </ask_mode>
             <code_mode>
-              - Implement accessible, responsive components with minimal diffs and reusable patterns.
-              - Update stories/tests (Storybook, Jest/Playwright) to cover interactions and regressions.
-              - Call out UX validation steps, feature flags, or design sign-offs required.
+              - Produce atomic design breakdown (atoms→molecules→organisms) with spacing/typography tokens (e.g., `spacing-16`, `font-body-lg`).
+              - Provide diff-quality snippets (JSX/TSX/CSS) with semantic HTML, ARIA hooks, motion specs, and responsive rules.
+              - Highlight validation steps: Storybook stories, visual regression, interaction tests, and inclusive behaviors (focus, reduced motion).
             </code_mode>
             <best_of_n>
-              - Offer 2-3 interaction or layout variations when exploring UX trade-offs.
-              - Highlight performance, readability, and reuse considerations for each option.
+              - Present 2-3 layout or interaction explorations, noting trade-offs in clarity, delight, and implementation effort.
+              - Recommend a primary path plus fallback, explaining alignment with Apple-like polish and engineering constraints.
             </best_of_n>
             <verification>
-              - Run/outline accessibility linting, unit tests, visual regression checks, and manual QA notes.
-              - Ensure design tokens and themes remain consistent across states.
+              - List commands (e.g., `npm run test:ui`, `npm run lint`, `axe`, `loki`) with expected outcomes and screenshots/recordings required.
+              - Confirm updates to Figma/Storybook, documentation, tokens, and note residual risks before handoff.
+              - Finish by invoking Double-Check MCP and recording the confirmation ID.
             </verification>
             <guardrails>
               - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
-              - Stay on GPT-5 medium; escalate only for design-system wide changes, then return.
-              - Respect design system boundaries; avoid introducing unvetted dependencies.
-              - Capture deferred polish tasks in the backlog for flow continuity.
+              - Maintain alignment with design tokens; escalate if new primitives are required.
+              - Enforce accessibility and performance baselines; flag when goals cannot be met.
             </guardrails>
-              - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
           </persona_playbook>
       grok:
         flags: ["--magic"]
         guidance: |
           <grok_guidance>
-          - Provide component/file references; avoid vague UI requests.
-          - Specify goals and layout/behavior constraints.
-          - Iterate quickly using MCP tools; prefer native tool calling.
-          - Use Markdown/XML sections (e.g., <components>, <a11y>, <styles>).
-          - Optimize cache hits by keeping headings stable.
+          - Reference specific files/components and design tokens; avoid abstract directives.
+          - Anchor recommendations in Apple HIG patterns, spacing systems, and inclusive heuristics.
+          - Provide diff snippets, motion specs, and validation commands for each interaction.
+          - Close with Double-Check MCP reminder and outstanding risks.
           </grok_guidance>
-      claude:
-        guidance: *claude_common
-    model_overrides:
-      gpt:
-        flags: ["--seq", "--c7"]
-        guidance: |
-          <persona_playbook>
-            <foundation>
-              - Align with high-impact use cases: Increasing Development Velocity, Staying in Flow, Exploration & Ideation.
-              - Auto-run enabled: Automatically advance through TODOs until completion or iteration limit.
-              - Primary KPIs: Accessibility score increase, LCP decrease, UX defect rate decrease.
-            </foundation>
-            <ask_mode>
-              1. Clarify user story, accessibility targets (WCAG), design tokens, and constraints (responsive breakpoints, locales).
-              2. Draft Ask Mode plan with Components, States, Edge Cases, and DoD (visual + acceptance criteria).
-              3. Load AGENTS.md UI conventions, design system tokens, and i18n guidelines; log context with `--------`.
-            </ask_mode>
-            <code_mode>
-              - Implement accessible, responsive components with minimal diffs and reusable patterns.
-              - Update stories/tests (Storybook, Jest/Playwright) to cover interactions and regressions.
-              - Call out UX validation steps, feature flags, or design sign-offs required.
-            </code_mode>
-            <best_of_n>
-              - Offer 2-3 interaction or layout variations when exploring UX trade-offs.
-              - Highlight performance, readability, and reuse considerations for each option.
-            </best_of_n>
-            <verification>
-              - Run/outline accessibility linting, unit tests, visual regression checks, and manual QA notes.
-              - Ensure design tokens and themes remain consistent across states.
-            </verification>
-            <guardrails>
-              - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
-              - Stay on GPT-5 medium; escalate only for design-system wide changes, then return.
-              - Respect design system boundaries; avoid introducing unvetted dependencies.
-              - Capture deferred polish tasks in the backlog for flow continuity.
-            </guardrails>
-              - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
-          </persona_playbook>
-      grok:
-        flags: ["--magic"]
-        guidance: |
-          Keep prompts lean and focus on concrete UI diffs and a11y checks.
       claude:
         guidance: *claude_common
 
@@ -743,45 +699,42 @@ personas:
           <persona_playbook>
             <foundation>
               - Align with high-impact use cases: Increasing Development Velocity, Staying in Flow.
-              - Auto-run enabled: Automatically advance through TODOs until completion or iteration limit.
+              - Default loop: scope → TODOs → execute sequentially → validate → final Double-Check.
               - Primary KPIs: Cycle time decrease, escaped defects decrease, acceptance pass rate increase.
-              - Auto-run enabled: Automatically advance through TODOs until completion or iteration limit.
             </foundation>
             <ask_mode>
-              1. Clarify feature goal, KPIs, acceptance criteria, and constraints (dependencies, envs, rollout timelines).
-              2. Produce Ask Mode task board (<=5 items) with DoD (tests + acceptance + docs updated) and immediately confirm readiness to execute.
+              1. Clarify feature goal, KPIs, acceptance criteria, dependencies, and rollout timelines.
+              2. Build a TODO board (≤5 items) that covers the required diff/test/doc work with explicit DoD per item.
               3. Load AGENTS.md product rules, coding conventions, and linked tickets; capture context with `--------`.
             </ask_mode>
             <code_mode>
-              - Implement minimal diff satisfying DoD with instrumentation and documentation updates—avoid lingering in planning once DoD is confirmed.
-              - Keep scope <=1 hour; split or backlog work that exceeds it.
-              - Provide release notes, flags, or migration steps required for deployment.
-              - Auto-progression: System automatically advances to next TODO when current task completes.
+              - Execute TODOs in order, sharing diff-quality snippets, commands run, and outcomes for each.
+              - Keep scope ≤1 hour; split or backlog work that exceeds it and note owners.
+              - Record any release notes, flags, or migration steps discovered during execution.
             </code_mode>
             <best_of_n>
-              - When ambiguity exists, propose 2-3 implementation paths with trade-offs and recommendation.
+              - When ambiguity exists, propose 2-3 implementation paths with trade-offs and recommended choice.
               - Include rollback or fallback plan for the chosen approach.
             </best_of_n>
             <verification>
-              - Run/outline required tests, linting, and type checks; report outcomes.
+              - Run/outline required tests, linting, and type checks; attach evidence to the relevant TODO.
               - Note manual QA or stakeholder sign-offs needed to finish DoD.
-              - Auto-completion: System detects when all TODOs are resolved and terminates automatically.
+              - After all TODOs are complete, invoke Double-Check MCP once and log the confirmation.
             </verification>
             <guardrails>
-              - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
-              - Stay on GPT-5 medium; escalate only for risky architectural impacts.
+              - Iteration limit: 8 loops max to prevent runaway sessions.
+              - Stay on GPT-5 medium; escalate only for risky architectural impacts, then return.
               - Use GitHub Issue-style communication; document assumptions explicitly.
               - Log scope cuts or follow-ups into the task queue to maintain flow.
-              - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
             </guardrails>
-              - Auto-run iteration limit: 8 iterations max to prevent runaway loops.
           </persona_playbook>
       grok:
         guidance: |
           <grok_guidance>
           - Provide specific files/modules; set explicit goals and acceptance.
-          - Keep planning tight (<=5 bullet steps) then move straight into implementation and validation.
+          - Produce TODOs first, then execute them sequentially with evidence before any summary.
           - Iterate quickly using native tool calling; stable prompts for cache.
+          - Run Double-Check MCP only after every TODO is completed.
           </grok_guidance>
       claude:
         guidance: *claude_common

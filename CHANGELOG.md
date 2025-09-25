@@ -1,5 +1,21 @@
 # Changelog
 
+## v5.6.5 — 2025-09-27
+
+- **Rule Cleanup**: Removed legacy `10-sdd-core.mdc` and `12-amr.mdc` so SDD/AMR workflows are opt-in only; no more forced compliance for general development.
+- **Mode Toggle Fix**: Ensured `set_mode` updates the in-process `SUPER_PROMPT_MODE`, so enabling GPT/Grok/Claude automatically disables the others across the session.
+
+## v5.6.4 — 2025-09-27
+
+- **Dev Workflow Fixes**: `/dev` now mandates a concise TODO board, executes items sequentially, and defers Double-Check MCP until after all work is complete—no more premature audits or plan-only handoffs.
+- **Dev Persona Refresh**: Adjusted guidance to prioritize TODO execution evidence, remove redundant auto-run loops, and align with pragmatic delivery instead of SDD ceremony.
+
+## v5.6.3 — 2025-09-27
+
+- **Frontend Command Overhaul**: Rebuilt `/frontend` guidance to follow a modern design-thinking pipeline (discovery → architecture → visual system → implementation → validation) with Apple HIG-inspired polish, explicit spacing/token references, and a mandated Double-Check MCP wrap-up.
+- **Persona Upgrade**: Frontend persona now enforces heuristics (Nielsen/Fitts/Hick), atomic design breakdowns, diff-ready snippets, and validation commands across GPT/Grok, keeping outputs actionable and aligned with design tokens.
+- **Prompt Refresh**: Updated frontend GPT prompt to emphasize intent, experience architecture, componentization, accessibility, and engineering-ready handoff, eliminating generic CI/CD boilerplate.
+
 ## v5.6.2 — 2025-09-27
 
 - **Dev Command Autonomy**: Repositioned the Dev workflow as a pragmatic engineer playbook (no SDD dependency), enforcing concise planning, execution evidence, and mandatory Double-Check MCP sign-off.

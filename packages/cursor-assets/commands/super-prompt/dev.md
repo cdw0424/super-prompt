@@ -13,40 +13,38 @@ args:
 # Dev — Delivery Pipeline
 
 ## Instructions
-- Review the project dossier at `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.
-- Provide feature goal, affected surfaces, and acceptance criteria up front
-- Link specs/tickets and note test frameworks or deployment constraints
-- Validate proposals against current requirements, engineering standards, and Definition of Done—opt for pragmatic execution over ceremony.
-- After scope confirmation, bias toward building the solution—keep planning concise (<=5 bullets) and move straight into code, tests, and docs.
+- Review `.super-prompt/context/project-dossier.md`; if it is missing, run `/super-prompt/init` to regenerate it.
+- Collect feature goal, affected surfaces, acceptance criteria, and any blocking constraints before touching code.
+- Draft only the essential TODO list (≤5 items) needed to ship; then execute those TODOs sequentially.
+- Focus on concrete deliverables (code, tests, docs). Delay Double-Check MCP until every TODO is complete.
 - Use MCP Only (MCP server call): /super-prompt/dev "<your feature request>"
 
 ## Phases & Checklist
 ### Phase 0 — Scope Intake
 - [ ] Confirm objective, consumers, and Definition of Done
 - [ ] Capture environment/branch, dependencies, and rollout guardrails
-- [ ] Run Double-Check MCP: /super-prompt/double-check "Confession review for scope framing"
 
-### Phase 1 — Solution Design
+### Phase 1 — TODO Backlog (≤5 items)
 - [ ] Summarize current architecture and highlight impacted modules
-- [ ] Draft success metrics plus guardrails (perf, security, accessibility)
-- [ ] Identify open questions or missing context to unblock implementation
+- [ ] Break the work into ordered TODOs with owners/ETA where helpful
+- [ ] Surface unknowns or blockers that must resolve before execution
 
-### Phase 2 — Implementation Blueprint (≤5 bullets)
-- [ ] Summarize the execution strategy in a handful of actionable steps
-- [ ] Identify the specific files/functions to touch and required data or migrations
-- [ ] Call out test coverage expectations and monitoring hooks
+### Phase 2 — Execute TODOs
+- [ ] For each TODO, outline the specific files/functions to touch and apply the change
+- [ ] Record test coverage expectations and monitoring hooks per TODO
+- [ ] Track completed TODOs with evidence (diff snippets, command output)
 
-### Phase 3 — Implementation & Validation
-- [ ] Write or modify code following the blueprint; include diff-style snippets
-- [ ] Run or outline test/lint/type commands, report outcomes, and attach evidence
-- [ ] Update docs/changelog/config as needed and call out deployment or migration steps
+### Phase 3 — Validation & Polish
+- [ ] Run/outline required tests, linting, type checks, and report outcomes with evidence
+- [ ] Update docs/changelog/config as needed and note any rollout or migration steps
+- [ ] Capture remaining risks, debt, or follow-ups generated during execution
 
 ### Phase 4 — Closeout & Handoff
-- [ ] Summarize status of tasks/tests, flag debt or follow-ups
+- [ ] Summarize status of TODOs/tests, flag debt or follow-ups
 - [ ] Provide release/readiness checklist with owners and timestamps
 - [ ] Run Double-Check MCP: /super-prompt/double-check "Confession review for delivery"
 
 ## Outputs
-- Concise implementation blueprint linked to acceptance criteria
+- TODO board (≤5 items) with status, evidence, and links to code/test updates
 - Code-level deliverables (diff snippets, new files, config changes) with validation results
 - Final handoff summary covering residual risks, monitoring steps, follow-up owners, and the Double-Check MCP confirmation number

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import os
 from pathlib import Path
 from .paths import project_data_dir
 
@@ -25,6 +26,10 @@ def set_mode(mode: str) -> str:
     if m not in ('gpt','grok','claude'):
         raise ValueError('mode must be one of: gpt, grok, claude')
     MODE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    payload = { 'llm_mode': m }
+    payload = {'llm_mode': m}
     MODE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+
+    # Keep process environment in sync so subsequent calls respect the new mode immediately.
+    os.environ['SUPER_PROMPT_MODE'] = m
+
     return m
