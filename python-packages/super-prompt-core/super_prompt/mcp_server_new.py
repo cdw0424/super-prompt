@@ -6,7 +6,6 @@ This is a simple version of the MCP server that manually registers all tools usi
 
 import json
 import os
-import sys
 from typing import Optional
 
 # Initialize MCP components
@@ -44,8 +43,8 @@ from .personas.tools.system_tools import (
     gpt_mode_off,
     claude_mode_off,
 )
-from .sdd.architecture import render_sdd_brief, list_sdd_sections
 from .mode_store import get_mode, set_mode
+from .sdd.architecture import render_sdd_brief, list_sdd_sections
 from .context.collector import ContextCollector
 from .core.memory_manager import span_manager, progress, memory_span
 from .personas.pipeline_manager import PersonaPipeline
@@ -55,6 +54,113 @@ from .high_mode import is_high_mode_enabled, set_high_mode
 
 # Tool registry for stdio access
 _TOOL_REGISTRY = {}
+
+# Context cache for Grok optimization
+_CONTEXT_CACHE = {}
+_CACHE_HIT_THRESHOLD = 0.8
+
+# Mode-based tool filtering
+_GROK_TOOLS = {
+    'sp_grok_code_fast_context_collect',
+    'sp_grok_code_fast_analyze',
+    'sp_grok_code_fast_architect',
+    'sp_grok_code_fast_backend'
+}
+
+_GPT_TOOLS = {
+    'sp_gpt_mode_on_mcp',
+    'sp_gpt_mode_off_mcp'
+}
+
+_CLAUDE_TOOLS = {
+    'sp_claude_mode_on_mcp',
+    'sp_claude_mode_off_mcp'
+}
+
+def _should_register_tool(tool_name: str) -> bool:
+    """Check if a tool should be registered based on current mode."""
+    current_mode = get_mode('gpt')
+
+    # Always register core tools
+    core_tools = {
+        'sp_health', 'sp_version', 'sp_list_commands', 'list_personas',
+        'sp_mode_get_mcp', 'sp_mode_set_mcp', 'sp_grok_mode_on_mcp',
+        'sp_grok_mode_off_mcp', 'sp_high_mode_on_mcp', 'sp_high_mode_off_mcp'
+    }
+
+    if tool_name in core_tools:
+        return True
+
+    # Mode-specific tools
+    if current_mode == 'grok' and tool_name in _GROK_TOOLS:
+        return True
+    elif current_mode == 'gpt' and tool_name in _GPT_TOOLS:
+        return True
+    elif current_mode == 'claude' and tool_name in _CLAUDE_TOOLS:
+        return True
+
+    # Default: register all tools for backward compatibility
+    return True
+
+
+def _get_context_cache_key(query: str, context: dict) -> str:
+    """Generate cache key for context to optimize Grok cache hits."""
+    import hashlib
+    context_str = str(sorted(context.items()) if context else "")
+    combined = f"{query}:{context_str}"
+    return hashlib.md5(combined.encode()).hexdigest()[:16]
+
+
+def _get_cached_context(cache_key: str) -> str:
+    """Retrieve cached context if cache hit threshold is met."""
+    if cache_key in _CONTEXT_CACHE:
+        cached_item = _CONTEXT_CACHE[cache_key]
+        if cached_item.get('hit_ratio', 0) >= _CACHE_HIT_THRESHOLD:
+            return cached_item['context']
+    return None
+
+
+def _cache_context(cache_key: str, context: str, model: str = "grok") -> None:
+    """Cache context with hit tracking for Grok optimization."""
+    if cache_key not in _CONTEXT_CACHE:
+        _CONTEXT_CACHE[cache_key] = {'context': context, 'hit_count': 0, 'model': model}
+
+    _CONTEXT_CACHE[cache_key]['hit_count'] += 1
+    total_hits = sum(item['hit_count'] for item in _CONTEXT_CACHE.values() if item['model'] == model)
+    if total_hits > 0:
+        _CONTEXT_CACHE[cache_key]['hit_ratio'] = _CONTEXT_CACHE[cache_key]['hit_count'] / total_hits
+
+
+def _format_grok_context(context_result: dict, target_files: list = None, requirements: str = None, dependencies: str = None) -> str:
+    """Format context for Grok Code Fast 1 with structured XML sections."""
+    sections = []
+
+    # Requirements section
+    if requirements:
+        sections.append(f"<requirements>\n{requirements}\n</requirements>")
+
+    # Target files section
+    if target_files:
+        sections.append("<target_files>")
+        for file_path in target_files:
+            sections.append(f"- {file_path}")
+        sections.append("</target_files>")
+
+    # Dependencies section
+    if dependencies:
+        sections.append(f"<dependencies>\n{dependencies}\n</dependencies>")
+
+    # Context files section
+    if context_result and context_result.get("files"):
+        files = context_result["files"][:6]  # Limit to 6 files for Grok optimization
+        sections.append("<context_files>")
+        for file_info in files:
+            path = file_info.get("path", "")
+            content = file_info.get("content", "")[:600]  # Limit content size
+            sections.append(f"<file path=\"{path}\">\n{content}\n</file>")
+        sections.append("</context_files>")
+
+    return "\n\n".join(sections) if sections else ""
 
 
 def _format_codex_context(context_result, max_files: int = 6, snippet_chars: int = 600, max_chars: int = 8000) -> str:
@@ -92,10 +198,11 @@ def _format_codex_context(context_result, max_files: int = 6, snippet_chars: int
 
 
 # Register basic tools
-@mcp.tool()
-def sp_health() -> str:
-    """Check if Super Prompt MCP server is healthy"""
-    return "Super Prompt MCP server is running"
+if _should_register_tool('sp_health'):
+    @mcp.tool()
+    def sp_health() -> str:
+        """Check if Super Prompt MCP server is healthy"""
+        return "Super Prompt MCP server is running"
 
 
 _TOOL_REGISTRY["sp_health"] = sp_health
@@ -853,32 +960,8 @@ def sp_double_check(query: str, persona: str = "double_check") -> str:
 _TOOL_REGISTRY["sp_double_check"] = sp_double_check
 
 
-@mcp.tool()
-def sp_seq(query: str) -> str:
-    """Sequential persona: sp_seq analysis"""
-    try:
-        pipeline = PersonaPipeline()
-        result = pipeline.run_persona("seq", query)
-        return result.text if hasattr(result, "text") else str(result)
-    except Exception as e:
-        return f"Sequential analysis error: {str(e)}"
 
 
-_TOOL_REGISTRY["sp_seq"] = sp_seq
-
-
-@mcp.tool()
-def sp_seq_ultra(query: str) -> str:
-    """Sequential Ultra persona: sp_seq_ultra analysis"""
-    try:
-        pipeline = PersonaPipeline()
-        result = pipeline.run_persona("seq-ultra", query)
-        return result.text if hasattr(result, "text") else str(result)
-    except Exception as e:
-        return f"Sequential Ultra analysis error: {str(e)}"
-
-
-_TOOL_REGISTRY["sp_seq_ultra"] = sp_seq_ultra
 
 
 @mcp.tool()
@@ -921,6 +1004,117 @@ def sp_debate(query: str) -> str:
 
 
 _TOOL_REGISTRY["sp_debate"] = sp_debate
+
+
+# Grok Code Fast 1 optimized tools
+if _should_register_tool('sp_grok_code_fast_context_collect'):
+    @mcp.tool()
+    def sp_grok_code_fast_context_collect(query: str, target_files: str = "", requirements: str = "", dependencies: str = "") -> str:
+    """Context collector optimized for Grok Code Fast 1 with structured context formatting."""
+    try:
+        from .context.collector import ContextCollector
+        import json
+
+        collector = ContextCollector()
+        context_result = collector.collect_context(query)
+
+        # Parse target files
+        target_files_list = [f.strip() for f in target_files.split(",") if f.strip()] if target_files else None
+
+        # Format context for Grok
+        grok_context = _format_grok_context(
+            context_result,
+            target_files=target_files_list,
+            requirements=requirements,
+            dependencies=dependencies
+        )
+
+        # Cache context for Grok optimization
+        cache_key = _get_context_cache_key(query, {"files": target_files, "reqs": requirements, "deps": dependencies})
+        _cache_context(cache_key, grok_context, "grok")
+
+        return grok_context if grok_context else "No relevant context found"
+    except Exception as e:
+        return f"Grok context collection error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_grok_code_fast_context_collect"] = sp_grok_code_fast_context_collect
+
+
+if _should_register_tool('sp_grok_code_fast_analyze'):
+    @mcp.tool()
+    def sp_grok_code_fast_analyze(query: str, context_cache_key: str = "") -> str:
+        """Rapid analysis tool optimized for Grok Code Fast 1."""
+    try:
+        # Try to get cached context first
+        cached_context = _get_cached_context(context_cache_key) if context_cache_key else None
+
+        if cached_context:
+            # Use cached context for faster analysis
+            enhanced_query = f"{cached_context}\n\nQuery: {query}"
+        else:
+            enhanced_query = query
+
+        # Use code_fast_analyzer prompt
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        result = run_prompt_based_workflow("code_fast_analyzer", enhanced_query)
+
+        return result if isinstance(result, str) else str(result)
+    except Exception as e:
+        return f"Grok analysis error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_grok_code_fast_analyze"] = sp_grok_code_fast_analyze
+
+
+if _should_register_tool('sp_grok_code_fast_architect'):
+    @mcp.tool()
+    def sp_grok_code_fast_architect(query: str, context_cache_key: str = "") -> str:
+        """Architecture design tool optimized for Grok Code Fast 1."""
+    try:
+        # Try to get cached context first
+        cached_context = _get_cached_context(context_cache_key) if context_cache_key else None
+
+        if cached_context:
+            enhanced_query = f"{cached_context}\n\nQuery: {query}"
+        else:
+            enhanced_query = query
+
+        # Use code_fast_architect prompt
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        result = run_prompt_based_workflow("code_fast_architect", enhanced_query)
+
+        return result if isinstance(result, str) else str(result)
+    except Exception as e:
+        return f"Grok architecture error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_grok_code_fast_architect"] = sp_grok_code_fast_architect
+
+
+if _should_register_tool('sp_grok_code_fast_backend'):
+    @mcp.tool()
+    def sp_grok_code_fast_backend(query: str, context_cache_key: str = "") -> str:
+        """Backend development tool optimized for Grok Code Fast 1."""
+    try:
+        # Try to get cached context first
+        cached_context = _get_cached_context(context_cache_key) if context_cache_key else None
+
+        if cached_context:
+            enhanced_query = f"{cached_context}\n\nQuery: {query}"
+        else:
+            enhanced_query = query
+
+        # Use code_fast_backend prompt
+        from .prompts.workflow_executor import run_prompt_based_workflow
+        result = run_prompt_based_workflow("code_fast_backend", enhanced_query)
+
+        return result if isinstance(result, str) else str(result)
+    except Exception as e:
+        return f"Grok backend error: {str(e)}"
+
+
+_TOOL_REGISTRY["sp_grok_code_fast_backend"] = sp_grok_code_fast_backend
 
 
 @mcp.tool()

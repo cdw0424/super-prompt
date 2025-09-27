@@ -55,8 +55,6 @@ PIPELINE_LABELS: Dict[str, str] = {
     "doc-master": "Doc Master",
     "docs-refector": "Docs Refector",
     "ultracompressed": "Ultra Compressed",
-    "seq": "Sequential",
-    "seq-ultra": "Sequential Ultra",
     "high": "High Reasoning",
 }
 
@@ -100,9 +98,6 @@ PIPELINE_ALIASES: Dict[str, str] = {
     "tr": "tr",
     "ultra": "ultracompressed",
     "ultracompressed": "ultracompressed",
-    "seq": "seq",
-    "sequential": "seq",
-    "seq-ultra": "seq-ultra",
     "high": "high",
 }
 
@@ -183,16 +178,6 @@ DEFAULT_PLAN_LINES: Dict[str, List[str]] = {
         "- Select critical insights and supporting evidence",
         "- Prioritize messaging hierarchy under token budget",
         "- Flag trade-offs or details omitted for brevity",
-    ],
-    "seq": [
-        "- Define hypothesis list and evidence required",
-        "- Outline sequential reasoning checkpoints",
-        "- Prepare validation tests for each conclusion",
-    ],
-    "seq-ultra": [
-        "- Establish ten-step investigation agenda",
-        "- Maintain branching options and re-evaluation criteria",
-        "- Record open questions and ownership for follow-up",
     ],
     "high": [
         "- Frame strategic context, stakeholders, and constraints",
@@ -278,16 +263,6 @@ DEFAULT_EXEC_LINES: Dict[str, List[str]] = {
         "- Draft concise response and confirm key facts",
         "- Run peer or stakeholder verification for omissions",
         "- Capture optional deep-dive references",
-    ],
-    "seq": [
-        "- Execute sequential reasoning steps with evidence",
-        "- Validate conclusions against assumptions",
-        "- Track unresolved branches for future exploration",
-    ],
-    "seq-ultra": [
-        "- Document each iteration outcome and decision",
-        "- Maintain branch ledger and revisit pivot criteria",
-        "- Summarize insights with remaining unknowns",
     ],
     "high": [
         "- Present strategic recommendation with rationale",

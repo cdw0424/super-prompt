@@ -217,17 +217,6 @@ def create_app():
         """Requirements specification: Requirements gathering, validation, and documentation"""
         return run_prompt_based_workflow("specify", query)
 
-    # Sequential reasoning
-    @app.tool(name="sp_seq")
-    def seq(query: str, persona: str = "seq") -> str:
-        """Sequential reasoning: Step-by-step analysis, assumption validation, and decision making"""
-        return run_prompt_based_workflow("seq", query)
-
-    # Ultra sequential reasoning
-    @app.tool(name="sp_seq_ultra")
-    def seq_ultra(query: str, persona: str = "seq_ultra") -> str:
-        """Ultra sequential reasoning: Exhaustive analysis, multi-level reasoning, and optimization"""
-        return run_prompt_based_workflow("seq_ultra", query)
 
     # Ultra compressed communication
     @app.tool(name="sp_ultracompressed")
@@ -377,8 +366,6 @@ def create_app():
             "sp_plan - Project planning and management",
             "sp_tasks - Task breakdown and management",
             "sp_specify - Requirements specification and analysis",
-            "sp_seq - Sequential reasoning and step-by-step analysis",
-            "sp_seq_ultra - Ultra-detailed sequential reasoning",
             "sp_ultracompressed - Maximum insight with minimum words",
             "sp_wave - Trend analysis and market forecasting",
             "sp_service_planner - Service design and customer experience",

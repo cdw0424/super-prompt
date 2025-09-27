@@ -7,6 +7,7 @@ Used by both MCP tools and thin CLI wrappers.
 
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+import os
 import yaml
 
 
@@ -170,7 +171,7 @@ def disable_codex_mode(project_root: Optional[Path] = None) -> List[str]:
 
 
 def enable_grok_mode(project_root: Optional[Path] = None) -> List[str]:
-    """Enable Grok mode and install Grok guidance rules."""
+    """Enable Grok mode and install Grok guidance rules with automatic optimizations."""
     root = Path(project_root or ".")
     logs: List[str] = []
     cursor_dir = root / ".cursor"
@@ -178,7 +179,11 @@ def enable_grok_mode(project_root: Optional[Path] = None) -> List[str]:
 
     logs.extend(_disable_all_modes(root, except_mode="grok"))
 
+    # Enable Grok mode flag
     (cursor_dir / ".grok-mode").write_text("", encoding="utf-8")
+
+    # Set environment variable for automatic routing
+    os.environ['SUPER_PROMPT_MODE'] = 'grok'
 
     # Install Grok guidance
     rules_dir = cursor_dir / "rules"
@@ -233,6 +238,15 @@ alwaysApply: true
 
 ## 10) Optimize for Cache Hits
 - Keep prompt prefixes/history stable across tool sequences to maximize cache reuse and latency gains.
+
+## 11) Grok Code Fast 1 Specific Optimizations
+- Use `grok-code-fast-1` model for tool-heavy, multi-step coding tasks (search → edit → verify)
+- Leverage 4x speed and 1/10th cost for rapid iteration and refinement
+- Prefer native tool calling over XML-based protocols for better performance
+- Structure context in XML/Markdown sections with descriptive headings
+- Use reasoning_content in streaming mode for observability
+- Target 6 files max in context, 600 chars per file for optimal performance
+- Cache context between tool calls to maximize cache hits and reduce latency
 """,
         encoding="utf-8",
     )
@@ -258,6 +272,10 @@ def disable_grok_mode(project_root: Optional[Path] = None) -> List[str]:
         logs.append("-------- Grok mode: DISABLED")
     else:
         logs.append("-------- Grok mode: Already disabled")
+
+    # Clear environment variable
+    if 'SUPER_PROMPT_MODE' in os.environ:
+        del os.environ['SUPER_PROMPT_MODE']
 
     grok_rule = root / ".cursor" / "rules" / "20-grok-guidance.mdc"
     if grok_rule.exists():

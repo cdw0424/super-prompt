@@ -155,8 +155,6 @@ class CursorAdapter:
             "review",
             "scribe",
             "security",
-            "seq-ultra",
-            "seq",
             "service-planner",
             "specify",
             "tasks",

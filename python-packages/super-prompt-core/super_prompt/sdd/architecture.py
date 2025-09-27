@@ -368,22 +368,6 @@ PERSONA_FOCUS: Dict[str, Dict[str, Iterable[str]]] = {
             "Ensure runbooks and onboarding docs are appended to plan/tasks for `/implement`.",
         ],
     },
-    "seq": {
-        "sections": ["dev_cycle", "slash_commands", "runners"],
-        "stages": ["specify", "plan", "tasks"],
-        "notes": [
-            "Maintain a step-by-step log so humans can rejoin the sequence midstream.",
-            "Highlight risk checkpoints that `/implement` should pause on for approval.",
-        ],
-    },
-    "seq-ultra": {
-        "sections": ["dev_cycle", "operations", "quality"],
-        "stages": ["specify", "plan", "tasks", "implement"],
-        "notes": [
-            "Expose deep reasoning branches alongside the single source of truth in spec/plan.",
-            "Document contingency tasks for complex branches to guide `/implement`.",
-        ],
-    },
     "high": {
         "sections": ["overview", "principles", "quality", "operations"],
         "stages": ["constitution", "specify", "plan", "tasks", "implement"],

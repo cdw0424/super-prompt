@@ -1,80 +1,106 @@
-Prompt Engineering for Grok Code Fast 1
-For developers using agentic coding tools
-grok-code-fast-1
- is a lightweight agentic model which is designed to excel as your pair-programmer inside most common coding tools. To optimize your experience, we present a few guidelines so that you can fly through your day-to-day coding tasks.
+# Prompt Engineering for grok-code-fast-1 (agentic coding model)
 
-Provide the necessary context
-Most coding tools will gather the necessary context for you on their own. However, it is oftentimes better to be specific by selecting the specific code you want to use as context. This allows 
-grok-code-fast-1
- to focus on your task and prevent unnecessary deviations. Try to specify relevant file paths, project structures, or dependencies and avoid providing irrelevant context.
+## 1.1 What the model is optimized for
+- **grok-code-fast-1** is a lightweight, agentic coding model designed to act like a fast pair-programmer inside code tools. Use it for tool-heavy, multi-step coding tasks (search → edit → verify). For single-shot deep explanations/debugging where you already have rich context, prefer Grok 4.
+- It's tuned for rapid iteration: up to ~4× faster at ~1/10 the cost versus other leading agentic models—so refine prompts aggressively when the first output isn't perfect.
 
-No-context prompt to avoid
-Make error handling better
+**Tip:** If you also need hard numbers for planning—grok-code-fast-1 lists a 256k context window, 2M TPM / 480 RPM, and priced per-million tokens (input $0.20, output $1.50) on the models page.
 
-Good prompt with specified context
-My error codes are defined in @errors.ts, can you use that as reference to add proper error handling and error codes to @sql.ts where I am making queries
+## 1.2 User-side prompting (inside editors/IDEs)
+- **Provide concrete context.** Select the exact code spans, file paths, project structure, and relevant dependencies. Avoid "no-context" requests like "make error handling better."
+- **State explicit goals and constraints.** Tell it exactly what to build/change and how you'll measure success; vague prompts underperform.
+- **Iterate by refining.** Use the model's low-latency/low-cost profile to iterate quickly; reference the previous failure modes when you retry.
+- **Favor agentic tasks.** Aim for multi-step, tool-using work over one-shot Q&A; reserve Grok 4 for deep dives with full upfront context.
 
-Set explicit goals and requirements
-Clearly define your goals and the specific problem you want 
-grok-code-fast-1
- to solve. Detailed and concrete queries can lead to better performance. Try to avoid vague or underspecified prompts, as they can result in suboptimal results.
+## 1.3 API-builder best practices
+- **Reasoning stream:** You can surface the model's thinking trace at `chunk.choices[0].delta.reasoning_content`; it's available only in streaming mode. Use this for observability and debugging.
+- **Prefer native tool calling.** grok-code-fast-1 was built for first-party (native) tool calls; XML-encoded tool protocols can hurt performance.
+- **Strong system prompt.** Spell out task, expectations, and edge cases at the system level; this materially changes outcomes.
+- **Structure the context.** Provide large context in Markdown or XML-tagged sections with descriptive headings/definitions so the model can target precisely.
+- **Exploit cache hits.** Leave your prompt prefix/history stable across tool-using turns; changing it causes cache misses and slower inference.
+- **OpenAI-compatible surface.** The model interleaves tool calls during thinking and sends summarized thinking via an OpenAI-compatible API for better UX.
 
-Vague prompt to avoid
-Create a food tracker
+## 2) Function Calling (Tool/Function use)
 
-Good, detailed prompt
-Create a food tracker which shows the breakdown of calorie consumption per day divided by different nutrients when I enter a food item. Make it such that I can see an overview as well as get high level trends.
+## 2.1 What it enables
+- Function calling connects Grok to external tools and systems (APIs/DBs/web/code exec/robotics). In streaming, the entire tool call arrives in one chunk (it's not split across chunks).
 
-Continually refine your prompts
-grok-code-fast-1
- is a highly efficient model, delivering up to 4x the speed and 1/10th the cost of other leading agentic models. This enables you to test your complex ideas at an unprecedented speed and affordability. Even if the initial output isn’t perfect, we strongly suggest taking advantage of the uniquely rapid and cost-effective iteration to refine your query—using the suggestions above (e.g., adding more context) or by referencing the specific failures from the first attempt.
+## 2.2 End-to-end flow (canonical loop)
+1. **Prepare tools.** Define your callable functions and parameter schemas so the model knows what exists and how to call them. You can define schemas via Pydantic or a raw dict; keep a {name → function} map for dispatch.
+2. **Send the initial message.** Include messages, tools (your function schemas), and options. Grok may return a tool call request.
+3. **If Grok requests a tool call:** Execute the function(s) locally with the given args, then append a role:"tool" message with results. You can reply only with results or results + a new user ask.
+4. **Send results back to the model** to generate the final user-facing answer (or trigger more tool calls). Continue multi-turn as needed.
 
-Good prompt example with refinement
-The previous approach didn’t consider the IO heavy process which can block the main thread, we might want to run it in its own threadloop such that it does not block the event loop instead of just using the async lib version
+**Important bookkeeping detail**
+- A tool call is referenced three times across the exchange—(a) by id + name in the assistant message, (b) by tool_call_id in the tool message's content, and (c) within the tools array of the request body. Keep these aligned.
 
-Assign agentic tasks
-We encourage users to try 
-grok-code-fast-1
- for agentic-style tasks rather than one-shot queries. Our Grok 4 models are more suited for one-shot Q&A while 
-grok-code-fast-1
- is your ideal companion for navigating large mountains of code with tools to deliver you precise answers.
+## 2.3 Behavior controls
+- **Default:** `tool_choice: "auto"` → model decides whether/what to call.
+- **Always call:** `tool_choice: "required"` → forces a call; may cause hallucinated parameters if a call isn't truly needed.
+- **Force a specific function:** `tool_choice: {"type":"function","function":{"name":"your_fn"}}`.
+- **Disable calling:** don't pass tools, or set `tool_choice: "none"`.
 
-A good way to think about this is:
+## 2.4 Parallel function calling
+- Enabled by default. If multiple calls are needed, they appear together in a single response. Disable with `parallel_function_calling: "false"`. (Note the string value in the docs.)
 
-grok-code-fast-1
- is great at working quickly and tirelessly to find you the answer or implement the required change.
-Grok 4 is best for diving deep into complex concepts and tough debugging when you provide all the necessary context upfront.
-For developers building coding agents via the xAI API
-With 
-grok-code-fast-1
-, we wanted to bring an agentic coding model into the hands of developers. Outside of our launch partners, we welcome all developers to try out 
-grok-code-fast-1
- in tool-call-heavy domains as the fast speed and low cost makes it both efficient and affordable for using many tools to figure out the correct answer.
+## 3) Putting it together (battle-tested patterns)
 
-As mentioned in the blog post, 
-grok-code-fast-1
- is a reasoning model with interleaved tool-calling during its thinking. We also send summarized thinking via the OpenAI-compatible API for better UX support. More API details can be found at https://docs.x.ai/docs/guides/function-calling.
+## 3.1 When to pick which model
+- Use **grok-code-fast-1** for high-speed, tool-heavy, code-navigation/edit/verify loops; use **Grok 4** for deep, single-shot reasoning when you already have complete context.
 
-Reasoning content
-grok-code-fast-1
- is a reasoning model, and we expose its thinking trace via 
-chunk.choices[0].delta.reasoning_content
-. Please note that the thinking traces are only accessible when using streaming mode.
+## 3.2 Streaming UX that "just works"
+- Show progress by reading `reasoning_content` in streaming; then surface the final answer. Remember: tool calls arrive atomically in one chunk during streaming.
 
-Use native tool calling
-grok-code-fast-1
- offers first-party support for native tool-calling and was specifically designed with native tool-calling in mind. We encourage you to use it instead of XML-based tool-call outputs, which may hurt performance.
+## 3.3 Prompt hygiene & caching
+- Keep a stable prompt prefix/history across tool-using turns to maximize cache hits and latency gains; avoid needless churn.
 
-Give a detailed system prompt
-Be thorough and give many details in your system prompt. A well-written system prompt which describes the task, expectations, and edge-cases the model should be aware of can make a night-and-day difference. For more inspiration, refer to the User Best Practices above.
+## 3.4 Context scaffolding that the model exploits
+- Wrap large context in Markdown/XML sections with descriptive headings (e.g., ## Requirements, ## Constraints, ## Target file: src/foo.ts), so Grok can target the right blocks.
 
-Introduce context to the model
-grok-code-fast-1
- is accustomed to seeing a lot of context in the initial user prompt. We recommend developers to use XML tags or Markdown-formatted content to mark various sections of the context and to add clarity to certain sections. Descriptive Markdown headings/XML tags and their corresponding definitions will allow 
-grok-code-fast-1
- to use the context more effectively.
+## 3.5 Function-calling guardrails
+- Start with `tool_choice: "auto"`; only force "required" when you must call a tool and you trust your argument extraction. Be explicit about argument schemas (Pydantic recommended) to cut invalid calls.
+- If you need serialized side-effects, disable parallel ("false") or handle concurrency in your dispatcher.
 
-Optimize for cache hits
-Our cache hits are a big contributor to 
-grok-code-fast-1
-’s fast inference speed. In agentic tasks where the model uses multiple tools in sequence, most of the prefix remains the same and thus is automatically retrieved from the cache to speed up inference. We recommend against changing or augmenting the prompt history, as that could lead to cache misses and therefore significantly slower inference speeds.
+## 4) Drop-in checklists
+
+## 4.1 Editor / human operator
+- Select specific code spans & file paths as context.
+- State goal + constraints + output format up front.
+- Iterate fast: retry with what failed last time.
+- Prefer agentic tasks (search → edit → test) over vague asks.
+
+## 4.2 Backend / agent author
+- Define tools with schemas (Pydantic or dict) and a name→fn map.
+- Call chat with messages, tools, and tool_choice (usually "auto").
+- On tool call: run, then append a role:"tool" message (preserve tool_call_id) and send back to Grok.
+- Decide on parallelism (parallel_function_calling default on).
+- Use native tool calling; stream and read reasoning_content.
+- Keep prompt prefix stable for cache speedups.
+
+## 5) Minimal reference loop (language-agnostic pseudocode)
+
+```python
+define tools = [
+  { name: "get_weather", parameters: { city: string }, ... },  # schema via Pydantic or dict
+  ...
+]
+map = { "get_weather": get_weather_impl, ... }
+
+messages = [
+  {role:"system", content:"You are a coding agent..." },
+  {role:"user",   content:"Refactor X; target file: src/a.ts; tests: ..."}
+]
+
+resp = chat(model="grok-code-fast-1", tools=tools, tool_choice="auto",
+            messages=messages, stream=true)
+
+if resp.includes_tool_calls:
+  for call in resp.tool_calls: results.append(map[call.name](call.args))
+  messages.append({role:"tool", tool_call_id: call.id, content: serialize(results)})
+  # optionally also append another user ask here
+  final = chat(model, tools, messages)  # produce user-facing answer
+else:
+  final = resp
+```
+
+*(Everything above aligns 1:1 with the official docs' flow, tool-choice semantics, and streaming/tool-call behavior.)*

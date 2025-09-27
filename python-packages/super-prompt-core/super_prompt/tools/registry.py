@@ -79,8 +79,6 @@ TOOL_METADATA: Dict[str, Dict[str, Any]] = {
     "sp.tasks": {"category": "sdd", "tags": ["sdd", "tasks"]},
     "sp.sdd_architecture": {"category": "sdd", "tags": ["sdd", "architecture"]},
     "sp.implement": {"category": "sdd", "tags": ["sdd", "implement"]},
-    "sp.seq": {"category": "reasoning", "tags": ["reasoning", "sequential"]},
-    "sp.seq-ultra": {"category": "reasoning", "tags": ["reasoning", "sequential", "advanced"]},
     "sp_high": {"category": "reasoning", "tags": ["reasoning", "high-effort"]},
     "sp.tr": {"category": "utility", "tags": ["utility", "translation"]},
     "sp.ultracompressed": {"category": "utility", "tags": ["utility", "compression"]},

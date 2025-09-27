@@ -3,12 +3,12 @@ Prompt-Based Workflow Executor for Super Prompt v5.0.5
 Executes persona-specific prompts based on mode selection
 """
 
-import os
 from typing import Dict, Any, Optional
 from .gpt_prompts import GPT_PROMPTS
 from .grok_prompts import GROK_PROMPTS
 from ..paths import project_root, project_data_dir
 from ..personas.tools.system_tools import ensure_project_dossier
+from ..mode_store import get_mode
 
 
 class PromptWorkflowExecutor:
@@ -18,37 +18,35 @@ class PromptWorkflowExecutor:
         self.gpt_prompts = GPT_PROMPTS
         self.grok_prompts = GROK_PROMPTS
 
-    def get_current_mode(self) -> str:
-        """Get current LLM mode from environment or config"""
-        # Check for mode override in environment
-        mode = os.getenv('SUPER_PROMPT_MODE', '').lower()
-        if mode in ['gpt', 'grok']:
-            return mode
-
-        # Check for mode file
-        mode_file = os.path.join(os.getcwd(), '.super-prompt', 'mode.json')
-        if os.path.exists(mode_file):
-            try:
-                import json
-                with open(mode_file, 'r') as f:
-                    mode_data = json.load(f)
-                    saved_mode = mode_data.get('mode', '').lower()
-                    if saved_mode in ['gpt', 'grok']:
-                        return saved_mode
-            except Exception:
-                pass
-
-        # Default to GPT mode
-        return 'gpt'
-
     def get_prompt_template(self, persona: str, mode: Optional[str] = None) -> Optional[str]:
-        """Get the appropriate prompt template for a persona and mode (strict matching)."""
+        """Get the appropriate prompt template for a persona and mode with Grok optimization routing."""
         if mode is None:
-            mode = self.get_current_mode()
+            mode = get_mode('gpt')
 
-        prompts = self.gpt_prompts if mode == 'gpt' else self.grok_prompts
         key = persona.lower()
-        # Strict: Only exact key match; do not auto-fallback or transform
+
+        # Grok mode optimization: try code_fast variants first
+        if mode == 'grok' and key in self.grok_prompts:
+            # For common personas, try the code_fast variants first
+            code_fast_keys = {
+                'high': 'code_fast',
+                'analyzer': 'code_fast_analyzer',
+                'architect': 'code_fast_architect',
+                'backend': 'code_fast_backend',
+                'frontend': 'code_fast_frontend',
+                'dev': 'code_fast_dev'
+            }
+
+            if key in code_fast_keys:
+                code_fast_key = code_fast_keys[key]
+                if code_fast_key in self.grok_prompts:
+                    template = self.grok_prompts[code_fast_key]
+                    # Verify template has the expected format
+                    if '{query}' in template:
+                        return template
+
+        # Fallback to original logic
+        prompts = self.gpt_prompts if mode == 'gpt' else self.grok_prompts
         return prompts.get(key)
 
     def execute_workflow(self, persona: str, query: str, mode: Optional[str] = None) -> str:
@@ -62,7 +60,7 @@ class PromptWorkflowExecutor:
         template = self.get_prompt_template(persona, mode)
 
         if not template:
-            return f"Error: No prompt template found for persona '{persona}' in mode '{mode or self.get_current_mode()}'"
+            return f"Error: No prompt template found for persona '{persona}' in mode '{mode or get_mode('gpt')}'"
 
         # Format the prompt with the query
         try:
@@ -77,7 +75,7 @@ class PromptWorkflowExecutor:
     def list_available_personas(self, mode: Optional[str] = None) -> Dict[str, str]:
         """List all available personas with descriptions"""
         if mode is None:
-            mode = self.get_current_mode()
+            mode = get_mode('gpt')
 
         prompts = self.gpt_prompts if mode == 'gpt' else self.grok_prompts
 

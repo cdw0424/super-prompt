@@ -41,8 +41,6 @@ class MCPAuthorization:
         "plan": "read",
         "tasks": "read",
         "implement": "read",
-        "seq": "read",
-        "seq-ultra": "read",
         "high": "read",
         # Write tools (configuration changes)
         "mode_set": "write",

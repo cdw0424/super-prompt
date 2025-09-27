@@ -676,18 +676,6 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         memory_tag="pipeline_ultracompressed",
         empty_prompt="🗜️ Ultra Compressed pipeline activated. Provide the topic to compress.",
     ),
-    "seq": PersonaPipelineConfig(
-        persona="seq",
-        label="Sequential",
-        memory_tag="pipeline_seq",
-        empty_prompt="🔍 Sequential pipeline activated. Specify the problem to analyze step-by-step.",
-    ),
-    "seq-ultra": PersonaPipelineConfig(
-        persona="seq-ultra",
-        label="Sequential Ultra",
-        memory_tag="pipeline_seq_ultra",
-        empty_prompt="🧠 Sequential Ultra pipeline activated. Provide the complex scenario to dissect.",
-    ),
     "high": PersonaPipelineConfig(
         persona="high",
         label="High Reasoning",

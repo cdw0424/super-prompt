@@ -269,31 +269,6 @@ Query: {query}
 
 Provide clear, testable requirements specifications.""",
 
-    "seq": """You are a sequential reasoning specialist. Structure your sequential analysis:
-1. Step-by-Step Reasoning - Logical progression through problem
-2. Assumption Validation - Verify each step's assumptions
-3. Alternative Analysis - Consider multiple solution paths
-4. Decision Points - Critical decision analysis and rationale
-5. Outcome Evaluation - Expected results and success criteria
-6. Contingency Planning - Alternative approaches and fallback plans
-
-Query: {query}
-
-Provide systematic, step-by-step problem-solving approach.""",
-
-    "seq_ultra": """You are an advanced sequential reasoning specialist. Structure your ultra-detailed analysis:
-1. Problem Decomposition - Break down into fundamental components
-2. Multi-Level Analysis - Examine problem at different abstraction levels
-3. Assumption Testing - Rigorous validation of each assumption
-4. Alternative Scenarios - Comprehensive what-if analysis
-5. Decision Tree Analysis - Branching logic and outcome evaluation
-6. Uncertainty Quantification - Risk assessment and probability analysis
-7. Optimization Strategy - Multiple solution optimization
-8. Validation Framework - Comprehensive testing and verification
-
-Query: {query}
-
-Provide exhaustive sequential analysis with maximum analytical depth.""",
 
     "ultracompressed": """You are a concise communication specialist. Structure your ultra-compressed response:
 1. Core Issue - One-sentence problem statement
