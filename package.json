@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "5.6.5",
-  "description": "Super Prompt v5.6.5 - Cursor-first MCP research & delivery copilot",
+  "version": "6.0.6",
+  "description": "Super Prompt v6.0.6 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "sp-mcp": "bin/sp-mcp"
@@ -39,9 +39,8 @@
     "prompt-engineering",
     "productivity",
     "automation",
-    "amr",
-    "model-routing",
-    "codex"
+    "mcp",
+    "sdd"
   ],
   "author": "Daniel Choi",
   "license": "MIT",
@@ -84,6 +83,6 @@
     "zod": "^4.1.8"
   },
   "dependencies": {
-    "@cdw0424/super-prompt": "^5.6.5"
+    "@cdw0424/super-prompt": "^6.0.2"
   }
 }

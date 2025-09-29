@@ -1,5 +1,44 @@
 # Changelog
 
+## v6.0.6 — 2025-09-28
+
+- **README Improvements**: Enhanced Quick Start section with installation, initialization, language modes, and usage examples
+- **Installation Documentation**: Added sudo requirement for global npm installs in README
+- **SDD Mode Toggle Commands**: Added `sdd-mode-on` and `sdd-mode-off` CLI commands with Cursor integration
+- **Codex Import Cleanup**: Removed all references to deleted Codex modules to prevent import errors
+- **CLI Stability**: Fixed remaining import issues in global and local CLI installations
+- **Version Alignment**: Updated package versions across NPM and Python to maintain consistency
+
+## v6.0.3 — 2025-09-28
+
+- **Syntax Error Fix**: Corrected indentation issues in Grok Code Fast helper functions causing CLI import failures
+- **CLI Stability**: Fixed unmatched ')' in AMR-removed code sections preventing `super-prompt super:init --force` from running
+
+## v6.0.2 — 2025-09-28
+
+- **Stability Improvements**: Enhanced initialization stability and error handling
+- **Documentation Updates**: Updated all documentation and version references to v6.0.2
+- **Bug Fixes**: Minor bug fixes and performance improvements
+
+## v6.0.1 — 2025-09-28
+
+- **AMR Functionality Removal**: Completely removed AMR (Auto Model Router) functionality to prevent `.codex` file modifications during `super:init`
+- **Codex CLI Integration Disabled**: Removed all Codex CLI integration and `.codex` directory creation to eliminate file system conflicts
+- **Enhanced Stability**: Eliminated potential conflicts between Super Prompt initialization and existing `.codex` configurations
+- **Cleaner Installation**: Streamlined initialization process without legacy AMR/Codex interference
+- **Documentation Updates**: Updated all documentation to reflect AMR removal and cleaner initialization process
+
+## v6.0.0 — 2025-09-28
+
+- **MCP-First SDD Development Platform**: Complete architectural redesign transforming Super Prompt into an enterprise-grade MCP-First development platform with comprehensive SDD (Scope → Design → Delivery) workflow and documentation management
+- **29+ Specialized MCP Tools**: Full MCP tool suite optimized for each development task type with evidence-based analysis, citations, and double-check rituals
+- **SDD Documentation System**: Every SDD phase generates comprehensive, traceable documentation with automatic folder organization and version tracking
+- **Enhanced Cursor Integration**: MCP-First architecture with optimized LLM mode switching (GPT/Claude/Grok) and context management
+- **Documentation Automation**: Automated SDD project creation, documentation updates, and status tracking with CLI scripts
+- **Quality Guardrails**: Mandatory documentation requirements, evidence-based outputs, and comprehensive quality gates at every SDD phase
+- **Enterprise-Grade Architecture**: Production-ready with audit trails, rollback capabilities, and team collaboration features
+- **Comprehensive CLI Tools**: Automated scripts for SDD project management, documentation updates, and integration verification
+
 ## v5.6.5 — 2025-09-27
 
 - **Rule Cleanup**: Removed legacy `10-sdd-core.mdc` and `12-amr.mdc` so SDD/AMR workflows are opt-in only; no more forced compliance for general development.

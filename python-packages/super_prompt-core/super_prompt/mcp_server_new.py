@@ -84,8 +84,7 @@ def _should_register_tool(tool_name: str) -> bool:
     core_tools = {
         'sp_health', 'sp_version', 'sp_list_commands', 'list_personas',
         'sp_mode_get_mcp', 'sp_mode_set_mcp', 'sp_grok_mode_on_mcp',
-        'sp_grok_mode_off_mcp', 'sp_high_mode_on_mcp', 'sp_high_mode_off_mcp',
-        'sp_sdd_mode_on_mcp', 'sp_sdd_mode_off_mcp'
+        'sp_grok_mode_off_mcp', 'sp_high_mode_on_mcp', 'sp_high_mode_off_mcp'
     }
 
     if tool_name in core_tools:
@@ -378,36 +377,6 @@ def sp_high_mode_off_mcp():
 
 
 _TOOL_REGISTRY["sp_high_mode_off"] = sp_high_mode_off_mcp
-
-
-@mcp.tool(name="sp_sdd_mode_on")
-def sp_sdd_mode_on_mcp():
-    """Enable SDD mode."""
-    try:
-        # Import the CLI function
-        from .cli import sdd_mode_on
-        result = sdd_mode_on()
-        return result
-    except Exception as e:
-        return f"❌ Error enabling SDD mode: {str(e)}"
-
-
-_TOOL_REGISTRY["sp_sdd_mode_on"] = sp_sdd_mode_on_mcp
-
-
-@mcp.tool(name="sp_sdd_mode_off")
-def sp_sdd_mode_off_mcp():
-    """Disable SDD mode."""
-    try:
-        # Import the CLI function
-        from .cli import sdd_mode_off
-        result = sdd_mode_off()
-        return result
-    except Exception as e:
-        return f"❌ Error disabling SDD mode: {str(e)}"
-
-
-_TOOL_REGISTRY["sp_sdd_mode_off"] = sp_sdd_mode_off_mcp
 
 
 # Context Management Protocol Tools
@@ -1110,6 +1079,7 @@ if _should_register_tool('sp_grok_code_fast_architect'):
     def sp_grok_code_fast_architect(query: str, context_cache_key: str = "") -> str:
         """Architecture design tool optimized for Grok Code Fast 1."""
         try:
+            # Try to get cached context first
             cached_context = _get_cached_context(context_cache_key) if context_cache_key else None
 
             if cached_context:
@@ -1117,6 +1087,7 @@ if _should_register_tool('sp_grok_code_fast_architect'):
             else:
                 enhanced_query = query
 
+            # Use code_fast_architect prompt
             from .prompts.workflow_executor import run_prompt_based_workflow
             result = run_prompt_based_workflow("code_fast_architect", enhanced_query)
 
@@ -1133,6 +1104,7 @@ if _should_register_tool('sp_grok_code_fast_backend'):
     def sp_grok_code_fast_backend(query: str, context_cache_key: str = "") -> str:
         """Backend development tool optimized for Grok Code Fast 1."""
         try:
+            # Try to get cached context first
             cached_context = _get_cached_context(context_cache_key) if context_cache_key else None
 
             if cached_context:
@@ -1140,6 +1112,7 @@ if _should_register_tool('sp_grok_code_fast_backend'):
             else:
                 enhanced_query = query
 
+            # Use code_fast_backend prompt
             from .prompts.workflow_executor import run_prompt_based_workflow
             result = run_prompt_based_workflow("code_fast_backend", enhanced_query)
 

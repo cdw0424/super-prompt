@@ -5,7 +5,6 @@ import json
 import os
 
 from .prompts.workflow_executor import run_prompt_based_workflow
-from .codex.client import run_codex_high_with_fallback
 from .context.collector import ContextCollector
 from .personas.pipeline_manager import PersonaPipeline
 from .high_mode import is_high_mode_enabled
@@ -86,7 +85,7 @@ def create_app():
         context_result = collector.collect_context(query, max_tokens=8000)
         context_digest = _format_codex_context(context_result)
 
-        plan_output = run_codex_high_with_fallback(query=query, context=context_digest, persona=persona)
+        plan_output = run_prompt_based_workflow("high", query)
         if isinstance(plan_output, dict):
             return json.dumps(plan_output, ensure_ascii=False)
         return plan_output

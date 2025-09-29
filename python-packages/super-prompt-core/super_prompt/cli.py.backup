@@ -51,9 +51,10 @@ from .context.collector import ContextCollector
 from .sdd.gates import check_implementation_ready
 from .personas.loader import PersonaLoader
 from .adapters.cursor_adapter import CursorAdapter
+from .adapters.codex_adapter import CodexAdapter
 from .validation.todo_validator import TodoValidator
 from .paths import package_root, project_root, project_data_dir, cursor_assets_root
-from .mcp_register import ensure_cursor_mcp_registered, validate_project_ssot, ensure_project_ssot_priority, get_ssot_guidance, perform_ssot_migration
+from .mcp_register import ensure_cursor_mcp_registered, ensure_codex_mcp_registered, validate_project_ssot, ensure_project_ssot_priority, get_ssot_guidance, perform_ssot_migration
 from .mode_store import set_mode as set_mode_file
 from .personas.loader import PersonaLoader
 from .mcp_client import MCPClient
@@ -127,14 +128,21 @@ app.add_typer(setup_app)
 @setup_app.command("global")
 def setup_global(
     cursor: bool = typer.Option(False, "--cursor", help="Setup Cursor MCP server globally"),
+    codex: bool = typer.Option(False, "--codex", help="Setup Codex MCP server globally"),
     project_root: Optional[Path] = typer.Option(
         None, "--project-root", help="Project root directory"
     ),
     force: bool = typer.Option(False, "--force", help="Force overwrite existing configurations"),
 ):
-    """Explicit global MCP setup (SSOT compliance)."""
-    if not cursor:
-        typer.echo("❌ Error: Must specify --cursor to run global setup", err=True)
+    """
+    Explicit global MCP setup (Phase 2: SSOT compliance)
+
+    This command provides explicit control over global MCP registration.
+    Use this when you specifically want global setup, rather than automatic registration.
+    """
+    if not cursor and not codex:
+        typer.echo("❌ Error: Must specify at least one of --cursor or --codex", err=True)
+        typer.echo("💡 Usage: super-prompt setup global --cursor --codex", err=True)
         raise typer.Exit(1)
 
     target_dir = Path(project_root or ".").resolve()
@@ -142,6 +150,7 @@ def setup_global(
     typer.echo("🔧 Explicit Global MCP Setup (SSOT Compliant)")
     typer.echo(f"   Project: {target_dir}")
     typer.echo(f"   Cursor: {'✅' if cursor else '❌'}")
+    typer.echo(f"   Codex: {'✅' if codex else '❌'}")
     typer.echo(f"   Force: {'✅' if force else '❌'}")
     typer.echo()
 
@@ -155,13 +164,25 @@ def setup_global(
     except Exception as e:
         typer.echo(f"⚠️  SSOT validation failed: {e}")
 
-    try:
-        typer.echo("🚀 Setting up Cursor MCP globally...")
-        cfg_path = ensure_cursor_mcp_registered(target_dir, overwrite=force)
-        typer.echo(f"✅ Cursor MCP registered globally: {cfg_path}")
-    except Exception as e:
-        typer.echo(f"❌ Cursor setup failed: {e}", err=True)
-        raise typer.Exit(1)
+    # Cursor global setup
+    if cursor:
+        try:
+            typer.echo("🚀 Setting up Cursor MCP globally...")
+            cfg_path = ensure_cursor_mcp_registered(target_dir, overwrite=force)
+            typer.echo(f"✅ Cursor MCP registered globally: {cfg_path}")
+        except Exception as e:
+            typer.echo(f"❌ Cursor setup failed: {e}", err=True)
+            raise typer.Exit(1)
+
+    # Codex global setup
+    if codex:
+        try:
+            typer.echo("🚀 Setting up Codex MCP globally...")
+            codex_cfg = ensure_codex_mcp_registered(target_dir, overwrite=force)
+            typer.echo(f"✅ Codex MCP registered globally: {codex_cfg}")
+        except Exception as e:
+            typer.echo(f"❌ Codex setup failed: {e}", err=True)
+            raise typer.Exit(1)
 
     typer.echo()
     typer.echo("🎉 Global MCP setup completed!")
@@ -172,17 +193,25 @@ def setup_global(
 @setup_app.command("cleanup")
 def setup_cleanup(
     cursor: bool = typer.Option(False, "--cursor", help="Remove Cursor global MCP entries"),
+    codex: bool = typer.Option(False, "--codex", help="Remove Codex global MCP entries"),
     server_name: str = typer.Option("super-prompt", "--server-name", help="MCP server name to clean"),
 ):
-    """Cleanup global MCP entries (SSOT compliance restoration)."""
-    if not cursor:
-        typer.echo("❌ Error: Must specify --cursor to run cleanup", err=True)
+    """
+    Cleanup global MCP entries (SSOT compliance restoration)
+
+    This command removes global MCP configurations to restore SSOT compliance.
+    Use this when you want to rely only on project-local configurations.
+    """
+    if not cursor and not codex:
+        typer.echo("❌ Error: Must specify at least one of --cursor or --codex", err=True)
+        typer.echo("💡 Usage: super-prompt setup cleanup --cursor --codex", err=True)
         raise typer.Exit(1)
 
     from .mcp_register import cleanup_global_entries
 
     typer.echo("🧹 Global MCP Cleanup (SSOT Restoration)")
     typer.echo(f"   Cursor: {'✅' if cursor else '❌'}")
+    typer.echo(f"   Codex: {'✅' if codex else '❌'}")
     typer.echo(f"   Server: {server_name}")
     typer.echo()
 
@@ -328,8 +357,9 @@ def setup_migrate(
         status = result.get("current_status", {})
         typer.echo("   📁 Current Status:")
         typer.echo(f"     • Project Cursor: {'✅' if status.get('project_cursor_exists') else '❌'}")
+        typer.echo(f"     • Project Codex: {'✅' if status.get('project_codex_exists') else '❌'}")
         typer.echo(f"     • Global Cursor: {'✅' if status.get('global_cursor_exists') else '❌'}")
-        typer.echo(f"     • Codex CLI: {'ℹ️ User-managed' if True else '❌'}")
+        typer.echo(f"     • Global Codex: {'✅' if status.get('global_codex_exists') else '❌'}")
 
         # SSOT compliance status
         ssot_before = result.get("ssot_compliant_before")
@@ -774,6 +804,44 @@ def sdd_command(
 
 
 # AMR functionality removed
+def amr_print(
+        root = Path(project_root or ".")
+        cursor_dir = root / ".cursor"
+        cursor_dir.mkdir(parents=True, exist_ok=True)
+        flag = cursor_dir / ".codex-mode"
+        flag.write_text("", encoding="utf-8")
+        # Mutual exclusivity: disable Grok mode flag if present
+        grok_flag = root / ".cursor" / ".grok-mode"
+        if grok_flag.exists():
+            try:
+                grok_flag.unlink()
+                typer.echo("-------- Grok mode disabled due to Codex AMR activation")
+            except Exception:
+                pass
+        typer.echo("-------- Codex AMR mode: ENABLED (.cursor/.codex-mode)")
+    except Exception as e:
+        typer.echo(f"❌ Error enabling Codex mode: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command("codex-mode-off")
+def codex_mode_off(
+    project_root: Optional[Path] = typer.Option(
+        None, "--project-root", help="Project root directory"
+    ),
+):
+    """Disable Codex AMR mode by removing .cursor/.codex-mode flag."""
+    try:
+        root = Path(project_root or ".")
+        flag = root / ".cursor" / ".codex-mode"
+        if flag.exists():
+            flag.unlink()
+            typer.echo("-------- Codex AMR mode: DISABLED")
+        else:
+            typer.echo("-------- Codex AMR mode: Already disabled")
+    except Exception as e:
+        typer.echo(f"❌ Error disabling Codex mode: {e}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command("grok-mode-on")
@@ -1075,41 +1143,6 @@ def validate(
         raise typer.Exit(1)
 
 
-@app.command("sdd-mode-on")
-def sdd_mode_on(
-    project_root: str = typer.Option(".", "--project-root", help="Project root directory"),
-):
-    """Enable SDD mode by creating .cursor/.sdd-mode flag."""
-    try:
-        root = Path(project_root)
-        cursor_dir = root / ".cursor"
-        cursor_dir.mkdir(parents=True, exist_ok=True)
-        flag = cursor_dir / ".sdd-mode"
-        flag.write_text("", encoding="utf-8")
-        typer.echo("-------- SDD mode: ENABLED (.cursor/.sdd-mode)")
-    except Exception as e:
-        typer.echo(f"❌ Error enabling SDD mode: {e}", err=True)
-        raise typer.Exit(1)
-
-
-@app.command("sdd-mode-off")
-def sdd_mode_off(
-    project_root: str = typer.Option(".", "--project-root", help="Project root directory"),
-):
-    """Disable SDD mode by removing .cursor/.sdd-mode flag."""
-    try:
-        root = Path(project_root)
-        flag = root / ".cursor" / ".sdd-mode"
-        if flag.exists():
-            flag.unlink()
-            typer.echo("-------- SDD mode: DISABLED")
-        else:
-            typer.echo("-------- SDD mode: Already disabled")
-    except Exception as e:
-        typer.echo(f"❌ Error disabling SDD mode: {e}", err=True)
-        raise typer.Exit(1)
-
-
 @app.command()
 def init(
     project_root: Optional[Path] = typer.Option(
@@ -1122,8 +1155,8 @@ def init(
     CRITICAL PROTECTION: This command and all personas MUST NEVER modify files in:
     - .cursor/ (Cursor IDE configuration)
     - .super-prompt/ (Super Prompt internal files)
-    - .codex/ (Codex CLI configuration - managed by user)
-    These directories are protected and should only be modified by their respective official tools.
+    - .codex/ (Codex CLI configuration)
+    These directories are protected and should only be modified by official installation processes.
     """
     # 디버깅 메시지 (함수 시작 부분)
     import sys
@@ -1137,7 +1170,7 @@ def init(
         typer.echo("\033[33mPersonas and user commands MUST NEVER modify files in:\033[0m")
         typer.echo("\033[33m  - .cursor/ (Cursor IDE configuration)\033[0m")
         typer.echo("\033[33m  - .super-prompt/ (Super Prompt internal files)\033[0m")
-        typer.echo("\033[33m  - .codex/ (Codex CLI configuration - managed by user)\033[0m")
+        typer.echo("\033[33m  - .codex/ (Codex CLI configuration)\033[0m")
         typer.echo(
             "\033[36mThis official installation process is authorized to create these directories.\033[0m"
         )
@@ -1289,8 +1322,8 @@ def init(
         # Store MCP settings globally at ~/.cursor/mcp.json (avoid duplication)
         typer.echo("✅ MCP settings will be configured globally at ~/.cursor/mcp.json")
 
-        # Codex functionality has been removed to prevent .codex file modifications
-        # typer.echo("✅ Codex settings will be configured globally at ~/.codex")
+        # Store Codex settings only globally at ~/.codex (no project .codex creation)
+        typer.echo("✅ Codex settings will be configured globally at ~/.codex")
 
         # Copy .super-prompt directory from package
         import shutil
@@ -1661,7 +1694,9 @@ Brief description of the feature.
                 memory_dir = target_dir / "memory"
                 memory_dir.mkdir(parents=True, exist_ok=True)
 
-                # .codex directory creation removed to prevent file system conflicts
+                # .codex 폴더
+                codex_dir = target_dir / ".codex"
+                codex_dir.mkdir(parents=True, exist_ok=True)
 
             except Exception:
                 pass  # 조용히 실패 처리
@@ -1673,16 +1708,15 @@ Brief description of the feature.
             pass  # 조용히 실패 처리
 
         # Optional: Codex registration (always overwrite to prevent drift)
-        # NOTE: Codex functionality has been removed to prevent .codex file modifications during super:init
         codex_registered = False
-        # try:
-        #     codex_cfg = ensure_codex_mcp_registered(target_dir, overwrite=True)
-        #     codex_registered = True
-        #     typer.echo(f"✅ Codex MCP server registered: {codex_cfg}")
-        #     typer.echo("✅ Codex configuration: Using GLOBAL ~/.codex (prevents duplication)")
-        # except Exception as e:
-        #     typer.echo(f"⚠️  Codex registration failed: {e}")
-        #     codex_registered = False
+        try:
+            codex_cfg = ensure_codex_mcp_registered(target_dir, overwrite=True)
+            codex_registered = True
+            typer.echo(f"✅ Codex MCP server registered: {codex_cfg}")
+            typer.echo("✅ Codex configuration: Using GLOBAL ~/.codex (prevents duplication)")
+        except Exception as e:
+            typer.echo(f"⚠️  Codex registration failed: {e}")
+            codex_registered = False
 
         # Execute SSOT compliance validation
         try:
@@ -1860,7 +1894,7 @@ Brief description of the feature.
         typer.echo("     - ~/.cursor/commands/super-prompt/ (global persona commands)")
         typer.echo("     - ~/.cursor/rules/ (global SuperClaude framework rules)")
         typer.echo("     - .super-prompt/ (with all internal system files)")
-        # .codex directory creation removed to prevent file system conflicts
+        typer.echo("     - .codex/ (with agents.md, bootstrap prompt, router script)")
         typer.echo("     - specs/ (for SDD specifications)")
         typer.echo("     - memory/ (for context and rules)")
         typer.echo("   MCP Settings:")

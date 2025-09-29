@@ -17,11 +17,9 @@ def _disable_all_modes(root: Path, except_mode: Optional[str] = None) -> List[st
     rules_dir = cursor_dir / "rules"
 
     known_flags = {
-        "codex": [cursor_dir / ".codex-mode", root / ".codex" / ".codex-mode"],
         "grok": [cursor_dir / ".grok-mode"],
     }
     known_rules = {
-        "codex": rules_dir / "20-gpt5-guidance.mdc",
         "grok": rules_dir / "20-grok-guidance.mdc",
     }
 
@@ -49,125 +47,50 @@ def _disable_all_modes(root: Path, except_mode: Optional[str] = None) -> List[st
     return logs
 
 
-def enable_codex_mode(project_root: Optional[Path] = None) -> List[str]:
-    """Enable GPT/Codex AMR mode and install GPT-5 guidance rules."""
-    root = Path(project_root or ".")
-    logs: List[str] = []
-    cursor_dir = root / ".cursor"
-    cursor_dir.mkdir(parents=True, exist_ok=True)
-
-    logs.extend(_disable_all_modes(root, except_mode="codex"))
-
-    # Enable flag
-    (cursor_dir / ".codex-mode").write_text("", encoding="utf-8")
-
-    # Install GPT-5 guidance rules
-    rules_dir = cursor_dir / "rules"
-    rules_dir.mkdir(parents=True, exist_ok=True)
-    gpt5_rule = rules_dir / "20-gpt5-guidance.mdc"
-    gpt5_rule.write_text(
-        """---
-description: "GPT-5 guidance for personas (applies in GPT mode)"
-globs: ["**/*"]
-alwaysApply: true
----
-# GPT-5 Usage Guidelines (GPT Mode)
-- Scope: Applies when GPT mode is enabled for all personas.
-- Language: English only. All logs must be prefixed with `--------`.
-- Safety: Never print secrets (mask like `sk-***`). Ask confirmation before destructive ops or network calls.
-
-## 1) Be Precise; Avoid Conflicts
-- Prefer unambiguous, specific instructions; avoid mixing competing goals.
-- Resolve conflicts in favor of AGENTS.md and `.cursor/rules` in this repo.
-- SSOT first: Follow personas manifest/.cursor/rules/AGENTS.md as single source of truth.
-
-## 2) Use the Right Reasoning Effort
-- Default to gpt-5 with reasoning=medium.
-- Escalate to high only for heavy planning/review or complex root-cause work.
-- After planning/review, return to medium for execution.
-
-## 3) Use XML-like Blocks for Structure
-Include and follow structured blocks when present:
-
-```xml
-<code_editing_rules>
-  <guiding_principles>
-    - Modular, reusable components
-    - Clarity over cleverness
-    - Minimal diffs; focused changes
-  </guiding_principles>
-  <frontend_stack_defaults>
-    - Styling: TailwindCSS
-  </frontend_stack_defaults>
-</code_editing_rules>
-
-<self_reflection>
-  - Think in a private rubric (5–7 categories) before building
-  - Iterate internally until the solution scores high across the rubric
-</self_reflection>
-
-<persistence>
-  - Be decisive without asking for clarification unless blocking
-  - Do not over-gather context; respect tool budgets
-  - Still ASK CONFIRMATION before destructive ops or any network calls
-</persistence>
-```
-
-## 4) Calibrated Tone (Avoid Overly Firm Language)
-- Avoid hyperbolic mandates (e.g., "ALWAYS be THOROUGH").
-- Stay concise and practical; be specific about what to do next.
-
-## 5) Allow Planning and Self‑Reflection
-- For zero‑to‑one or ambiguous tasks, add a brief internal plan before code.
-- Use the AMR high reasoning phase for PLAN/REVIEW; then return to medium.
-
-## 6) Control Eagerness of the Coding Agent
-- Be explicit about tool budgets and sequencing.
-- Parallelize only when it reduces latency without sacrificing safety.
-- Defer to the fixed AMR state machine and repository guards.
-""",
-        encoding="utf-8",
-    )
-
-    # Persona overrides for GPT
-    logs.extend(_install_persona_overrides(root, model="gpt"))
-    # Materialize GPT prompting guide from docs
-    try:
-        _write_model_prompt_guide(root, model="gpt")
-        logs.append("-------- Installed GPT prompting guide (.cursor/rules/22-model-guide.mdc)")
-    except Exception:
-        # Non-fatal if docs are missing
-        pass
-    logs.append("-------- Codex AMR mode: ENABLED (.cursor/.codex-mode)")
-    logs.append("-------- Installed GPT-5 guidance rules (.cursor/rules/20-gpt5-guidance.mdc)")
-    return logs
+# AMR functionality has been removed to prevent .codex file modifications during super:init
+# def enable_codex_mode(project_root: Optional[Path] = None) -> List[str]:
+#     """Enable GPT/Codex AMR mode and install GPT-5 guidance rules."""
+#     root = Path(project_root or ".")
+#     logs: List[str] = []
+#     cursor_dir = root / ".cursor"
+#     cursor_dir.mkdir(parents=True, exist_ok=True)
+#
+#     logs.extend(_disable_all_modes(root, except_mode="codex"))
+#
+#     # Enable flag
+#     (cursor_dir / ".codex-mode").write_text("", encoding="utf-8")
+#
+#     # Install GPT-5 guidance rules
+    # GPT/Codex mode removed
 
 
-def disable_codex_mode(project_root: Optional[Path] = None) -> List[str]:
-    root = Path(project_root or ".")
-    logs: List[str] = []
-    flag = root / ".cursor" / ".codex-mode"
-    if flag.exists():
-        flag.unlink()
-        logs.append("-------- Codex AMR mode: DISABLED")
-    else:
-        logs.append("-------- Codex AMR mode: Already disabled")
+# AMR functionality has been removed to prevent .codex file modifications during super:init
+# def disable_codex_mode(project_root: Optional[Path] = None) -> List[str]:
+#     root = Path(project_root or ".")
+#     logs: List[str] = []
+#     flag = root / ".cursor" / ".codex-mode"
+#     if flag.exists():
+#         flag.unlink()
+#         logs.append("-------- Codex AMR mode: DISABLED")
+#     else:
+#         logs.append("-------- Codex AMR mode: Already disabled")
 
-    gpt5_rule = root / ".cursor" / "rules" / "20-gpt5-guidance.mdc"
-    if gpt5_rule.exists():
-        gpt5_rule.unlink()
-        logs.append("-------- Removed GPT-5 guidance rules")
-    # Remove persona overrides
-    ov = root / ".cursor" / "rules" / "21-persona-overrides.mdc"
-    if ov.exists():
-        ov.unlink()
-        logs.append("-------- Removed persona overrides")
-    # Remove model guide
-    mg = root / ".cursor" / "rules" / "22-model-guide.mdc"
-    if mg.exists():
-        mg.unlink()
-        logs.append("-------- Removed model prompting guide")
-    return logs
+    # AMR functionality has been removed to prevent .codex file modifications during super:init
+    # gpt5_rule = root / ".cursor" / "rules" / "20-gpt5-guidance.mdc"
+    # if gpt5_rule.exists():
+    #     gpt5_rule.unlink()
+    #     logs.append("-------- Removed GPT-5 guidance rules")
+    # # Remove persona overrides
+    # ov = root / ".cursor" / "rules" / "21-persona-overrides.mdc"
+    # if ov.exists():
+    #     ov.unlink()
+    #     logs.append("-------- Removed persona overrides")
+    # # Remove model guide
+    # mg = root / ".cursor" / "rules" / "22-model-guide.mdc"
+    # if mg.exists():
+    #     mg.unlink()
+    #     logs.append("-------- Removed model prompting guide")
+    # return logs
 
 
 def enable_grok_mode(project_root: Optional[Path] = None) -> List[str]:

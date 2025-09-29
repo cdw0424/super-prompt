@@ -11,7 +11,6 @@ from typing import Dict, Any, Optional, List, Callable, Union, Tuple
 
 from ..core.memory_manager import progress
 from ..analysis.project_analyzer import analyze_project_context
-from ..codex.integration import call_codex_assistance, should_use_codex_assistance, summarize_situation_for_codex
 from ..sdd.architecture import generate_sdd_persona_overlay
 from ..prompts.workflow_executor import run_prompt_based_workflow
 
@@ -21,7 +20,7 @@ class PersonaPipelineConfig:
     persona: str
     label: str
     memory_tag: str
-    use_codex: Optional[bool] = None
+    use_codex: Optional[bool] = False
     plan_builder: Optional[Callable[[str, dict], List[str]]] = None
     exec_builder: Optional[Callable[[str, dict], List[str]]] = None
     persona_kwargs: Optional[Dict[str, Any]] = None
@@ -64,7 +63,7 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         persona="security",
         label="Security",
         memory_tag="pipeline_security",
-        use_codex=True,
+        use_codex=False,
         empty_prompt="🛡️ Security pipeline activated. Describe the threat or vulnerability.",
     ),
     "performance": PersonaPipelineConfig(
@@ -77,7 +76,7 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         persona="analyzer",
         label="Analyzer",
         memory_tag="pipeline_analyzer",
-        use_codex=True,
+        use_codex=False,
         empty_prompt="🔍 Analyzer pipeline activated. Describe the incident or defect to investigate.",
     ),
     "qa": PersonaPipelineConfig(
@@ -157,14 +156,14 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         persona="service-planner",
         label="Service Planner",
         memory_tag="pipeline_service_planner",
-        use_codex=True,
+        use_codex=False,
         empty_prompt="🧭 Service Planner pipeline activated. Outline the service or product goal.",
     ),
     "tr": PersonaPipelineConfig(
         persona="tr",
         label="Troubleshooting",
         memory_tag="pipeline_troubleshooting",
-        use_codex=True,
+        use_codex=False,
         empty_prompt="🛠️ Troubleshooting pipeline activated. Describe the incident, symptoms, or failing task to diagnose.",
     ),
     "doc-master": PersonaPipelineConfig(
@@ -195,7 +194,7 @@ PIPELINE_CONFIGS: Dict[str, PersonaPipelineConfig] = {
         persona="high",
         label="High Reasoning",
         memory_tag="pipeline_high",
-        use_codex=True,
+        use_codex=False,
         empty_prompt="🧠 High Reasoning pipeline activated. Share the strategic question to explore.",
     ),
 }
