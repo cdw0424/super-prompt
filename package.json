@@ -1,10 +1,10 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "6.0.6",
-  "description": "Super Prompt v6.0.6 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
+  "version": "6.1.1",
+  "description": "Super Prompt v6.1.1 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
   "bin": {
     "super-prompt": "bin/super-prompt",
-    "sp-mcp": "bin/sp-mcp"
+    "super-prompt-mcp": "bin/sp-mcp"
   },
   "scripts": {
     "clean:py": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
