@@ -1203,8 +1203,8 @@ def init(
         target_os = target_os_env or target_os_config or "mac"
         if interactive_allowed and not target_os_env:
             typer.echo("")
-            typer.echo("환경 선택에 따라 설치 경로가 조정됩니다.")
-            answer = typer.prompt("초기화할 환경을 선택하세요 (mac/windows)", default=target_os)
+            typer.echo("Installation paths will be adjusted based on your environment selection.")
+            answer = typer.prompt("Select your target environment (mac/windows)", default=target_os)
             target_os = normalize_target_os(answer) or target_os
 
         os.environ["SUPER_PROMPT_TARGET_OS"] = target_os
@@ -1506,11 +1506,11 @@ Brief description of the feature.
             debug_echo(f"Auto-configured MCP server path: {mcp_server_path}")
             debug_echo(f"Auto-configured Python package path: {python_package_path}")
 
-            # 3. Python 패키지 설치 확인 및 설치 (조용한 모드)
+            # 3. Python package installation verification and setup (quiet mode)
             try:
                 import importlib.util
                 if importlib.util.find_spec("super_prompt") is None:
-                    # Python 패키지 설치 시도 (조용히)
+                    # Attempt Python package installation (quietly)
                     try:
                         import subprocess
                         import sys
@@ -1519,9 +1519,9 @@ Brief description of the feature.
                             "--user", "super-prompt-core==5.2.21"
                         ], capture_output=True, text=True, timeout=60)
                     except Exception:
-                        pass  # 조용히 실패 처리
+                        pass  # Handle failures silently
             except Exception:
-                pass  # 조용히 실패 처리
+                pass  # Handle failures silently
 
             # 3. Super Prompt 내부 파일들 생성 (조용한 모드)
             try:
@@ -1580,7 +1580,7 @@ Brief description of the feature.
                 pass
 
             except Exception:
-                pass  # 조용히 실패 처리
+                pass  # Handle failures silently
 
             # 4. 커서 명령어와 규칙 파일 생성 (안전한 방법)
             try:
@@ -1619,7 +1619,7 @@ Brief description of the feature.
                             shutil.copy2(mdc_file, dst_file)
 
             except Exception:
-                pass  # 조용히 실패 처리
+                pass  # Handle failures silently
 
             # 5. 프로젝트 로컬 MCP 설정 생성 (프로젝트별 격리를 위해)
             try:
@@ -1664,10 +1664,10 @@ Brief description of the feature.
                 # .codex directory creation removed to prevent file system conflicts
 
             except Exception:
-                pass  # 조용히 실패 처리
+                pass  # Handle failures silently
 
-            # 초기화 완료 (최소 로그만 출력)
-            # MCP 서버가 올바르게 작동하도록 최소한의 로그만 출력
+            # Initialization complete (minimal logging)
+            # Ensure MCP server operates correctly with minimal logging
 
         except Exception:
             pass  # 조용히 실패 처리

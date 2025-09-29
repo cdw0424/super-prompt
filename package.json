@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "6.1.5",
-  "description": "Super Prompt v6.1.5 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
+  "version": "6.1.6",
+  "description": "Super Prompt v6.1.6 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "super-prompt-mcp-server": "bin/sp-mcp"

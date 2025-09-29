@@ -136,19 +136,19 @@ class ProgressIndicator:
         pass
 
     def show_success(self, message: str) -> None:
-        """성공 메시지를 표시 (silent mode for clean MCP operation)"""
+        """Display success message (silent mode for clean MCP operation)"""
         pass
 
     def show_error(self, message: str) -> None:
-        """오류 메시지를 표시 (silent mode for clean MCP operation)"""
+        """Display error message (silent mode for clean MCP operation)"""
         pass
 
     def show_info(self, message: str) -> None:
-        """정보 메시지를 표시 (silent mode for clean MCP operation)"""
+        """Display info message (silent mode for clean MCP operation)"""
         pass
 
     def show_warning(self, message: str) -> None:
-        """경고 메시지를 표시 (silent mode for clean MCP operation)"""
+        """Display warning message (silent mode for clean MCP operation)"""
         pass
 
 
