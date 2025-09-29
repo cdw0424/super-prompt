@@ -13,8 +13,8 @@ def ensure_cursor_mcp_registered(
 ) -> Path:
     """
     Global MCP registration: write to ~/.cursor/mcp.json.
-    Manages MCP server configuration globally to avoid project-specific duplication.
-    CRITICAL: Prevents any duplicate MCP installations by enforcing global-only registration.
+    Manages MCP server configuration globally while preserving existing MCP servers.
+    IMPORTANT: Always preserves existing MCP servers to prevent conflicts.
     """
     # 전역 ~/.cursor 디렉터리 사용 (항상 전역, 절대 중복 없음)
     cursor_dir = Path.home() / ".cursor"
@@ -44,19 +44,29 @@ def ensure_cursor_mcp_registered(
     }
 
     data = {}
+    existing_servers = {}
+
     if cfg_path.exists():
         try:
             data = json.loads(cfg_path.read_text(encoding="utf-8") or "{}")
+            # 기존 MCP 서버들을 백업
+            existing_servers = data.get("mcpServers", {}).copy()
         except Exception:
             # 파손/비JSON이면 보수적으로 새로 작성
             data = {}
 
     mcp = data.get("mcpServers") or {}
-    # overwrite=True이면 완전히 교체, 아니면 기존 설정과 병합
+
+    # overwrite=True라도 기존 MCP 서버들을 보존 (단, 같은 이름의 서버는 교체)
     if overwrite:
+        # 같은 이름의 서버만 교체, 다른 서버들은 모두 보존
         mcp[server_name] = entry
+        # overwrite=True일 때도 다른 기존 서버들을 보존
+        for existing_name, existing_config in existing_servers.items():
+            if existing_name != server_name:
+                mcp[existing_name] = existing_config
     else:
-        # 기존 설정과 병합
+        # 기존 설정과 병합 (항상 기존 서버들을 보존)
         if server_name in mcp and isinstance(mcp[server_name], dict):
             merged = dict(mcp[server_name])
             merged.update(entry)
