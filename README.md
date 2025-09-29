@@ -42,7 +42,7 @@ sudo npm install -g @cdw0424/super-prompt@latest
 super-prompt super:init --force
 
 # 3. Start MCP server for Cursor IDE
-super-prompt-mcp
+super-prompt-mcp-server
 ```
 
 ### Language Modes
@@ -124,7 +124,7 @@ sudo npm install -g @cdw0424/super-prompt@latest
 **Solution**: Ensure MCP server is running and Cursor is configured:
 ```bash
 # Start MCP server
-super-prompt-mcp
+super-prompt-mcp-server
 
 # Then restart Cursor IDE
 ```
