@@ -1,7 +1,7 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "6.1.4",
-  "description": "Super Prompt v6.1.4 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
+  "version": "6.1.5",
+  "description": "Super Prompt v6.1.5 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
   "bin": {
     "super-prompt": "bin/super-prompt",
     "super-prompt-mcp-server": "bin/sp-mcp"
@@ -82,7 +82,5 @@
     "ioredis": "^5.7.0",
     "zod": "^4.1.8"
   },
-  "dependencies": {
-    "@cdw0424/super-prompt": "^6.0.2"
-  }
+  "dependencies": {}
 }

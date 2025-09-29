@@ -102,7 +102,7 @@ python -m super_prompt.mcp_stdio
 #### npm Installation Conflicts (EEXIST Error)
 **Problem**: `npm error EEXIST: file already exists` during installation
 
-**Solution**: This issue has been resolved in v6.1.3+. If you're upgrading from an older version, you may need to manually remove conflicting files first.
+**Solution**: This issue has been resolved in v6.1.5+. If you're upgrading from an older version, you may need to manually remove conflicting files first.
 
 ```bash
 # If you have an older version installed, remove conflicting files first
@@ -110,12 +110,18 @@ sudo rm -f /opt/homebrew/bin/sp-mcp
 sudo rm -f /opt/homebrew/bin/super-prompt-mcp
 sudo rm -f /opt/homebrew/bin/super-prompt-mcp-server
 
+# Clear npm cache (recommended)
+npm cache clean --force
+
 # Then perform clean installation
 sudo npm uninstall -g @cdw0424/super-prompt
 sudo npm install -g @cdw0424/super-prompt@latest
 ```
 
-**Note**: Starting from v6.1.3, the binary name has been changed to `super-prompt-mcp-server` to prevent any future conflicts with other npm packages.
+**Note**: Starting from v6.1.5:
+- Binary name has been changed to `super-prompt-mcp-server` to prevent conflicts
+- Circular dependency has been removed from package.json
+- npm cache issues have been resolved
 
 #### macOS Permission Issues
 **Problem**: Permission denied during global installation
