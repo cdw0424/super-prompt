@@ -1,5 +1,4 @@
 # Local analysis reports and sessions
-.cursor/
 .codex/reports/
 memory/
 memory-bank/
@@ -31,6 +30,15 @@ context_memory.db
 node_modules/
 dist/
 builds/
+
+# NPM cache and temporary files (prevent git tracking issues)
+**/.npm-cache/
+**/.npm/
+**/node_modules/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 # Gitignore additions for cleanliness
 .DS_Store
 *.tgz

@@ -1,16 +1,10 @@
-// src/commands/super-init.ts
-import fs from 'node:fs';
-import path from 'node:path';
-import readline from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
+// src/commands/super-init.js
+const fs = require('fs');
+const path = require('path');
+const readline = require('readline/promises');
+const { stdin: input, stdout: output } = require('process');
 
-interface FrameworkConfig {
-  name: string;
-  description: string;
-  files: string[];
-}
-
-const FRAMEWORKS: Record<string, FrameworkConfig> = {
+const FRAMEWORKS = {
   'nextjs': {
     name: 'Next.js + TypeScript',
     description: 'React framework with TypeScript',
@@ -53,13 +47,13 @@ const FRAMEWORKS: Record<string, FrameworkConfig> = {
   }
 };
 
-function ensureDir(p: string) { 
+function ensureDir(p) { 
   if (!fs.existsSync(p)) {
     fs.mkdirSync(p, { recursive: true }); 
   }
 }
 
-async function promptFramework(): Promise<string> {
+async function promptFramework() {
   const rl = readline.createInterface({ input, output });
   
   try {
@@ -79,7 +73,7 @@ async function promptFramework(): Promise<string> {
     const answer = await rl.question('Enter your choice (1-8) [1]: ');
     const choice = answer.trim() || '1';
     
-    const mapping: Record<string, string> = {
+    const mapping = {
       '1': 'nextjs',
       '2': 'react',
       '3': 'react-router',
@@ -100,7 +94,7 @@ function printBanner() {
   console.log('');
   console.log('╔═══════════════════════════════════════════════════════════╗');
   console.log('║                                                           ║');
-  console.log('║            ⚡ SUPER PROMPT v6.1.6 ⚡                        ║');
+  console.log('║              ⚡ SUPER PROMPT v7.0.0 ⚡                      ║');
   console.log('║                                                           ║');
   console.log('║     Simplified Development Assistant for Cursor IDE       ║');
   console.log('║                                                           ║');
@@ -108,7 +102,7 @@ function printBanner() {
   console.log('');
 }
 
-export async function run(_ctx?: any) {
+async function run(_ctx) {
   printBanner();
   
   const cwd = process.cwd();
@@ -151,7 +145,7 @@ export async function run(_ctx?: any) {
     const selectedFiles = new Set(frameworkConfig.files);
     
     // Copy .cursor/ directory selectively
-    function copyDir(src: string, dest: string, relativePath: string = '') {
+    function copyDir(src, dest, relativePath = '') {
       if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
       }
@@ -250,10 +244,20 @@ export async function run(_ctx?: any) {
     console.log('');
 
     process.exitCode = 0;
-  } catch (err: any) {
+  } catch (err) {
     console.error('');
     console.error('❌ Installation failed:', err?.message || err);
     console.error('');
     process.exitCode = 1;
   }
+}
+
+// Export for use in bin/super-prompt
+if (require.main === module) {
+  run().catch(err => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
+} else {
+  module.exports = { run };
 }

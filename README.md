@@ -1,216 +1,285 @@
-# Super Prompt
+# Super Prompt v7
 
 [![npm version](https://img.shields.io/npm/v/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt) [![npm downloads](https://img.shields.io/npm/dt/@cdw0424/super-prompt.svg)](https://www.npmjs.com/package/@cdw0424/super-prompt) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Super Prompt is a powerful MCP-First SDD Development Platform designed for Cursor IDE integration, providing comprehensive AI-assisted development workflows with evidence-based analysis and quality gates.
+**Simplified Development Assistant for Cursor IDE**
 
-## Features
+Super Prompt v7 is a complete rewrite focused on simplicity and Cursor IDE integration. It provides framework-specific best practices, professional development roles, and a lightweight Spec-Driven Development workflow.
 
-- **MCP-First Architecture**: Built on Model Context Protocol for seamless AI integration
-- **SDD Workflow**: Spec-Driven Development with automated documentation and phase tracking
-- **29+ Specialized Personas**: Tailored AI tools for different development roles
-- **Cursor Integration**: Optimized for Cursor IDE with MCP server integration
-- **Quality Assurance**: Built-in validation, todo tracking, and regression testing
-- **Enterprise-Grade**: Production-ready with audit trails and team collaboration features
-- **Codex Compatible**: Works alongside existing Codex CLI installations without conflicts
+## ✨ What's New in v7
 
-## Installation
+- 🎯 **Framework Selection**: Choose your stack (Next.js, React, React Router v7, Vue, Python, Django, FastAPI)
+- 🚀 **Simplified Architecture**: No more MCP/Python dependencies
+- 📝 **Cursor Rules & Commands**: Native `.mdc` rules and `/commands`
+- 👥 **10 Professional Roles**: @architect, @frontend, @backend, and more
+- ⚡ **SDD Micro-Cycle**: Lightweight spec-driven development workflow
+- 🧹 **Clean Installation**: Single command setup with no legacy baggage
 
-### Global Installation (Recommended)
-```bash
-# Install globally (requires sudo on macOS/Linux)
-sudo npm install -g @cdw0424/super-prompt@latest
+## 🚀 Quick Start
 
-# Or install specific version
-sudo npm install -g @cdw0424/super-prompt@6.1.1
-```
-
-### Project Initialization
-```bash
-# Initialize Super Prompt in your project
-super-prompt super:init --force
-```
-
-## Quick Start
-
-### Basic Setup
-```bash
-# 1. Install globally
-sudo npm install -g @cdw0424/super-prompt@latest
-
-# 2. Initialize your project
-super-prompt super:init --force
-
-# 3. Start MCP server for Cursor IDE
-super-prompt-mcp-server
-```
-
-### Language Modes
-- **GPT Mode**: `super-prompt gpt-mode-on` (default)
-- **Grok Mode**: `super-prompt grok-mode-on`
-- **Claude Mode**: `super-prompt claude-mode-on`
-- **High Mode**: `super-prompt high-mode-on` (for complex reasoning)
-
-### Personas (29+ Available)
-- `/architect` - System architecture design
-- `/frontend` - Frontend development
-- `/backend` - Backend implementation
-- `/doc-master` - Documentation generation
-- `/security` - Security analysis
-- `/performance` - Performance optimization
-- `/qa` - Quality assurance
-- `/devops` - DevOps and deployment
-- And 20+ more specialized roles
-
-### SDD Workflow
-- `/specify` - Requirements specification
-- `/plan` - Implementation planning
-- `/tasks` - Task breakdown
-- `/implement` - Implementation execution
-
-### Example Usage
-```bash
-# Initialize your project
-super-prompt super:init --force
-
-# Switch to Grok mode for fast development
-super-prompt grok-mode-on
-
-# Use architect persona to design system
-/architect "Design a user authentication system"
-
-# Follow SDD workflow
-/specify "Build a task management app"
-/plan "Implement user stories"
-/tasks "Break down into development tasks"
-/implement "Execute the implementation"
-```
-
-### MCP Server
-```bash
-# Start MCP server for Cursor IDE integration
-super-prompt-mcp
-
-# Or use Python module directly
-python -m super_prompt.mcp_stdio
-```
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-#### npm Installation Conflicts (EEXIST Error)
-**Problem**: `npm error EEXIST: file already exists` during installation
-
-**Solution**: This issue has been resolved in v6.1.5+. If you're upgrading from an older version, you may need to manually remove conflicting files first.
+### Installation
 
 ```bash
-# If you have an older version installed, remove conflicting files first
-sudo rm -f /opt/homebrew/bin/sp-mcp
-sudo rm -f /opt/homebrew/bin/super-prompt-mcp
-sudo rm -f /opt/homebrew/bin/super-prompt-mcp-server
+# Install globally
+npm install -g @cdw0424/super-prompt
 
-# Clear npm cache (recommended)
-npm cache clean --force
-
-# Then perform clean installation
-sudo npm uninstall -g @cdw0424/super-prompt
-sudo npm install -g @cdw0424/super-prompt@latest
+# Initialize in your project
+cd your-project
+super-prompt super:init
 ```
 
-**Note**: Starting from v6.1.5:
-- Binary name has been changed to `super-prompt-mcp-server` to prevent conflicts
-- Circular dependency has been removed from package.json
-- npm cache issues have been resolved
+### Interactive Setup
 
-#### macOS Permission Issues
-**Problem**: Permission denied during global installation
+When you run `super:init`, you'll be prompted to select your project type:
 
-**Solution**: Use `sudo` for global npm installations:
+```
+📦 Select your project type:
+
+  1. Next.js + TypeScript (React framework)
+  2. React + TypeScript
+  3. React Router v7 + TypeScript
+  4. Vue.js + TypeScript
+  5. Python
+  6. Django (Python web framework)
+  7. FastAPI (Python API framework)
+  8. All Frameworks (install everything)
+
+Enter your choice (1-8) [1]:
+```
+
+### What Gets Installed
+
+After initialization, your project will have:
+
+```
+your-project/
+├── .cursor/
+│   ├── rules/
+│   │   ├── 01-codequality.mdc      # Code quality guidelines
+│   │   ├── 10-clean-code.mdc       # Clean code principles
+│   │   ├── 30-typescript.mdc       # TypeScript best practices (if selected)
+│   │   ├── 40-react.mdc            # React best practices (if selected)
+│   │   └── roles/                  # 10 professional roles
+│   │       ├── architect.mdc
+│   │       ├── backend.mdc
+│   │       ├── frontend.mdc
+│   │       ├── devops.mdc
+│   │       ├── double-check.mdc
+│   │       ├── performance.mdc
+│   │       ├── qa.mdc
+│   │       ├── refactor.mdc
+│   │       ├── security.mdc
+│   │       └── troubleshooting.mdc
+│   └── commands/
+│       └── sdd-micro.md            # Spec-Driven Development workflow
+└── ...
+```
+
+## 📚 Features
+
+### 🎯 Cursor Rules (Auto-Applied)
+
+These rules are automatically applied to all your code:
+
+- **Code Quality Guidelines** - Best practices for clean, maintainable code
+- **Clean Code Principles** - SOLID principles, DRY, SSOT compliance
+- **Framework-Specific Rules** - Tailored to your selected framework
+
+### 👥 Roles (Use with @)
+
+Invoke specialized AI roles for different tasks:
+
+| Role | Command | Description |
+|------|---------|-------------|
+| **Architect** | `@architect` | System architecture design and technical decisions |
+| **Backend** | `@backend` | Backend & API development, scalability, security |
+| **Frontend** | `@frontend` | Frontend & UI/UX development, accessibility |
+| **DevOps** | `@devops` | CI/CD, infrastructure, deployment automation |
+| **Double Check** | `@double-check` | Risk audit, verification, confession-driven review |
+| **Performance** | `@performance` | Performance optimization, profiling, benchmarking |
+| **QA** | `@qa` | Quality assurance, testing strategy, test automation |
+| **Refactor** | `@refactor` | Code refactoring, technical debt reduction |
+| **Security** | `@security` | Security audit, threat modeling, vulnerability analysis |
+| **Troubleshooting** | `@troubleshooting` | Debugging, root-cause analysis, incident response |
+
+### ⚡ Commands (Use with /)
+
+Execute specialized workflows:
+
+- **`/sdd-micro`** - Lightweight Spec-Driven Development workflow
+  - Clarify requirements
+  - Plan implementation
+  - Implement with confidence
+  - Verify completion
+
+## 🎯 Usage Examples
+
+### Starting a New Feature
+
+```
+/sdd-micro
+
+> What feature are you building?
+Add rate limiting to API
+
+> Why does this matter?
+Prevent abuse and ensure fair usage
+
+> How will you know it's done?
+- 100 req/min limit enforced
+- 429 status on exceed
+- Rate limit headers in response
+
+✓ Created: docs/super-prompt/sdd/001-251010-add-rate-limiting/spec.md
+✓ Created: docs/super-prompt/sdd/001-251010-add-rate-limiting/plan.md
+```
+
+### Getting Expert Advice
+
+```
+@architect How should I structure a microservices architecture?
+
+@frontend What's the best way to implement dark mode in React?
+
+@security Can you review this authentication flow for vulnerabilities?
+
+@performance How can I optimize this database query?
+```
+
+### Code Review
+
+```
+@double-check Review this PR for potential issues
+
+@qa What test cases should I add for this feature?
+
+@refactor How can I improve this code's maintainability?
+```
+
+## 🔄 Upgrading from v6 to v7
+
+v7 is a **complete rewrite** with breaking changes. Follow these steps for a clean upgrade:
+
+### 1. Remove Old Installation
+
 ```bash
-sudo npm install -g @cdw0424/super-prompt@latest
+# Uninstall old version
+npm uninstall -g @cdw0424/super-prompt
+
+# Remove old global files (if they exist)
+rm -rf ~/.super-prompt
+rm -rf ~/.cursor/mcp.json  # Only if you used v6 MCP features
 ```
 
-#### Cursor IDE Integration Issues
-**Problem**: Super Prompt commands not appearing in Cursor
+### 2. Clean Up Your Project
 
-**Solution**: Ensure MCP server is running and Cursor is configured:
 ```bash
-# Start MCP server
-super-prompt-mcp-server
+cd your-project
 
-# Then restart Cursor IDE
+# Remove old Super Prompt files
+rm -rf .super-prompt/
+rm -rf .cursor/rules/*-sdd-*.mdc
+rm -rf python-packages/
+rm -rf personas/
+
+# Remove old MCP configuration (if exists)
+rm -f .cursor/mcp.json
 ```
 
-#### Python Module Not Found
-**Problem**: Import errors when running Super Prompt
+### 3. Install v7
 
-**Solution**: Ensure Python dependencies are installed:
 ```bash
-python -m pip install --break-system-packages typer pyyaml pathspec mcp fastmcp
+# Install new version
+npm install -g @cdw0424/super-prompt
+
+# Initialize in your project
+super-prompt super:init
 ```
 
-## Development
+### 4. Select Your Framework
 
-### Prerequisites
-- Node.js 18+
-- Python 3.10+
-- Git
+Choose the framework that matches your project when prompted.
 
-### Setup
-```bash
-git clone https://github.com/cdw0424/super-prompt.git
-cd super-prompt
-npm install
+### What Changed?
+
+| v6 | v7 |
+|----|-----|
+| MCP + Python architecture | Pure JavaScript/Node.js |
+| 29+ personas | 10 focused roles |
+| Complex SDD workflow | Lightweight SDD micro-cycle |
+| `.md` commands | `.mdc` rules + `.md` commands |
+| Manual mode switching | Framework-based configuration |
+| Global MCP server | Cursor-native integration |
+
+## 🛠️ Supported Frameworks
+
+### Frontend
+
+- **Next.js** - React framework with server-side rendering
+- **React** - React library with TypeScript
+- **React Router v7** - React Router v7 with file-based routing and data loading
+- **Vue.js** - Vue.js framework with TypeScript
+
+### Backend
+
+- **Python** - Python development best practices
+- **Django** - Django web framework
+- **FastAPI** - FastAPI framework for APIs
+
+### All Frameworks
+
+Select "All Frameworks" if you work with multiple stacks or want all rules available.
+
+## 📖 Documentation
+
+### SDD Micro-Cycle
+
+The SDD (Spec-Driven Development) micro-cycle is a lightweight workflow inspired by GitHub's Spec-Kit:
+
+1. **Clarify** (3-5 min) - Define what you're building and why
+2. **Plan** (5-10 min) - Outline how you'll build it
+3. **Implement** - Execute the plan with confidence
+4. **Verify** - Ensure success criteria are met
+
+Each feature gets its own folder:
+```
+docs/super-prompt/sdd/
+├── 001-251010-add-rate-limiting/
+│   ├── spec.md
+│   ├── plan.md
+│   └── notes.md
+├── 002-251015-jwt-authentication/
+│   ├── spec.md
+│   └── plan.md
+└── ...
 ```
 
-### Building and Testing
-```bash
-# Build the project
-npm run build
+### Role Details
 
-# Run tests
-npm test
+Each role provides:
+- **Specialized expertise** in their domain
+- **Evidence-based analysis** with references
+- **Actionable recommendations** with priorities
+- **Risk assessment** and mitigation strategies
+- **Best practices** from industry standards
 
-# Verify SSOT compliance
-npm run sp:verify:all
-```
+## 🤝 Contributing
 
-### Development Scripts
-```bash
-# Development mode
-npm run dev
+Contributions are welcome! Please read our contributing guidelines before submitting PRs.
 
-# Initialize for development
-npm run dev:init
-
-# Start MCP server in development
-npm run sp:mcp
-
-# List available MCP tools
-npm run sp:mcp:list-tools
-
-# Doctor check
-npm run sp:doctor
-```
-
-### Publishing
-```bash
-# Prepare and publish
-npm run prepack
-npm publish --access public
-```
-
-## Contributing
-
-Contributions are welcome! Please see our [contributing guide](docs/contributing.md) and follow the SDD workflow for new features.
-
-## License
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Support
+## 🆘 Support
 
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/your-repo/super-prompt/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/super-prompt/discussions)
+- **Issues**: [GitHub Issues](https://github.com/cdw0424/super-prompt/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/cdw0424/super-prompt/discussions)
+
+## 🙏 Acknowledgments
+
+Built with ❤️ for the Cursor IDE community.
+
+---
+
+**Super Prompt v7** - Simplified Development Assistant for Cursor IDE

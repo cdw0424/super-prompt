@@ -1,0 +1,125 @@
+---
+name: react-router-v7-best-practices
+description: "Remix best practices and patterns"
+---
+
+# React Router v7 Best Practices
+
+## Project Structure
+- Use file-based routing in `app/routes` directory
+- Place route components in `app/routes` following React Router v7 conventions
+- Place shared components in `app/components` directory
+- Place utilities and helpers in `app/lib` directory
+- Use lowercase with dashes for directories (e.g., `components/user-profile`)
+
+## Routing Conventions
+- Use file-based routing: `app/routes/about.tsx`, `app/routes/users.$id.tsx`
+- Dynamic segments: Use `$` prefix (e.g., `users.$userId.tsx`)
+- Nested routes: Use dot notation (e.g., `users.settings.profile.tsx`)
+- Index routes: Use `_index.tsx` suffix
+- Layout routes: Use `_layout.tsx` or parent route files
+- Pathless routes: Prefix with underscore (e.g., `_auth.tsx`)
+
+## Data Loading
+- Use `loader` functions for server-side data fetching
+- Export `loader` from route modules for data requirements
+- Access loader data via `useLoaderData()` hook
+- Implement proper error handling with `ErrorBoundary`
+- Use `defer` for streaming data when appropriate
+- Return web standard Response objects from loaders
+
+## Data Mutations
+- Use `action` functions for form submissions and mutations
+- Export `action` from route modules for data modifications
+- Use `Form` component from React Router for automatic handling
+- Access action data via `useActionData()` hook
+- Implement optimistic UI with `useFetcher()`
+- Return redirect responses after successful mutations
+
+## Performance
+- Implement proper loading states with `useNavigation()`
+- Use `Suspense` boundaries for streaming
+- Leverage route-based code splitting (automatic)
+- Implement proper caching strategies in loaders
+- Use `prefetch` on `Link` components when appropriate
+- Minimize client-side state, prefer server state
+
+## Forms and Validation
+- Use `Form` component for progressive enhancement
+- Implement server-side validation in action functions
+- Use `useActionData()` for error handling
+- Show loading states with `useNavigation()` or `useFetcher()`
+- Return validation errors in action responses
+- Handle both JavaScript-enabled and disabled scenarios
+
+## Error Handling
+- Export `ErrorBoundary` from route modules
+- Implement proper error boundaries at route level
+- Use `isRouteErrorResponse` for typed error handling
+- Show user-friendly error messages
+- Log errors appropriately
+- Handle different error types (404, 500, etc.)
+
+## TypeScript Integration
+- Define loader and action return types
+- Use `LoaderFunctionArgs` and `ActionFunctionArgs` types
+- Type route params with generic parameters
+- Use `useLoaderData<typeof loader>()` for type safety
+- Define proper types for form data
+- Leverage TypeScript strict mode
+
+## Meta and SEO
+- Export `meta` function from route modules
+- Return array of meta descriptors
+- Use dynamic meta based on loader data
+- Implement proper title, description, and OG tags
+- Handle meta for error pages
+- Use canonical URLs when appropriate
+
+## Navigation
+- Use `Link` component for client-side navigation
+- Use `NavLink` for active state styling
+- Implement proper loading states during navigation
+- Use `useNavigate()` hook for programmatic navigation
+- Handle navigation blocking with `useBlocker()` when needed
+- Implement proper focus management
+
+## State Management
+- Minimize client-side state
+- Prefer URL state for shareable/bookmarkable data
+- Use loader data as server state
+- Use `useFetcher()` for non-navigational data loading
+- Implement proper revalidation strategies
+- Use React Context sparingly for truly global state
+
+## Middleware and Layout
+- Use layout routes for shared UI
+- Implement authentication checks in loaders
+- Use `headers` function for caching strategies
+- Implement proper session management
+- Use cookies for authentication tokens
+- Handle redirects in loaders when needed
+
+## Testing
+- Test route modules independently
+- Mock loader and action responses
+- Test error boundaries and error states
+- Verify form submissions and validations
+- Test loading and navigation states
+- Implement integration tests for critical flows
+
+## Code Organization
+- Keep route modules focused and cohesive
+- Extract complex logic into separate modules
+- Use custom hooks for shared logic
+- Implement proper TypeScript types
+- Keep components small and reusable
+- Follow single responsibility principle
+
+## Deployment
+- Configure proper build settings
+- Set up environment variables correctly
+- Implement proper caching headers
+- Use CDN for static assets
+- Monitor server-side performance
+- Implement proper logging and monitoring

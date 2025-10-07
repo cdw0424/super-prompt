@@ -1,17 +1,15 @@
 {
   "name": "@cdw0424/super-prompt",
-  "version": "6.1.6",
-  "description": "Super Prompt v6.1.6 - MCP-First SDD Development Platform for Cursor IDE with Comprehensive Documentation",
+  "version": "7.1.0",
+  "description": "Super Prompt v7.1.0 - Simplified Development Assistant for Cursor IDE",
   "bin": {
-    "super-prompt": "bin/super-prompt",
-    "super-prompt-mcp-server": "bin/sp-mcp"
+    "super-prompt": "bin/super-prompt"
   },
   "scripts": {
     "clean:py": "find . -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find . -name '*.pyc' -delete >/dev/null 2>&1 || true; find packages -type d -name __pycache__ -prune -exec rm -rf {} + >/dev/null 2>&1 || true; find packages -name '*.pyc' -delete >/dev/null 2>&1 || true",
     "clean": "rm -rf dist || true && rm -rf python-packages/super-prompt-core/dist || true && npm run clean:py",
     "build": "echo 'Build complete - JavaScript project'",
-    "prepack": "npm run clean && node scripts/prepare-python-dist.js && npm run build",
-    "preinstall": "mkdir -p ${NPM_CONFIG_CACHE:-/tmp/.npm-cache} || true",
+    "prepack": "npm run clean && npm run build",
     "postinstall": "node install.js",
     "test": "node --test",
     "dev": "./bin/super-prompt",
@@ -20,15 +18,7 @@
     "amr:print": "cat .cursor/rules/*-sdd-*.mdc",
     "sp:init": "super-prompt super:init",
     "sp:rules": "super-prompt super:init && cat .cursor/rules/*-sdd-*.mdc || true",
-    "sp:mcp": "python -m super_prompt.mcp_client",
-    "sp:doctor": "super-prompt doctor",
-    "sp:mcp:python": "python -m super_prompt.mcp_client",
-    "sp:mcp:list-tools": "python -m super_prompt.mcp_client list-tools",
-    "sp:mcp:call": "python -m super_prompt.mcp_client call",
-    "sp:mcp:stdio": "python -m super_prompt.mcp_stdio",
-    "install:python": "python3 -m pip install --break-system-packages --upgrade typer pyyaml pathspec mcp fastmcp && python3 -m pip install --break-system-packages ./python-packages/super-prompt-core || (python -m pip install --break-system-packages --upgrade typer pyyaml pathspec mcp fastmcp && python -m pip install --break-system-packages ./python-packages/super-prompt-core)",
-    "ssot:verify": "node scripts/ssot/verify-ssot.js",
-    "sp:verify:all": "npm run ssot:verify && npm run build && echo '✅ All verifications passed'"
+    "sp:doctor": "super-prompt doctor"
   },
   "keywords": [
     "ai",
@@ -59,9 +49,7 @@
   ],
   "files": [
     "bin/",
-    "python-packages/super-prompt-core/",
-    "packages/",
-    "templates/",
+    ".cursor/",
     "src/",
     "install.js",
     "README.md",
